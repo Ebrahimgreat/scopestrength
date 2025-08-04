@@ -1,4 +1,4 @@
-# Crohnjobs
+# Workout Builder
 
 To start your Phoenix server:
 
