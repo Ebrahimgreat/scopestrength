@@ -60,7 +60,7 @@ defmodule Crohnjobs.MixProject do
       {:bandit, "~> 1.5"},
       {:oban, "~> 2.14"},
       {:oban_web, "~> 2.11"},
-      {:gen_stage, "~> 1.0.0"}
+      {:gen_stage, "~> 1.0.0"},
 
     ]
   end

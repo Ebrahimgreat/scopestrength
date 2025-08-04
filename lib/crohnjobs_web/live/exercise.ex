@@ -5,12 +5,14 @@ alias Postgrex.Extensions.Name
   @impl true
   alias Crohnjobs.Workout
   def mount(_params, _session, socket) do
-    {:ok, assign(  socket,   %{ name: "Becnh" ,report: "",  date: Date.utc_today(),  exercises: [%{ id: 1, exercise_id: 1,  name: "Bench Press", workout: [%{set: 1, reps: 1, weight: 1}]},
+    workout = Enum.sort_by(Workout.list_exercises(), & &1.name)
+
+    {:ok, assign(  socket,   %{ name: "Ebrahim" ,report: "",  date: Date.utc_today(),  exercises: [%{ id: 1, exercise_id: 1,  name: "Bench Press", workout: [%{set: 1, reps: 1, weight: 1}]},
 
 
 
     ],
-    databaseExercises: Enum.map(Workout.list_exercises(), fn x->{x.name, x.id} end)
+    databaseExercises: Enum.map(workout, fn x->{x.name, x.id} end)
 
   }
     )}
@@ -138,7 +140,7 @@ end
 def handle_event("submit", _unsigned_params, socket) do
   Crohnjobs.WorkoutTracker.programme(%{name: socket.assigns.name, date: socket.assigns.date, exercises: socket.assigns.exercises})
 
-   {:noreply, assign(socket, report: "true")}
+   {:noreply, assign(socket, report: "true")|> put_flash(:info, "Workout Added. You can press download to view in on your device")}
 
 end
 
@@ -160,7 +162,7 @@ end
       <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold">Workout Builder</h1>
         <%= if @report == "true" do %>
-          <a class="bg-blue text-white px-4 py-2 rounded shadow" href="download/workout">
+          <a class="bg-red text-black px-4 py-2 rounded shadow" href="download/workout">
             Download
           </a>
         <% end %>
@@ -181,6 +183,9 @@ end
           + Add Exercise
         </.button>
       </div>
+
+
+
 
       <.form phx-change="updateSet">
         <%= for exercise <- @exercises do %>
@@ -253,6 +258,7 @@ end
         </div>
       </.form>
     </div>
+
     """
   end
 end
