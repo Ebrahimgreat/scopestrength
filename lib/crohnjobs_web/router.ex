@@ -18,9 +18,8 @@ defmodule CrohnjobsWeb.Router do
   scope "/", CrohnjobsWeb do
   pipe_through :browser
 
-  get "/", PageController, :home
   get "/download/workout", DownloadController, :workout
-  live "/exercise", Exercise
+  live "/", Exercise
   oban_dashboard "/oban"
 
   end
