@@ -1,18 +1,12 @@
-# Workout Builder
+Workout Builder is a minimal Elixir application that helps users track workouts and export them as a .txt file. Simple, lightweight, and focused on workout logging.
 
-To start your Phoenix server:
+✨ Features
+	•	🏋️ Workout Tracking – Log exercises with sets, reps, and weights
+	•	📂 Export to File – Download workouts as plain text (.txt)
+	•	🌀 Minimal & Fast – Built in Elixir with simplicity in mind
 
-  * Run `mix setup` to install and setup dependencies
-  * Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
-
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
-
-Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
-
-## Learn more
-
-  * Official website: https://www.phoenixframework.org/
-  * Guides: https://hexdocs.pm/phoenix/overview.html
-  * Docs: https://hexdocs.pm/phoenix
-  * Forum: https://elixirforum.com/c/phoenix-forum
-  * Source: https://github.com/phoenixframework/phoenix
+🚀 Tech Stack
+	•	Language: Elixir
+ • Framework: Phenoix
+ 
+ 
