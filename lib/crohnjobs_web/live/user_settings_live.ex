@@ -11,6 +11,31 @@ defmodule CrohnjobsWeb.UserSettingsLive do
     </.header>
 
     <div class="space-y-12 divide-y">
+
+
+         <.form
+
+          id="name"
+          phx-submit="update_name"
+        >
+       <.input type="text" name="name" value={@name}/>
+
+
+
+<.button>
+Update Name
+</.button>
+        </.form>
+
+
+    <div>
+
+
+    </div>
+
+
+
+
       <div>
         <.simple_form
           for={@email_form}
@@ -18,6 +43,9 @@ defmodule CrohnjobsWeb.UserSettingsLive do
           phx-submit="update_email"
           phx-change="validate_email"
         >
+
+
+
           <.input field={@email_form[:email]} type="email" label="Email" required />
           <.input
             field={@email_form[:current_password]}
@@ -93,6 +121,7 @@ defmodule CrohnjobsWeb.UserSettingsLive do
 
     socket =
       socket
+      |> assign(:name, user.name)
       |> assign(:current_password, nil)
       |> assign(:email_form_current_password, nil)
       |> assign(:current_email, user.email)
@@ -115,6 +144,19 @@ defmodule CrohnjobsWeb.UserSettingsLive do
     {:noreply, assign(socket, email_form: email_form, email_form_current_password: password)}
   end
 
+
+
+ def handle_event("update_name",%{"name"=> name}, socket) do
+  user = socket.assigns.current_user
+  case Account.update_name(user,%{"name"=> name}) do
+    {:ok, user}->
+      {:noreply, socket|> put_flash(:info,"Name updated")|> assign(:name, user.name)}
+      {:error, changeset} ->
+        {:noreply, assign(socket, :name_form, to_form(changeset))}
+    end
+
+ end
+
   def handle_event("update_email", params, socket) do
     %{"current_password" => password, "user" => user_params} = params
     user = socket.assigns.current_user
@@ -134,6 +176,10 @@ defmodule CrohnjobsWeb.UserSettingsLive do
         {:noreply, assign(socket, :email_form, to_form(Map.put(changeset, :action, :insert)))}
     end
   end
+
+
+
+
 
   def handle_event("validate_password", params, socket) do
     %{"current_password" => password, "user" => user_params} = params

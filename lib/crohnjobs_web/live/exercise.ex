@@ -3,10 +3,16 @@ defmodule CrohnjobsWeb.Exercise do
 
   @impl true
   alias Crohnjobs.Workout
+
   def mount(_params, _session, socket) do
+
+    name_form = to_form(%{"name"=>"Ebrahim"})
+
+
+
     workout = Enum.sort_by(Workout.list_exercises(), & &1.name)
 
-    {:ok, assign(  socket,   %{ name: "Ebrahim" ,report: "",  date: Date.utc_today(),  exercises: [%{ id: 1, exercise_id: 1,  name: "Bench Press", workout: [%{set: 1, reps: 1, weight: 1}]},
+    {:ok, assign(  socket,   %{ name_form: name_form ,report: "",  date: Date.utc_today(),  exercises: [%{ id: 1, exercise_id: 1,  name: "Bench Press", workout: [%{set: 1, reps: 1, weight: 1}]},
 
 
 
@@ -38,7 +44,9 @@ end
 {:noreply, assign(socket, exercises: updated_exercises)}
 end
 def handle_event("updateName", %{"name"=>name}, socket) do
-{:noreply, assign(socket, name: name)}
+  name_form = to_form(%{"name"=>name})
+
+{:noreply, assign(socket, name_form: name_form)}
 
 end
 
@@ -191,12 +199,12 @@ end
 
 
           <div class="grid md:grid-cols-2 gap-6">
-            <.form  phx-change="updateName" class="space-y-2">
+            <.form for={@name_form}  phx-change="updateName" class="space-y-2">
               <label class="block text-sm font-semibold text-gray-700"> Name</label>
               <.input
+              field={@name_form[:name]}
                 name="name"
                 placeholder="Enter your name"
-                value={@name}
                 class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               />
             </.form>

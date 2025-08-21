@@ -25,7 +25,6 @@ defmodule Crohnjobs.Workout do
   Gets a single exercise.
 
   Raises `Ecto.NoResultsError` if the Exercise does not exist.
-
   ## Examples
 
       iex> get_exercise!(123)

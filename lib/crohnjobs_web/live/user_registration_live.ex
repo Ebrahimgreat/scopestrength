@@ -31,8 +31,10 @@ defmodule CrohnjobsWeb.UserRegistrationLive do
           Oops, something went wrong! Please check the errors below.
         </.error>
 
+        <.input field={@form[:name]} type="text" label="name" required/>
         <.input field={@form[:email]} type="email" label="Email" required />
         <.input field={@form[:password]} type="password" label="Password" required />
+
 
         <:actions>
           <.button phx-disable-with="Creating account..." class="w-full">Create an account</.button>
@@ -54,6 +56,7 @@ defmodule CrohnjobsWeb.UserRegistrationLive do
   end
 
   def handle_event("save", %{"user" => user_params}, socket) do
+
     case Account.register_user(user_params) do
       {:ok, user} ->
         {:ok, _} =
