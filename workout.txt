@@ -1,8 +1,6 @@
 Workout created by : Ebrahim
 Workout Date, 2025-08-08
 Exercise: Bench Press
- Set: 1, Weight: 12, Reps: 50, volume: 600
-Exercise: Bench Press
  Set: 1, Weight: 1, Reps: 1, volume: 1
-Total Exercises: 2
- Workout Volume:  13
+Total Exercises: 1
+ Workout Volume:  1

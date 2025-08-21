@@ -1,5 +1,4 @@
 defmodule CrohnjobsWeb.Exercise do
-alias Postgrex.Extensions.Name
   use CrohnjobsWeb, :live_view
 
   @impl true
@@ -22,7 +21,7 @@ alias Postgrex.Extensions.Name
 
 def handle_event("removeSet", %{"name"=> name},socket) do
 
- [fieldValue, exerciseId, setId] = String.split(name, "_")
+ [_fieldValue, exerciseId, setId] = String.split(name, "_")
  exerciseId = String.to_integer(exerciseId)
  setID = String.to_integer(setId)
  updated_exercises = Enum.map(socket.assigns.exercises, fn item-> if item.id == exerciseId do
@@ -141,7 +140,7 @@ end
   {:noreply, assign(socket, exercises: updated_exercise)}
 
   end
-
+  @impl true
 def handle_event("submit", _unsigned_params, socket) do
   Crohnjobs.WorkoutTracker.programme(%{name: socket.assigns.name, date: socket.assigns.date, exercises: socket.assigns.exercises})
 
@@ -149,7 +148,7 @@ def handle_event("submit", _unsigned_params, socket) do
 
 end
 
-
+@impl true
   def handle_event("add", _unsigned_params, socket) do
     newExercise = %{ id: length(socket.assigns.exercises)+1, exercise_id: 1,  name: "Bench Press", workout: [%{set: 1, reps: 1, weight: 1}]}
     updatedExercises = socket.assigns.exercises ++ [newExercise]
@@ -160,7 +159,6 @@ end
 
   @impl true
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
-  @impl true
 
 
   def render(assigns) do
@@ -193,7 +191,7 @@ end
 
 
           <div class="grid md:grid-cols-2 gap-6">
-            <.form phx-change="updateName" class="space-y-2">
+            <.form  phx-change="updateName" class="space-y-2">
               <label class="block text-sm font-semibold text-gray-700"> Name</label>
               <.input
                 name="name"
@@ -242,7 +240,7 @@ end
             <div class="h-px bg-gradient-to-r from-gray-300 to-transparent flex-1"></div>
           </div>
 
-          <.form phx-change="updateSet">
+          <.form  phx-change="updateSet">
             <%= for {exercise, index} <- Enum.with_index(@exercises) do %>
               <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
                 <!-- Exercise Header -->
