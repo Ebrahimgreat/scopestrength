@@ -1,74 +1,170 @@
 <!DOCTYPE html>
 <html lang="en" class="[scrollbar-gutter:stable]">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default="Crohnjobs" suffix=" · Phoenix Framework">
-      {assigns[:page_title]}
-    </.live_title>
-    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
-    </script>
-  </head>
-  <body class="bg-white">
-    <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="csrf-token" content={get_csrf_token()} />
+  <.live_title default="Crohnjobs" suffix=" · Phoenix Framework">
+    {assigns[:page_title]}
+  </.live_title>
+  <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+  <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+  </script>
+</head>
+<body class="bg-white">
+  <!-- Navigation Bar -->
+  <nav class="bg-white shadow-sm border-b border-zinc-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <!-- Logo/Brand -->
+        <div class="flex items-center">
+          <.link href={~p"/"} class="text-xl font-bold text-zinc-900 hover:text-zinc-700">
+            Scope Application
+          </.link>
+        </div>
+
+        <!-- Main Navigation Links -->
+        <%= if @current_user do %>
+          <div class="hidden md:flex items-center space-x-8">
+            <.link
+              href={~p"/"}
+              class="text-sm font-medium text-zinc-900 hover:text-zinc-700 px-3 py-2 rounded-md transition-colors"
+            >
+              Home
+            </.link>
+            <.link
+              href={~p"/clients"}
+              class="text-sm font-medium text-zinc-900 hover:text-zinc-700 px-3 py-2 rounded-md transition-colors"
+            >
+              Clients
+            </.link>
+            <.link
+              href={~p"/programmes"}
+              class="text-sm font-medium text-zinc-900 hover:text-zinc-700 px-3 py-2 rounded-md transition-colors"
+            >
+              Programmes
+            </.link>
+             <.link
+              href={~p"/exercises"}
+              class="text-sm font-medium text-zinc-900 hover:text-zinc-700 px-3 py-2 rounded-md transition-colors"
+            >
+              Exercises
+            </.link>
+          </div>
+        <% end %>
+
+        <!-- User Menu -->
+        <div class="flex items-center space-x-4">
+          <%= if @current_user do %>
+            <!-- User Name -->
+            <span class="text-sm text-zinc-600 hidden sm:block">
+              {@current_user.name}
+            </span>
+            
+            <!-- User Dropdown Menu -->
+            <div class="relative">
+              <.link
+                href={~p"/users/settings"}
+                class="text-sm font-medium text-zinc-900 hover:text-zinc-700 px-3 py-2 rounded-md transition-colors"
+              >
+                Settings
+              </.link>
+            </div>
+            
+            <.link
+              href={~p"/users/log_out"}
+              method="delete"
+              class="text-sm font-medium text-red-600 hover:text-red-700 px-3 py-2 rounded-md transition-colors"
+            >
+              Log out
+            </.link>
+          <% else %>
+            <.link
+              href={~p"/users/register"}
+              class="text-sm font-medium text-zinc-900 hover:text-zinc-700 px-3 py-2 rounded-md transition-colors"
+            >
+              Register
+            </.link>
+            <.link
+              href={~p"/users/log_in"}
+              class="bg-zinc-900 text-white hover:bg-zinc-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Log in
+            </.link>
+          <% end %>
+        </div>
+
+        <!-- Mobile menu button -->
+        <%= if @current_user do %>
+          <div class="md:hidden flex items-center">
+            <button
+              type="button"
+              class="text-zinc-600 hover:text-zinc-900 focus:outline-none focus:text-zinc-900 p-2"
+              phx-click="toggle_mobile_menu"
+            >
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Mobile Navigation Menu -->
       <%= if @current_user do %>
+        <div class="md:hidden" id="mobile-menu" style="display: none;">
+          <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-zinc-200">
+            <.link
+              href={~p"/"}
+              class="block px-3 py-2 text-sm font-medium text-zinc-900 hover:text-zinc-700 hover:bg-zinc-50 rounded-md transition-colors"
+            >
+              Home
+            </.link>
+            <.link
+              href={~p"/clients"}
+              class="block px-3 py-2 text-sm font-medium text-zinc-900 hover:text-zinc-700 hover:bg-zinc-50 rounded-md transition-colors"
+            >
+              Clients
+            </.link>
 
+            
 
-
-          <.link
-            href={~p"/"}
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-          >
-            Home
-          </.link>
-
-
-
-
-      
-        <li>
-        <li class="text-[0.8125rem] leading-6 text-zinc-900">
-          {@current_user.name}
-        </li>
-
-      
-          <.link
-            href={~p"/users/settings"}
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-          >
-            Settings
-          </.link>
-        </li>
-        <li>
-          <.link
-            href={~p"/users/log_out"}
-            method="delete"
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-          >
-            Log out
-          </.link>
-        </li>
-      <% else %>
-        <li>
-          <.link
-            href={~p"/users/register"}
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-          >
-            Register
-          </.link>
-        </li>
-        <li>
-          <.link
-            href={~p"/users/log_in"}
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-          >
-            Log in
-          </.link>
-        </li>
+          
+            <.link
+              href={~p"/programmes"}
+              class="block px-3 py-2 text-sm font-medium text-zinc-900 hover:text-zinc-700 hover:bg-zinc-50 rounded-md transition-colors"
+            >
+              Programmes
+            </.link>
+            
+    
+          </div>
+        </div>
       <% end %>
-    </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="flex-1">
     {@inner_content}
-  </body>
+  </main>
+
+  <!-- Mobile Menu Toggle Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const mobileMenuButton = document.querySelector('[phx-click="toggle_mobile_menu"]');
+      const mobileMenu = document.getElementById('mobile-menu');
+      
+      if (mobileMenuButton && mobileMenu) {
+        mobileMenuButton.addEventListener('click', function() {
+          if (mobileMenu.style.display === 'none' || mobileMenu.style.display === '') {
+            mobileMenu.style.display = 'block';
+          } else {
+            mobileMenu.style.display = 'none';
+          }
+        });
+      }
+    });
+  </script>
+</body>
 </html>

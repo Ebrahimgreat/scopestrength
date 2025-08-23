@@ -1,4 +1,6 @@
 defmodule CrohnjobsWeb.Router do
+
+
   use CrohnjobsWeb, :router
 
   import CrohnjobsWeb.UserAuth
@@ -20,9 +22,19 @@ defmodule CrohnjobsWeb.Router do
 
   scope "/", CrohnjobsWeb do
   pipe_through [:browser, :require_authenticated_user]
+  live_session :require_authenticated_user,
+  on_mount: [{CrohnjobsWeb.UserAuth, :ensure_authenticated}] do
 
+
+  live "/clients",Clients
+  live "/programmes", Programmes
+  live "/", Dashboard
+  live "/exercises",Exercises
+  live "/workout", Exercise
+  live "/users/settings", UserSettingsLive, :edit
+  live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
+  end
   get "/download/workout", DownloadController, :workout
-  live "/", Exercise
   oban_dashboard "/oban"
 
   end
@@ -65,15 +77,6 @@ defmodule CrohnjobsWeb.Router do
     post "/users/log_in", UserSessionController, :create
   end
 
-  scope "/", CrohnjobsWeb do
-    pipe_through [:browser, :require_authenticated_user]
-
-    live_session :require_authenticated_user,
-      on_mount: [{CrohnjobsWeb.UserAuth, :ensure_authenticated}] do
-      live "/users/settings", UserSettingsLive, :edit
-      live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
-    end
-  end
 
   scope "/", CrohnjobsWeb do
     pipe_through [:browser]

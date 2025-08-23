@@ -10,7 +10,7 @@
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
 alias Crohnjobs.Repo
-alias Crohnjobs.Workout.Exercise
+alias Crohnjobs.Exercises.Exercise
 
 exercises = [
   # BACK

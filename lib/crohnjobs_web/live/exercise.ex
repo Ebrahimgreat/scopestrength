@@ -7,12 +7,25 @@ defmodule CrohnjobsWeb.Exercise do
   def mount(_params, _session, socket) do
 
     name_form = to_form(%{"name"=>"Ebrahim"})
+    update_set_form = to_form(%{
+      exercises: [
+        %{
+          id: 1,
+          exercise_id: 1,
+          name: "Bench Press",
+          workout: [
+            %{set: 1, reps: 1, weight: 1}
+          ]
+        }
+      ]
+    })
+
 
 
 
     workout = Enum.sort_by(Workout.list_exercises(), & &1.name)
 
-    {:ok, assign(  socket,   %{ name_form: name_form ,report: "",  date: Date.utc_today(),  exercises: [%{ id: 1, exercise_id: 1,  name: "Bench Press", workout: [%{set: 1, reps: 1, weight: 1}]},
+    {:ok, assign(  socket,   %{  update_set_form: update_set_form,    name_form: name_form ,report: "",  date: Date.utc_today(),  exercises: [%{ id: 1, exercise_id: 1,  name: "Bench Press", workout: [%{set: 1, reps: 1, weight: 1}]},
 
 
 
@@ -209,7 +222,7 @@ end
               />
             </.form>
 
-            <form phx-change="dateChange" class="space-y-2">
+            <form  phx-change="dateChange" class="space-y-2">
               <label class="block text-sm font-semibold text-gray-700">Workout Date</label>
               <.input
                 type="date"
@@ -248,7 +261,7 @@ end
             <div class="h-px bg-gradient-to-r from-gray-300 to-transparent flex-1"></div>
           </div>
 
-          <.form  phx-change="updateSet">
+          <.form for={@update_set_form}  phx-change="updateSet">
             <%= for {exercise, index} <- Enum.with_index(@exercises) do %>
               <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
                 <!-- Exercise Header -->

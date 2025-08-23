@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Workout do
+defmodule Crohnjobs.Exercise do
   @moduledoc """
   The Workout context.
   """
@@ -6,7 +6,7 @@ defmodule Crohnjobs.Workout do
   import Ecto.Query, warn: false
   alias Crohnjobs.Repo
 
-  alias Crohnjobs.Workout.Exercise
+  alias Crohnjobs.Exercises.Exercise
 
   @doc """
   Returns the list of exercises.

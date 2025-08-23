@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Workout.Exercise do
+defmodule Crohnjobs.Exercises.Exercise do
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -6,6 +6,8 @@ defmodule Crohnjobs.Workout.Exercise do
     field :name, :string
     field :type, :string
     field :equipment, :string
+    field :is_custom, :boolean
+    belongs_to :trainer, Crohnjobs.Trainers.Trainer
 
     timestamps(type: :utc_datetime)
   end
@@ -13,7 +15,7 @@ defmodule Crohnjobs.Workout.Exercise do
   @doc false
   def changeset(exercise, attrs) do
     exercise
-    |> cast(attrs, [:name, :equipment, :type])
+    |> cast(attrs, [:name, :equipment, :type, :trainer_id, :is_custom])
     |> validate_required([:name, :equipment, :type])
   end
 end
