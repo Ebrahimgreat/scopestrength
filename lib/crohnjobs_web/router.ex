@@ -1,6 +1,5 @@
 defmodule CrohnjobsWeb.Router do
 
-
   use CrohnjobsWeb, :router
 
   import CrohnjobsWeb.UserAuth
@@ -26,8 +25,14 @@ defmodule CrohnjobsWeb.Router do
   on_mount: [{CrohnjobsWeb.UserAuth, :ensure_authenticated}] do
 
 
-  live "/clients",Clients
+
+  live "/chat", Chat
+  live "/clients", Clients
+  live "/clients/:id", ShowClient
   live "/programmes", Programmes
+  live "/programmes/:id", ProgrammeShow
+  live "/programmes/:id/template/:template_id", Template
+  live "/programmes/:id/template/:template_id/details",TemplateDetail
   live "/", Dashboard
   live "/exercises",Exercises
   live "/workout", Exercise

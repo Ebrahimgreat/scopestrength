@@ -8,6 +8,14 @@ defmodule Crohnjobs.Programmes do
 
   alias Crohnjobs.Programmes.Programme
 
+
+ def get_programme_with_template!(id) do
+   Programme|> Repo.get!(id)|>
+   Repo.preload(:programmeTemplates)
+ end
+
+
+
   @doc """
   Returns the list of programme.
 
@@ -17,6 +25,9 @@ defmodule Crohnjobs.Programmes do
       [%Programme{}, ...]
 
   """
+
+
+
   def list_programme do
     Repo.all(Programme)
   end
@@ -70,6 +81,11 @@ defmodule Crohnjobs.Programmes do
       {:error, %Ecto.Changeset{}}
 
   """
+
+
+
+
+
   def update_programme(%Programme{} = programme, attrs) do
     programme
     |> Programme.changeset(attrs)
@@ -215,6 +231,7 @@ defmodule Crohnjobs.Programmes do
   def list_programme_template do
     Repo.all(ProgrammeTemplate)
   end
+
 
   @doc """
   Gets a single programme_template.

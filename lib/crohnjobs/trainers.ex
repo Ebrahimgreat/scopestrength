@@ -8,6 +8,7 @@ defmodule Crohnjobs.Trainers do
 
   alias Crohnjobs.Trainers.Trainer
 
+  @spec list_trainers() :: any()
   @doc """
   Returns the list of trainers.
 

@@ -6,6 +6,7 @@ defmodule Crohnjobs.Programmes.Programme do
  field :name, :string
  field :description, :string
  belongs_to :trainer, CrohnJobs.Trainer
+ has_many :programmeTemplates, Crohnjobs.Programmes.ProgrammeTemplate
 
     timestamps(type: :utc_datetime)
   end

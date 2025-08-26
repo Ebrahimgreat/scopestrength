@@ -4,7 +4,8 @@ defmodule Crohnjobs.Programmes.ProgrammeTemplate do
 
   schema "programme_template" do
     field :name, :string
-    belongs_to :programmes, Crohnjobs.Programmes
+    belongs_to :programme, Crohnjobs.Programmes
+    has_many :programmeDetails, Crohnjobs.Programmes.ProgrammeDetails
 
 
     timestamps(type: :utc_datetime)

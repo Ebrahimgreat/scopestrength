@@ -9,5 +9,6 @@ defmodule Crohnjobs.Repo.Migrations.CreateExercises do
 
       timestamps(type: :utc_datetime)
     end
+    create unique_index(:exercise, [:name])
   end
 end
