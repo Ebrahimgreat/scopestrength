@@ -7,15 +7,21 @@ alias Phoenix.LiveViewTest.View
   alias Crohnjobs.Programmes.ProgrammeTemplate
   alias Crohnjobs.Repo
 
-  def handle_event("updateForm", %{"name"=>name}, socket) do
+  def handle_event("updateForm", params, socket) do
+    IO.inspect(params)
+    name = params["programme_template"]["name"]
+    programmeTemplate = socket.assigns.template.data
+    case Programmes.update_programme_template(programmeTemplate, %{name: name}) do
+      {:ok, _programme}->
+        template = %{programmeTemplate | name: name}
+        templateForm = Programmes.change_programme_template(template)|>to_form()
 
+        {:noreply, socket|> put_flash(:info, "Template Updated")|> assign(:template, templateForm)}
 
-
-
-
-    {:noreply, assign(socket, template: socket.assigns.template)}
-
+        _ ->{:noreply,socket|> put_flash(:eror, "SOmething Happend")}
+    end
   end
+ @spec mount(nil | maybe_improper_list() | map(), any(), any()) :: {:ok, any()}
  def mount(params, session, socket) do
 id =  String.to_integer(params["template_id"])
 
@@ -27,8 +33,12 @@ id =  String.to_integer(params["template_id"])
   def render(assigns) do
     ~H"""
     {@template.data.name}
-    <.form phx-change="updateForm" for={@template}>
+    <.form phx-submit="updateForm" for={@template}>
     <.input  label="name" field={@template[:name]}/>
+
+    <.button>
+     Update Name
+    </.button>
     </.form>
 
     <div class="border">

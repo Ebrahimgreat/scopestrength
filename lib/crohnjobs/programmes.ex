@@ -152,6 +152,12 @@ defmodule Crohnjobs.Programmes do
   """
   def get_programme_details!(id), do: Repo.get!(ProgrammeDetails, id)
 
+  def get_programme_detail_with_exericse!(id) do
+    Repo.get!(ProgrammeDetails,id)
+    |> Repo.preload(:exercise)
+  end
+
+  @spec create_programme_details() :: any()
   @doc """
   Creates a programme_details.
 
@@ -168,6 +174,7 @@ defmodule Crohnjobs.Programmes do
     %ProgrammeDetails{}
     |> ProgrammeDetails.changeset(attrs)
     |> Repo.insert()
+
   end
 
   @doc """

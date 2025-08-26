@@ -5,7 +5,7 @@ defmodule CrohnjobsWeb.ShowClient do
   use CrohnjobsWeb, :live_view
 
   def mount(params, session, socket) do
-  client = Repo.get!(Client,params["id"])|> Repo.preload(:user)
+  client = Repo.get!(Client,params["id"])
   clientForm = Clients.change_client(client)|>to_form()
   {:ok, assign(socket, client: clientForm)}
 
@@ -14,13 +14,7 @@ defmodule CrohnjobsWeb.ShowClient do
   def render(assigns) do
     ~H"""
 
-    <.form for={@client}>
-    <.input field={@client[:user][:name]}/>
-
-    </.form>
-    <h1> hello From Client page
-    </h1>
-
+Hi
     """
 
   end
