@@ -3,6 +3,8 @@ defmodule Crohnjobs.Programmes.ProgrammeUser do
   import Ecto.Changeset
 
   schema "programmeuser" do
+    belongs_to :programme, Crohnjobs.Programmes.Programme
+    belongs_to :client, Crohnjobs.Clients.Client
 
 
     timestamps(type: :utc_datetime)
@@ -11,7 +13,7 @@ defmodule Crohnjobs.Programmes.ProgrammeUser do
   @doc false
   def changeset(programme_user, attrs) do
     programme_user
-    |> cast(attrs, [])
+    |> cast(attrs, [:programme_id, :client_id])
     |> validate_required([])
   end
 end

@@ -71,58 +71,113 @@ defmodule CrohnjobsWeb.TemplateDetail do
 
   end
 
-
-
   def render(assigns) do
     ~H"""
+    <div class="min-h-screen bg-gray-50 py-10">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+        <!-- Header -->
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">Template Exercise Builder</h1>
+          <p class="text-gray-600">Add exercises and configure sets and reps for your workout template.</p>
+        </div>
 
-<div class="grid grid-cols-2">
-<div class="border">
-<ul>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- Exercise Library Section -->
+          <div class="bg-white rounded-xl shadow p-6 border">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-xl font-semibold text-gray-800">Exercise Library</h2>
+              <span class="text-sm text-gray-500">
+                <%= length(@exercises) %> available
+              </span>
+            </div>
 
-    <%=for exercise <-@exercises do %>
-    <li> <.button phx-click="addExercise" phx-value-id={exercise.id}>
-        <%= exercise.name %>
-        </.button>
+            <div class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+              <%= for exercise <- @exercises do %>
+                <button
+                  phx-click="addExercise"
+                  phx-value-id={exercise.id}
+                  class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-100 transition"
+                >
+                  <span class="font-medium text-gray-800"><%= exercise.name %></span>
+                  <span class="text-green-600 font-bold text-lg">+</span>
+                </button>
+              <% end %>
+            </div>
+          </div>
 
-     </li>
-    <%end%>
-    </ul>
-    </div>
+          <!-- Template Configuration Section -->
+          <div class="bg-white rounded-xl shadow p-6 border">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-xl font-semibold text-gray-800">Template Configuration</h2>
+              <span class="text-sm text-gray-500">
+                <%= length(@programmeDetails) %> exercise<%= if length(@programmeDetails) != 1, do: "s" %>
+              </span>
+            </div>
 
+            <%= if length(@programmeDetails) > 0 do %>
+              <div class="space-y-6 max-h-96 overflow-y-auto">
+                <%= for {template, index} <- Enum.with_index(@programmeDetails) do %>
+                  <div class="p-4 bg-gray-50 rounded-lg border">
+                    <div class="flex items-center justify-between mb-3">
+                      <h3 class="font-semibold text-gray-900">
+                        <%= index + 1 %>. <%= template.data.exercise.name %>
+                      </h3>
+                      <button
+                        phx-click="deleteExercise"
+                        phx-value-id={template.data.id}
+                        data-confirm="Are you sure you want to remove this exercise?"
+                        class="text-red-600 hover:underline text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
 
+                    <.form phx-submit="updateForm" for={template} class="space-y-4">
+                      <.input type="hidden" field={template[:id]} />
 
-<div>
+                      <div class="grid grid-cols-2 gap-4">
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700">Sets</label>
+                          <.input
+                            field={template[:set]}
+                            type="number"
+                            min="1"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700">Reps</label>
+                          <.input
+                            field={template[:reps]}
+                            type="text"
+                            placeholder="e.g., 10, 8-12, AMRAP"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          />
+                        </div>
+                      </div>
 
-<%= for template <-@programmeDetails do %>
-
-<.button phx-click="deleteExercise"  phx-value-id={template.data.id}>
-Delete
-</.button>
-<.form phx-submit="updateForm" for={template}>
-
-<.input type="hidden" field={template[:id]}/>
-<label>
-{template.data.exercise.name}
-</label>
-<label>
-Set
-</label>
-<.input label="set" field={template[:set]}/>
-<.input label="reps" field={template[:reps]}/>
-<.button>
-Update
-</.button>
-</.form>
-
-
-<%end%>
-
-</div>
-
+                      <div class="flex justify-end">
+                        <.button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow-sm">
+                          Update
+                        </.button>
+                      </div>
+                    </.form>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <!-- Empty State -->
+              <div class="text-center py-12 bg-gray-50 rounded-lg border">
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No exercises added yet</h3>
+                <p class="text-gray-600">Start building your template by adding exercises from the library.</p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
     </div>
     """
-
   end
+
 
 end

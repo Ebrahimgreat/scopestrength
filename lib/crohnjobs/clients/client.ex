@@ -3,13 +3,12 @@ defmodule Crohnjobs.Clients.Client do
   import Ecto.Changeset
 
   schema "clients" do
-
+    field :name, :string
     field :age, :integer
     field :height, :decimal
     field :notes, :string
     field :sex, :string
     field :active, :boolean
-    belongs_to :user, Crohnjobs.Account.User
     belongs_to :trainer, Crohnjobs.Trainers.Trainer
 
     timestamps(type: :utc_datetime)
@@ -32,7 +31,8 @@ defmodule Crohnjobs.Clients.Client do
   @doc false
   def changeset(client, attrs) do
     client
-    |> cast(attrs, [ :age, :height, :notes, :sex, :user_id, :trainer_id, :active])
+    |> cast(attrs, [ :name, :age, :height, :notes, :sex, :trainer_id, :active])
+
 
 
     |> validate_required([])

@@ -18,7 +18,7 @@ defmodule Crohnjobs.Clients do
 
   """
   def list_clients do
-  Repo.all(from c in Client, preload: [:user, :trainer])
+  Repo.all(from c in Client, preload: [ :trainer])
   end
 
   @doc """
@@ -43,7 +43,6 @@ defmodule Crohnjobs.Clients do
   def get_clients_for_trainer(trainer_id) do
     from(c in Client,
       where: c.trainer_id == ^trainer_id,
-      preload: [:user, :trainer]
     )
     |> Repo.all()
   end

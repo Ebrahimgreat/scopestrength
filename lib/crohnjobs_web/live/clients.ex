@@ -3,54 +3,46 @@ defmodule CrohnjobsWeb.Clients do
   alias Crohnjobs.Trainers
   alias Crohnjobs.Clients
 
-def mount(_params, session, socket) do
-  user = socket.assigns.current_user
-  trainer = Trainers.get_trainer_byUserId(user.id)
-  clients = Clients.get_clients_for_trainer(trainer.id)
+  def mount(_params, _session, socket) do
+    user = socket.assigns.current_user
+    trainer = Trainers.get_trainer_byUserId(user.id)
+    clients = Clients.get_clients_for_trainer(trainer.id)
 
-  {:ok, assign(socket, clients: clients)}
-
-
-end
+    {:ok, assign(socket, clients: clients)}
+  end
+  
 
   def render(assigns) do
     ~H"""
-    <h1> Hello </h1>
-    <table>
+    <div class="p-8">
+      <h1 class="text-2xl font-bold mb-4">My Clients</h1>
 
-    <thead>
-    <tr>
-    <th> Name
-    </th>
-    <th>
-    Age
-    </th>
+      <%= if @clients == [] do %>
+        <p class="text-gray-600">No clients assigned yet.</p>
+      <% else %>
+        <ul class="space-y-2">
+          <%= for client <- @clients do %>
+            <li class="p-4 bg-white rounded shadow flex items-center justify-between">
+              <div>
+                <p class="font-semibold text-lg"><%= client.name %></p>
+                <p class="text-sm text-gray-500">Age: <%= client.age %></p>
+              </div>
 
-    </tr>
-    </thead>
-    <tbody>
+              <.link
+                navigate={~p"/clients/#{client.id}"}
+                class="text-blue-600 hover:underline"
+              >
+                View Profile
+              </.link>
+              <.button>
+              Delete client
+              </.button>
 
-  <%= for client <- @clients do %>
-
-
-   <tr>
-   <td> <%= client.user.name %> </td>
-   <td> <%= client.age %> </td>
-   <td>  <.link
-                          navigate={~p"/clients/#{client.id}"}
-                          class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-                        >
-                        View
-                        </.link>
-                        </td>
-   </tr>
-
-    <%end%>
-    </tbody>
-    </table>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+    </div>
     """
-
-
   end
-
 end
