@@ -29,6 +29,7 @@ defmodule CrohnjobsWeb.Router do
   live "/chat", Chat
   live "/clients", Clients
   live "/clients/:id", ShowClient
+  live "/client/:id/programme", ChangeProgramme
   live "/programmes", Programmes
   live "/programmes/:id", ProgrammeShow
   live "/programmes/:id/template/:template_id", Template
