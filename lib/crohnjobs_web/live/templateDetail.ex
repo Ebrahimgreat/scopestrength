@@ -30,9 +30,18 @@ defmodule CrohnjobsWeb.TemplateDetail do
   end
   def handle_event("deleteExercise", params, socket) do
     id = String.to_integer(params["id"])
-    programmeDetails = socket.assigns.programmeDetails|> Enum.reject( fn x-> x.data.id == id end)
+    programmeDetails = socket.assigns.programmeDetails
+    programmeFind= Enum.find(programmeDetails,fn x-> x.data.id == id end)
+ case Programmes.delete_programme_details(programmeFind.data) do
+      {:ok, _programme}->
+        updatedProgrammeDetail =  Enum.reject(programmeDetails, fn x-> x.data.id == id end)
+      {:noreply, socket|> put_flash(:info, "Succesfully Deleted")|> assign(template_id: socket.assigns.template_id, programmeDetails: updatedProgrammeDetail, exercises: socket.assigns.exercises)}
 
-    {:noreply, assign(socket,template_id: socket.assigns.template_id, programmeDetails: programmeDetails, exercises: socket.assigns.exercises)}
+      _ ->{:noreply,socket|> put_flash(:error, "Unsucessful")}
+
+
+    end
+
 
   end
 
@@ -41,14 +50,23 @@ defmodule CrohnjobsWeb.TemplateDetail do
     reps = params["programme_details"]["reps"]
     set = params["programme_details"]["set"]
     programmeDetails = socket.assigns.programmeDetails
-    programmeToUpdate = Enum.map(programmeDetails, fn x-> if x.data.id == id do
-     updatedData =  %{x.data| set: set, reps: reps}
-     Programmes.change_programme_details(updatedData)|> to_form()
-    else
-      x
-    end
-    end )
-    {:noreply, assign(socket,template_id: socket.assigns.template_id, programmeDetails: programmeToUpdate, exercises: socket.assigns.exercises)}
+
+    programmeFind = Enum.find(programmeDetails, fn x-> x.data.id == id end)
+   case Programmes.update_programme_details(programmeFind.data, %{set: set, reps: reps}) do
+    {:ok,_updated}->
+      programmeToUpdate = Enum.map(programmeDetails, fn x-> if x.data == id do
+        updatedData= %{x.data | set: set, reps: reps}
+        IO.inspect(updatedData)
+        Programmes.change_programme_details(updatedData)|> to_form()
+      else
+        x
+      end
+    end)
+      {:noreply,socket|> put_flash(:info, "Programme Detail updated")|> assign(template_id: socket.assigns.template_id, programmeDetails: programmeToUpdate, exercises: socket.assigns.exercises)}
+     _ -> {:noreply, socket|> put_flash(:error, "Error has occured")}
+   end
+
+
 
   end
 
