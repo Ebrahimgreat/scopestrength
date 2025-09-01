@@ -3,6 +3,7 @@ defmodule CrohnjobsWeb.UserRegistrationLive do
 
   alias Crohnjobs.Account
   alias Crohnjobs.Account.User
+  alias Crohnjobs.Trainers
 
   def render(assigns) do
     ~H"""
@@ -66,6 +67,7 @@ defmodule CrohnjobsWeb.UserRegistrationLive do
           )
 
         changeset = Account.change_user_registration(user)
+        Trainers.create_trainer(%{user_id: user.id, bio: "Weight Lifting"})
         {:noreply, socket |> assign(trigger_submit: true) |> assign_form(changeset)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
