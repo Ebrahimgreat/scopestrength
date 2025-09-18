@@ -25,7 +25,8 @@ alias Phoenix.LiveViewTest.View
  def mount(params, session, socket) do
 id =  String.to_integer(params["template_id"])
 
-  template = Repo.get!(ProgrammeTemplate,id)|> Repo.preload(:programmeDetails)
+  template = Repo.get!(ProgrammeTemplate,id)|> Repo.preload(programmeDetails: [:exercise])
+
   templateChangeset= Programmes.change_programme_template(template)|> to_form()
   {:ok, assign(socket, template: templateChangeset,  template_id: id)}
 
@@ -114,7 +115,7 @@ id =  String.to_integer(params["template_id"])
                           <%= index + 1 %>
                         </span>
                       </div>
-                      <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Exercise</span>
+                      <span class="text-xs font-medium text-gray-500 uppercase tracking-wide"> <%= programmeDetail.exercise.name%></span>
                     </div>
                   </div>
 
