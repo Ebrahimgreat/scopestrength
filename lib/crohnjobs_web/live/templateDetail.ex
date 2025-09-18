@@ -10,6 +10,7 @@ defmodule CrohnjobsWeb.TemplateDetail do
   def handle_event("addExercise", params, socket) do
    exercise_id = String.to_integer(params["id"])
    programmeDetails = socket.assigns.programmeDetails
+   IO.inspect(programmeDetails)
    exerciseFound = Enum.find(programmeDetails, fn x-> x.data.exercise_id == exercise_id end)
   case exerciseFound do
     nil ->
@@ -54,7 +55,7 @@ defmodule CrohnjobsWeb.TemplateDetail do
     programmeFind = Enum.find(programmeDetails, fn x-> x.data.id == id end)
    case Programmes.update_programme_details(programmeFind.data, %{set: set, reps: reps}) do
     {:ok,_updated}->
-      programmeToUpdate = Enum.map(programmeDetails, fn x-> if x.data == id do
+      programmeToUpdate = Enum.map(programmeDetails, fn x-> if x.data.id == id do
         updatedData= %{x.data | set: set, reps: reps}
         IO.inspect(updatedData)
         Programmes.change_programme_details(updatedData)|> to_form()
@@ -150,7 +151,7 @@ defmodule CrohnjobsWeb.TemplateDetail do
                       </button>
                     </div>
 
-                    <.form phx-submit="updateForm" for={template} class="space-y-4">
+                    <.form phx-submit="updateForm" for={template} id={"exercise-form-#{template.data.id}"} class="space-y-4">
                       <.input type="hidden" field={template[:id]} />
 
                       <div class="grid grid-cols-2 gap-4">
@@ -158,6 +159,7 @@ defmodule CrohnjobsWeb.TemplateDetail do
                           <label class="block text-sm font-medium text-gray-700">Sets</label>
                           <.input
                             field={template[:set]}
+                            id={"set-#{template.data.id}"}
                             type="number"
                             min="1"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -167,6 +169,7 @@ defmodule CrohnjobsWeb.TemplateDetail do
                           <label class="block text-sm font-medium text-gray-700">Reps</label>
                           <.input
                             field={template[:reps]}
+                            id={"reps-#{template.data.id}"}
                             type="text"
                             placeholder="e.g., 10, 8-12, AMRAP"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"

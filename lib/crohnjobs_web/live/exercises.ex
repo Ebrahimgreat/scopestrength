@@ -3,7 +3,6 @@ defmodule CrohnjobsWeb.Exercises do
 
   alias Crohnjobs.Exercise
 
-alias Crohnjobs.CustomExercises
 alias Crohnjobs.Trainers
   use CrohnjobsWeb, :live_view
 
@@ -36,13 +35,12 @@ alias Crohnjobs.Trainers
     filterApplied = "All"
     filterByEquipment = "All"
 
-    dialogOpen = false
+
      newExerciseForm = to_form(%{name: "Haka", type: "Boo", equipment: "Hala"})
 
 
 
-    customExercises = CustomExercises.list_custom_exercises()
-    exercises = Exercise.list_exercises() ++ customExercises
+    exercises = Exercise.list_exercises()
     {:ok, assign(socket, newExerciseForm: newExerciseForm, filterApplied: filterApplied, exercises: exercises, filterByEquipment: filterByEquipment)}
   end
   def render(assigns) do
