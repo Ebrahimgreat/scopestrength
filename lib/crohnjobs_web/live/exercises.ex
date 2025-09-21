@@ -133,7 +133,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
       <p> Create a new Exercise</p>
       <.input  type="text" required label="name" field={@newExerciseForm[:name]}/>
-      <.input type="select" options = {["Chest","Back","Quads","Shoulders","Abs","Bicep","Tricep"]} field={@newExerciseForm[:type]}/>
+      <.input type="select" options = {["Chest","Back","Quads","Hamstrings","Shoulders","Abs","Bicep","Tricep"]} field={@newExerciseForm[:type]}/>
       <.input type="select" field={@newExerciseForm[:equipment]} options={["Dumbell","Cable","Barbell", "Machine", "Plate"]}/>
       <.button>
       Submit
@@ -385,7 +385,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
                     <td class="py-4 px-6 text-gray-600">
                     <%= if Map.has_key?(exercise, :trainer_id) do %>
                 <.button phx-value-id={exercise.id} phx-click="editExercise">
-                Change
+                Open
                 </.button>
 
 

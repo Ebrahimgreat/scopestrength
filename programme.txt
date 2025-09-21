@@ -1,0 +1,19 @@
+Programme Name: Full Body
+Programme Description: This programme is designed for hyperophy
+
+Template : Full Body 1
+  Exercise: Romanian Deadlift, Set: 2, Reps: 10
+  Exercise: Wide Lat Pulldown, Set: 3, Reps: 10-12
+  Exercise: Incline Dumbbell Press, Set: 3, Reps: 6-10
+  Exercise: Tricep Pushdown, Set: 3, Reps: 10-12
+  Exercise: Standing Calf Raise, Set: 3, Reps: unlimited
+  Exercise: Barbell Curl, Set: 3, Reps: 10-12
+  Exercise: Cable Crunch, Set: 3, Reps: 15-20
+  Exercise: Deadlift, Set: 1, Reps: 10
+
+Template : Full Body 2
+
+Template : Full Body 3
+
+Template : Untitled
+

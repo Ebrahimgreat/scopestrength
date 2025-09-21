@@ -53,6 +53,28 @@ alias Crohnjobs.CustomExercises.CustomExercise
     {:noreply, assign(socket, show_modal: showModal)}
 
   end
+
+
+
+  def handle_event("filterByType", %{"name" => name}, socket) do
+    # prevent redundant reload
+    if socket.assigns.filter_by_type == name do
+
+      {:noreply, socket}
+    else
+      filtered_exercises =
+        case name do
+          "ALL" -> socket.assigns.allExercises
+          _ -> Enum.filter(socket.assigns.allExercises, &(&1.type == name))
+        end
+
+      {:noreply,
+       assign(socket,
+         exercises: filtered_exercises,
+         filter_by_type: name
+       )}
+    end
+  end
   def handle_event("deleteExercise", params, socket) do
     id = String.to_integer(params["id"])
     programmeDetails = socket.assigns.programmeDetails
@@ -69,6 +91,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
 
   end
+
 
   def handle_event("updateForm", params, socket) do
     id = String.to_integer(params["programme_details"]["id"])
@@ -100,6 +123,8 @@ alias Crohnjobs.CustomExercises.CustomExercise
     trainer_id = params["trainer_id"]
     show_modal = false
 
+
+
     newExerciseForm = CustomExercise.changeset(%CustomExercise{}, %{})|> to_form()
 
     user = socket.assigns.current_user
@@ -118,10 +143,11 @@ alias Crohnjobs.CustomExercises.CustomExercise
       )
       changesets = Enum.map(programmeTemplate, fn template-> template|> Programmes.change_programme_details()|> to_form() end)
 
-      {:ok, assign(socket, newExerciseForm: newExerciseForm, show_modal: show_modal, template_id: template_id, programmeDetails: changesets, exercises: exercises)}
+      {:ok, assign(socket, allExercises: exercises, filter_by_type: "ALL", newExerciseForm: newExerciseForm, show_modal: show_modal, template_id: template_id, programmeDetails: changesets, exercises: exercises)}
 
   end
 
+  @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-gray-50 py-10">
@@ -157,6 +183,90 @@ alias Crohnjobs.CustomExercises.CustomExercise
 <% end %>
 <button phx-click="openModal" class="bg-green-600 text-white px-4 py-2 rounded">Create Exercise</button>
 
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Filter By Type -->
+    <div>
+      <h3 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+        <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+        </svg>
+        Filter By Type
+      </h3>
+
+      Applied {@filter_by_type}
+      <div class="flex flex-wrap gap-2">
+        <.button
+        phx-click="filterByType"
+        phx-value-name="ALL"
+          class={[
+            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+            if(@filter_by_type == "ALL",
+              do: "bg-blue-600 text-white shadow-md",
+              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+            )
+          ]}
+        >
+          All Types
+        </.button>
+
+        <.button
+        phx-click="filterByType"
+        phx-value-name="Chest"
+          class={[
+            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+            if(@filter_by_type == "Chest",
+              do: "bg-blue-600 text-white shadow-md",
+              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+            )
+          ]}
+        >
+          Chest
+        </.button>
+
+        <.button
+        phx-click="filterByType"
+        phx-value-name="Back"
+          class={[
+            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+            if(@filter_by_type == "Back",
+              do: "bg-blue-600 text-white shadow-md",
+              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+            )
+          ]}
+        >
+          Back
+        </.button>
+
+        <.button
+        phx-click="filterByType"
+        phx-value-name="Legs"
+          class={[
+            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+            if(@filter_by_type == "Legs",
+              do: "bg-blue-600 text-white shadow-md",
+              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+            )
+          ]}
+        >
+          Legs
+        </.button>
+
+        <.button
+          phx-click="filterByType"
+          phx-value-name="Shoulders"
+          class={[
+            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+            if(@filter_by_type == "Shoulders",
+              do: "bg-blue-600 text-white shadow-md",
+              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+            )
+          ]}
+        >
+          Shoulders
+        </.button>
+      </div>
+    </div>
+</div>
 
 
 

@@ -2,7 +2,7 @@ defmodule CrohnjobsWeb.DownloadController do
   use CrohnjobsWeb, :controller
 
   def workout(conn, _params) do
-    file_path = "workout.txt"
+    file_path = "programme.txt"
 
     if File.exists?(file_path) do
       conn

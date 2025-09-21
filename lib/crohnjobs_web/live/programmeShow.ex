@@ -1,5 +1,8 @@
 defmodule CrohnjobsWeb.ProgrammeShow do
 
+alias Crohnjobs.DownloadProgramme
+alias Crohnjobs.Programmes.Programme
+alias Crohnjobs.Repo
   use CrohnjobsWeb, :live_view
   alias Crohnjobs.Programmes
 
@@ -14,6 +17,16 @@ defmodule CrohnjobsWeb.ProgrammeShow do
       updated_form = Programmes.change_programme(programme)|> to_form()
       {:noreply, socket|> put_flash(:info, "Template Deleted")|> assign(:programme, updated_form)}
   end
+
+
+
+  end
+  def handle_event("downloadProgramme", _, socket) do
+    programme =
+      Repo.get!(Programme, socket.assigns.programmeId)
+      |> Repo.preload(programmeTemplates: [programmeDetails: :exercise])
+    DownloadProgramme.downloadProgramme(%{programme: programme})
+    {:noreply,socket|> push_navigate(to: "/download/workout")}
 
   end
 
@@ -74,6 +87,10 @@ defmodule CrohnjobsWeb.ProgrammeShow do
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
           Add Template
+        </.button>
+
+        <.button phx-click="downloadProgramme">
+        Download Programme
         </.button>
       </div>
 
