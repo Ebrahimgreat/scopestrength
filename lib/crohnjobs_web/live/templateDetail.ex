@@ -1,5 +1,8 @@
 defmodule CrohnjobsWeb.TemplateDetail do
 
+alias Crohnjobs.CustomExercises
+alias Crohnjobs.Trainers
+alias Crohnjobs.CustomExercises.CustomExercise
   use CrohnjobsWeb, :live_view
   alias Crohnjobs.Programmes.ProgrammeDetails
   alias Crohnjobs.Repo
@@ -27,6 +30,27 @@ defmodule CrohnjobsWeb.TemplateDetail do
 
   end
 
+
+
+
+  end
+
+  def handle_event("createExercise", params, socket) do
+    user = socket.assigns.current_user
+    trainer = Trainers.get_trainer_byUserId(user.id)
+    name = params["custom_exercise"]["name"]
+    type = params["custom_exercise"]["type"]
+    equipment = params["custom_exercise"]["equipment"]
+    case CustomExercises.create_custom_exercise(%{name: name, equipment: equipment, type: type, trainer_id: trainer.id}) do
+      {:ok, customExercise}->
+        exercises = socket.assigns.exercises ++ [customExercise]
+      {:noreply,socket|> assign(show_modal: false, exercises: exercises)|> put_flash(:info, "exercise Created")}
+      _ -> {:noreply, socket|> put_flash(:error, "An error has occured")}
+    end
+  end
+  def handle_event("openModal", _, socket) do
+    showModal = !socket.assigns.show_modal
+    {:noreply, assign(socket, show_modal: showModal)}
 
   end
   def handle_event("deleteExercise", params, socket) do
@@ -73,10 +97,18 @@ defmodule CrohnjobsWeb.TemplateDetail do
 
   def mount(params, session, socket) do
 
+    trainer_id = params["trainer_id"]
+    show_modal = false
+
+    newExerciseForm = CustomExercise.changeset(%CustomExercise{}, %{})|> to_form()
+
+    user = socket.assigns.current_user
+    trainer = Trainers.get_trainer_byUserId(user.id)
+    customExercises = Repo.all(from c in CustomExercise, where: c.trainer_id == ^trainer.id)
 
 
     template_id = params["template_id"]
-    exercises = Exercise.list_exercises()
+    exercises = Exercise.list_exercises() ++ customExercises
 
     programmeTemplate =
       Repo.all(
@@ -86,7 +118,7 @@ defmodule CrohnjobsWeb.TemplateDetail do
       )
       changesets = Enum.map(programmeTemplate, fn template-> template|> Programmes.change_programme_details()|> to_form() end)
 
-      {:ok, assign(socket, template_id: template_id, programmeDetails: changesets, exercises: exercises)}
+      {:ok, assign(socket, newExerciseForm: newExerciseForm, show_modal: show_modal, template_id: template_id, programmeDetails: changesets, exercises: exercises)}
 
   end
 
@@ -99,6 +131,34 @@ defmodule CrohnjobsWeb.TemplateDetail do
           <h1 class="text-3xl font-bold text-gray-900 mb-2">Template Exercise Builder</h1>
           <p class="text-gray-600">Add exercises and configure sets and reps for your workout template.</p>
         </div>
+
+        <%= if @show_modal do %>
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg w-96 relative">
+      <h2 class="text-lg font-semibold mb-4">New Exercise</h2>
+      <.form phx-submit="createExercise" for={@newExerciseForm}>
+
+      <p> Create a new Exercise</p>
+      <.input  type="text" required label="name" field={@newExerciseForm[:name]}/>
+      <.input type="select" options = {["Chest","Back","Quads","Shoulders","Abs","Bicep","Tricep"]} field={@newExerciseForm[:type]}/>
+      <.input type="select" field={@newExerciseForm[:equipment]} options={["Dumbell","Cable","Barbell", "Machine", "Plate"]}/>
+      <.button>
+      Submit
+      </.button>
+
+
+
+
+      </.form>
+      <button phx-click="openModal" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">Close</button>
+
+    </div>
+  </div>
+<% end %>
+<button phx-click="openModal" class="bg-green-600 text-white px-4 py-2 rounded">Create Exercise</button>
+
+
+
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <!-- Exercise Library Section -->
@@ -141,14 +201,14 @@ defmodule CrohnjobsWeb.TemplateDetail do
                       <h3 class="font-semibold text-gray-900">
                         <%= index + 1 %>. <%= template.data.exercise.name %>
                       </h3>
-                      <button
+                      <.button
                         phx-click="deleteExercise"
                         phx-value-id={template.data.id}
                         data-confirm="Are you sure you want to remove this exercise?"
                         class="text-red-600 hover:underline text-sm"
                       >
                         Remove
-                      </button>
+                      </.button>
                     </div>
 
                     <.form phx-submit="updateForm" for={template} id={"exercise-form-#{template.data.id}"} class="space-y-4">

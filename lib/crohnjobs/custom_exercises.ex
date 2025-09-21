@@ -37,14 +37,6 @@ defmodule Crohnjobs.CustomExercises do
   """
   def get_custom_exercise!(id), do: Repo.get!(CustomExercise, id)
 
-
-  def get_custom_exercises_through_trainer(trainer_id) do
-    Repo.all(from c in CustomExercise, where: c.trainer_id == ^trainer_id)
-  end
-
-
-
-  @spec create_custom_exercise() :: any()
   @doc """
   Creates a custom_exercise.
 
@@ -62,8 +54,6 @@ defmodule Crohnjobs.CustomExercises do
     |> CustomExercise.changeset(attrs)
     |> Repo.insert()
   end
-
-
 
   @doc """
   Updates a custom_exercise.

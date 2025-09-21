@@ -8,15 +8,14 @@ defmodule Crohnjobs.CustomExercises.CustomExercise do
     field :equipment, :string
     belongs_to :trainer, Crohnjobs.Trainers.Trainer
 
+
     timestamps(type: :utc_datetime)
   end
 
   @doc false
   def changeset(custom_exercise, attrs) do
     custom_exercise
-    |> cast(attrs, [ :name, :type, :type, :equipment, :trainer_id])
-    |> unique_constraint(:name)
-
-    |> validate_required([])
+    |> cast(attrs, [:name, :equipment, :type, :trainer_id])
+    |> validate_required([:name, :equipment, :type, :trainer_id])
   end
 end

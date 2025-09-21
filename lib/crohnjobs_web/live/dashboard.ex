@@ -7,9 +7,9 @@ defmodule CrohnjobsWeb.Dashboard do
 
 
   def handle_event("updateStatus", params, socket) do
-    IO.inspect(params)
 
-   newClient = Clients.get_client!(5)
+
+   newClient = Clients.get_client!(params["id"])
    status = newClient.active
    Clients.update_client(newClient,%{active: !status})
   {:noreply, assign(socket, clients: Clients.list_clients)}
@@ -144,7 +144,8 @@ defmodule CrohnjobsWeb.Dashboard do
                       </td>
                       <td>
                       <.link  navigate={~p"/clients/#{client.id}"}>
-                      View
+                      <.button>View
+                      </.button>
                       </.link>
 
                       </td>

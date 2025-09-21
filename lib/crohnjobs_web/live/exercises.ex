@@ -1,11 +1,79 @@
 defmodule CrohnjobsWeb.Exercises do
 
 
+  alias Crohnjobs.CustomExercises
+  alias Crohnjobs.Repo
   alias Crohnjobs.Exercise
+  import Ecto.Query
 
 alias Crohnjobs.Trainers
+alias Crohnjobs.CustomExercises.CustomExercise
   use CrohnjobsWeb, :live_view
 
+
+
+  def handle_event("addExercise", params, socket) do
+
+    user = socket.assigns.current_user
+    trainer = Trainers.get_trainer_byUserId(user.id)
+
+    name = params["custom_exercise"]["name"]
+    equipment = params["custom_exercise"]["equipment"]
+    type = params["custom_exercise"]["type"]
+    IO.inspect(name)
+   case CustomExercises.create_custom_exercise(%{name: name, equipment: equipment, type: type, trainer_id: trainer.id}) do
+     {:ok, customExercise}->
+      exercises = socket.assigns.exercises ++ [customExercise]
+
+
+      {:noreply,socket|> assign(show_modal: false, exercises: exercises)|>put_flash(:info, "New Exercise Created")}
+     _ -> {:noreply, socket|> put_flash(:error, "An error has occured")}
+
+   end
+
+  end
+
+  def handle_event("openModal", _params, socket) do
+    show_modal = !socket.assigns.show_modal
+    {:noreply, assign(socket, show_modal: show_modal)}
+
+
+  end
+
+  def handle_event("editExercise", %{"id"=> id}, socket) do
+    showEditExercise =  true
+    customExercise = CustomExercises.get_custom_exercise!(id)
+
+    editExerciseFrom = CustomExercises.change_custom_exercise(customExercise)|> to_form()
+    {:noreply, assign(socket, editExerciseForm: editExerciseFrom, show_edit_exercise: showEditExercise)}
+  end
+
+
+  def handle_event("saveExercise", params, socket) do
+   id = String.to_integer(params["custom_exercise"]["id"])
+   name = params["custom_exercise"]["name"]
+   type = params["custom_exercise"]["type"]
+
+   equipment = params["custom_exercise"]["equipment"]
+   customExercise = CustomExercises.get_custom_exercise!(id)
+   case CustomExercises.update_custom_exercise(customExercise, %{name: name, equipment: equipment, type: type}) do
+    {:ok, updated_exercise} ->
+
+      updated_exercises = Enum.map(socket.assigns.exercises, fn x-> if x.id == updated_exercise.id do
+        %{x | name: updated_exercise.name, type: updated_exercise.type, equipment: updated_exercise.equipment}
+      else
+        x
+      end
+    end)
+    {:noreply, socket|>put_flash(:info, "Exercise Updated")|> assign(exercises: updated_exercises) }
+      _ ->{:noreply,socket |> put_flash(:info, "Error")}
+   end
+  end
+
+  def handle_event("closeEditExercise", _, socket) do
+    {:noreply, assign(socket, show_edit_exercise: false)}
+
+  end
 
   def handle_event("filterExercise",%{"name"=>name},socket) do
     if socket.assigns.filterApplied == name do
@@ -30,23 +98,86 @@ alias Crohnjobs.Trainers
   end
 
 
+
   def mount(_params, _session, socket) do
 
     filterApplied = "All"
     filterByEquipment = "All"
+    show_modal = false
+    show_edit_exercise = false
 
 
-     newExerciseForm = to_form(%{name: "Haka", type: "Boo", equipment: "Hala"})
+     newExerciseForm = CustomExercise.changeset(%CustomExercise{}, %{})|> to_form()
+     editExerciseForm = nil
+     customExercises = Repo.all(from c in CustomExercise, where: c.trainer_id == 1)
 
 
 
-    exercises = Exercise.list_exercises()
-    {:ok, assign(socket, newExerciseForm: newExerciseForm, filterApplied: filterApplied, exercises: exercises, filterByEquipment: filterByEquipment)}
+    exercises = Exercise.list_exercises() ++ customExercises
+
+    {:ok, assign(socket, editExerciseForm: editExerciseForm, show_modal: show_modal, show_edit_exercise: show_edit_exercise, newExerciseForm: newExerciseForm, filterApplied: filterApplied, exercises: exercises, filterByEquipment: filterByEquipment)}
   end
+  @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
 
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+
+
+
+<%= if @show_modal do %>
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg w-96 relative">
+      <h2 class="text-lg font-semibold mb-4">New Exercise</h2>
+      <.form phx-submit="addExercise" for={@newExerciseForm}>
+
+      <p> Create a new Exercise</p>
+      <.input  type="text" required label="name" field={@newExerciseForm[:name]}/>
+      <.input type="select" options = {["Chest","Back","Quads","Shoulders","Abs","Bicep","Tricep"]} field={@newExerciseForm[:type]}/>
+      <.input type="select" field={@newExerciseForm[:equipment]} options={["Dumbell","Cable","Barbell", "Machine", "Plate"]}/>
+      <.button>
+      Submit
+      </.button>
+
+
+
+
+      <button phx-click="openModal" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">Close</button>
+      </.form>
+    </div>
+  </div>
+<% end %>
+
+<button phx-click="openModal" class="bg-green-600 text-white px-4 py-2 rounded">Create Exercise</button>
+
+
+
+
+
+<%= if @show_edit_exercise do %>
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg w-96 relative">
+      <h2 class="text-lg font-semibold mb-4">New Exercise</h2>
+      <.form phx-submit="saveExercise" for={@editExerciseForm}>
+
+      <p> Edit the Given Exercise</p>
+      <.input type="hidden" field={@editExerciseForm[:id]}/>
+      <.input  type="text" required label="name" field={@editExerciseForm[:name]}/>
+      <.input type="select" options = {["Chest","Back","Quads","Shoulders","Abs","Bicep","Tricep"]} field={@editExerciseForm[:type]}/>
+      <.input type="select" field={@editExerciseForm[:equipment]} options={["Dumbell","Cable","Barbell", "Machine", "Plate"]}/>
+      <.button>
+      Submit
+      </.button>
+
+
+
+
+      <button phx-click="closeEditExercise" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">Close</button>
+      </.form>
+    </div>
+  </div>
+<% end %>
+
   <div class="flex items-center justify-between mb-6">
     <h2 class="text-lg font-semibold text-gray-900">Filter Exercises</h2>
     <%= if @filterApplied != "All" do %>
@@ -59,6 +190,7 @@ alias Crohnjobs.Trainers
       </.button>
     <% end %>
   </div>
+
 
   <!-- Active Filter Display -->
   <%= if @filterApplied != "All" do %>
@@ -250,6 +382,18 @@ alias Crohnjobs.Trainers
                     <td class="py-4 px-6 font-medium text-gray-900"><%= exercise.name %></td>
                     <td class="py-4 px-6 text-gray-600"><%= exercise.type || "N/A" %></td>
                     <td class="py-4 px-6 text-gray-600"><%= exercise.equipment || "None" %></td>
+                    <td class="py-4 px-6 text-gray-600">
+                    <%= if Map.has_key?(exercise, :trainer_id) do %>
+                <.button phx-value-id={exercise.id} phx-click="editExercise">
+                Change
+                </.button>
+
+
+                    <%end%>
+                    </td>
+
+
+
 
 
                   </tr>
