@@ -9,8 +9,8 @@ defmodule Crohnjobs.Programmes do
   alias Crohnjobs.Programmes.Programme
 
 
- def get_programme_with_template!(id) do
-   Programme|> Repo.get!(id)|>
+ def get_programme_with_template(id) do
+   Programme|> Repo.get(id)|>
    Repo.preload(:programmeTemplates)
  end
 

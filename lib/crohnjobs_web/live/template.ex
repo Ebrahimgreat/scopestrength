@@ -1,9 +1,10 @@
 defmodule CrohnjobsWeb.Template do
+alias Crohnjobs.Trainers
 alias CrohnjobsWeb.Template
 alias Phoenix.LiveViewTest.View
   use CrohnjobsWeb, :live_view
   alias Crohnjobs.Programmes
-  alias Crohnjobs.Programmes
+  alias Crohnjobs.Programmes.Programme
   alias Crohnjobs.Programmes.ProgrammeTemplate
   alias Crohnjobs.Repo
 
@@ -23,14 +24,41 @@ alias Phoenix.LiveViewTest.View
   end
  @spec mount(nil | maybe_improper_list() | map(), any(), any()) :: {:ok, any()}
  def mount(params, session, socket) do
-id =  String.to_integer(params["template_id"])
+  user = socket.assigns.current_user
+  trainer = Trainers.get_trainer_byUserId(user.id)
+  template_id = String.to_integer(params["template_id"])
+  programme_id = String.to_integer(params["id"])
 
-  template = Repo.get!(ProgrammeTemplate,id)|> Repo.preload(programmeDetails: [:exercise])
+  case Repo.get(ProgrammeTemplate, template_id) do
+    nil ->
+      {:ok,
+       socket
+       |> put_flash(:error, "Template not found")
+       |> redirect(to: "/programmes")}
 
-  templateChangeset= Programmes.change_programme_template(template)|> to_form()
-  {:ok, assign(socket, template: templateChangeset,  template_id: id)}
+    template ->
+      programme = Repo.get(Programme, template.programme_id)
 
- end
+      case programme.trainer_id == trainer.id do
+        true ->
+          template = Repo.preload(template, programmeDetails: [:exercise])
+          template_changeset = Programmes.change_programme_template(template) |> to_form()
+
+          {:ok,
+           assign(socket,
+             template: template_changeset,
+             template_id: template_id
+           )}
+
+        false ->
+          {:ok,
+           socket
+           |> put_flash(:error, "Template not found")
+           |> redirect(to: "/programmes")}
+      end
+  end
+end
+
   def render(assigns) do
     ~H"""
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

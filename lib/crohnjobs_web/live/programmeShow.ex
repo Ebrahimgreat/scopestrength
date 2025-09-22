@@ -1,5 +1,6 @@
 defmodule CrohnjobsWeb.ProgrammeShow do
 
+alias Crohnjobs.Trainers
 alias Crohnjobs.DownloadProgramme
 alias Crohnjobs.Programmes.Programme
 alias Crohnjobs.Repo
@@ -26,7 +27,7 @@ alias Crohnjobs.Repo
       Repo.get!(Programme, socket.assigns.programmeId)
       |> Repo.preload(programmeTemplates: [programmeDetails: :exercise])
     DownloadProgramme.downloadProgramme(%{programme: programme})
-    {:noreply,socket|> push_navigate(to: "/download/workout")}
+    {:noreply, assign(socket, report: true)}
 
   end
 
@@ -64,12 +65,20 @@ alias Crohnjobs.Repo
 
 
   end
+ @spec mount(map(), any(), any()) :: {:ok, any()}
  def mount(%{"id"=>id}, session, socket) do
-  programme = Programmes.get_programme_with_template!(id)
-  myProgramme = Programmes.change_programme(programme)|>to_form()
+  user = socket.assigns.current_user
+  trainer = Trainers.get_trainer_byUserId(user.id)
 
-  {:ok, assign(socket,  programme: myProgramme, programmeId: id)}
-
+ case Programmes.get_programme_with_template(id) do
+  nil -> {:ok, socket |> put_flash(:error, "Programme not found") |> redirect(to: "/programmes")}
+  programme->
+    case programme.trainer_id == trainer.id do
+      true-> myProgramme = Programmes.change_programme(programme)|> to_form()
+      {:ok, assign(socket,  programme: myProgramme, programmeId: id, report: false)}
+      false ->{:ok, socket|> put_flash(:error, "Programme not found")|>redirect(to: "/programmes")}
+    end
+  end
 
  end
  def render(assigns) do
@@ -89,10 +98,23 @@ alias Crohnjobs.Repo
           Add Template
         </.button>
 
+        <%= if @report == false do %>
         <.button phx-click="downloadProgramme">
-        Download Programme
+      Generate Report
         </.button>
+        <%end%>
+
       </div>
+
+      <%= if @report == true do %>
+      <a class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2 font-semibold" href="/download/workout">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                </svg>
+                <span>Download</span>
+              </a>
+              <%end%>
+
 
       <!-- Programme Details Form -->
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
