@@ -236,19 +236,45 @@ alias Crohnjobs.CustomExercises.CustomExercise
         >
           Back
         </.button>
-
         <.button
         phx-click="filterByType"
-        phx-value-name="Legs"
+        phx-value-name="Biceps"
           class={[
             "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filter_by_type == "Legs",
+            if(@filter_by_type == "Bicep",
               do: "bg-blue-600 text-white shadow-md",
               else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
             )
           ]}
         >
-          Legs
+          Biceps
+        </.button>
+
+        <.button
+        phx-click="filterByType"
+        phx-value-name="Quads"
+          class={[
+            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+            if(@filter_by_type == "Quads",
+              do: "bg-blue-600 text-white shadow-md",
+              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+            )
+          ]}
+        >
+          Quads
+        </.button>
+        <.button
+        phx-click="filterByType"
+        phx-value-name="Hamstrings"
+          class={[
+            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+            if(@filter_by_type == "Quads",
+              do: "bg-blue-600 text-white shadow-md",
+              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+            )
+          ]}
+        >
+          Hamstrings
         </.button>
 
         <.button

@@ -127,8 +127,9 @@ defmodule CrohnjobsWeb.ShowClient do
 
                   <div class="bg-pink-50 p-4 rounded-lg border-2 border-pink-200">
                     <label class="block text-sm font-bold text-pink-700 mb-2">Gender</label>
-                    <.input
-                      field={@client[:sex]}
+                    <.input type="select"
+                    options={[{"Male", "male"}, {"Female", "female"}, {"Other", "other"}]}
+                    field={@client[:sex]}
                       class="w-full px-3 py-2 text-lg font-semibold border-2 border-pink-300 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 bg-white"
                     />
                   </div>

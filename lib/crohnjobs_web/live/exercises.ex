@@ -12,6 +12,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
 
 
+
   def handle_event("addExercise", params, socket) do
 
     user = socket.assigns.current_user
@@ -32,6 +33,26 @@ alias Crohnjobs.CustomExercises.CustomExercise
    end
 
   end
+
+  def handle_event("deleteExercise", params, socket) do
+    user = socket.assigns.current_user
+    trainer = Trainers.get_trainer_byUserId(user.id)
+
+    id = String.to_integer(params["id"])
+    customExercise = CustomExercises.get_custom_exercise!(id)
+   case CustomExercises.delete_custom_exercise(customExercise) do
+    {:ok, _customExercise }->
+      updatedExercise = Enum.reject(socket.assigns.exercises, fn x-> Map.has_key?(x, :trainer_id) and x.id == id and x.trainer_id == trainer.id end)
+      {:noreply,socket|>put_flash(:info, "Deleted Successfully")|> assign(exercises: updatedExercise)}
+      _ ->{:noreply, socket|>put_flash(:error, "Something Happened")}
+   end
+
+
+
+
+  end
+
+
 
   def handle_event("openModal", _params, socket) do
     show_modal = !socket.assigns.show_modal
@@ -83,8 +104,8 @@ alias Crohnjobs.CustomExercises.CustomExercise
     filterApplied = name
    myExercises = case name do
      "All" ->
-      Exercise.list_exercises()
-      _ -> Enum.filter(socket.assigns.exercises, &(&1.type == name))
+     socket.assigns.allExercises
+      _ -> Enum.filter(socket.assigns.allExercises, &(&1.type == name))
 
 
     end
@@ -101,21 +122,24 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
   def mount(_params, _session, socket) do
 
+    user = socket.assigns.current_user
+    trainer = Trainers.get_trainer_byUserId(user.id)
+
     filterApplied = "All"
-    filterByEquipment = "All"
+
     show_modal = false
     show_edit_exercise = false
 
 
      newExerciseForm = CustomExercise.changeset(%CustomExercise{}, %{})|> to_form()
      editExerciseForm = nil
-     customExercises = Repo.all(from c in CustomExercise, where: c.trainer_id == 1)
+     customExercises = Repo.all(from c in CustomExercise, where: c.trainer_id == ^trainer.id)
 
 
 
     exercises = Exercise.list_exercises() ++ customExercises
 
-    {:ok, assign(socket, editExerciseForm: editExerciseForm, show_modal: show_modal, show_edit_exercise: show_edit_exercise, newExerciseForm: newExerciseForm, filterApplied: filterApplied, exercises: exercises, filterByEquipment: filterByEquipment)}
+    {:ok, assign(socket, editExerciseForm: editExerciseForm, show_modal: show_modal, show_edit_exercise: show_edit_exercise, newExerciseForm: newExerciseForm, filterApplied: filterApplied, allExercises: exercises, exercises: exercises)}
   end
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
@@ -263,16 +287,30 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
         <.button
           phx-click="filterExercise"
-          phx-value-name="Legs"
+          phx-value-name="Quads"
           class={[
             "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filterApplied == "Legs",
+            if(@filterApplied == "Quads",
               do: "bg-blue-600 text-white shadow-md",
               else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
             )
           ]}
         >
-          Legs
+          Quads
+        </.button>
+
+        <.button
+          phx-click="filterExercise"
+          phx-value-name="Hamstrings"
+          class={[
+            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+            if(@filterApplied == "Hamstrings",
+              do: "bg-blue-600 text-white shadow-md",
+              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+            )
+          ]}
+        >
+          Hamstrings
         </.button>
 
         <.button
@@ -292,55 +330,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
     </div>
 
     <!-- Filter By Equipment -->
-    <div>
-      <h3 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
-        <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
-        </svg>
-        Filter By Equipment
-      </h3>
-      <div class="flex flex-wrap gap-2">
-        <.button
-          phx-value-name="Machine"
-          phx-click="filterExerciseByEquipment"
-          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-sm"
-        >
-          Machine
-        </.button>
 
-        <.button
-          phx-value-name="Cables"
-          phx-click="filterExerciseByEquipment"
-          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-sm"
-        >
-          Cables
-        </.button>
-
-        <.button
-          phx-value-name="Barbell"
-          phx-click="filterExerciseByEquipment"
-          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-sm"
-        >
-          Barbell
-        </.button>
-
-        <.button
-          phx-value-name="Dumbbell"
-          phx-click="filterExerciseByEquipment"
-          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-sm"
-        >
-          Dumbbell
-        </.button>
-
-        <.button
-          phx-value-name="Bodyweight"
-          phx-click="filterExerciseByEquipment"
-          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-sm"
-        >
-          Bodyweight
-        </.button>
-      </div>
-    </div>
   </div>
 
   <!-- Results Counter -->
@@ -373,6 +363,10 @@ alias Crohnjobs.CustomExercises.CustomExercise
                   <th class="text-left py-4 px-6 font-semibold text-gray-900">Exercise Name</th>
                   <th class="text-left py-4 px-6 font-semibold text-gray-900">Type</th>
                   <th class="text-left py-4 px-6 font-semibold text-gray-900">Equipment</th>
+                  <th class= "text-left py-4 px-6 font-semibold text-gray-900">
+                  </th>
+                  <th class= "text-left py-4 px-6 font-semibold text-gray-900">
+                  </th>
 
                 </tr>
               </thead>
@@ -382,15 +376,22 @@ alias Crohnjobs.CustomExercises.CustomExercise
                     <td class="py-4 px-6 font-medium text-gray-900"><%= exercise.name %></td>
                     <td class="py-4 px-6 text-gray-600"><%= exercise.type || "N/A" %></td>
                     <td class="py-4 px-6 text-gray-600"><%= exercise.equipment || "None" %></td>
-                    <td class="py-4 px-6 text-gray-600">
                     <%= if Map.has_key?(exercise, :trainer_id) do %>
+                    <td class="py-4 px-6 text-gray-600">
+
                 <.button phx-value-id={exercise.id} phx-click="editExercise">
                 Open
                 </.button>
+                </td>
+                <td>
+                <.button phx-value-id={exercise.id} phx-click="deleteExercise">
+                delete
+                </.button>
+                </td>
+
 
 
                     <%end%>
-                    </td>
 
 
 

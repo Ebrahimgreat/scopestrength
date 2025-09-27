@@ -12,6 +12,7 @@ defmodule CrohnjobsWeb.Dashboard do
    newClient = Clients.get_client!(params["id"])
    status = newClient.active
    Clients.update_client(newClient,%{active: !status})
+
   {:noreply, assign(socket, clients: Clients.list_clients)}
 
   end
@@ -80,9 +81,7 @@ defmodule CrohnjobsWeb.Dashboard do
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Active
                     </th>
-                    <th>
-                    Action
-                    </th>
+
                     <th>
                     View
                     </th>
@@ -137,11 +136,7 @@ defmodule CrohnjobsWeb.Dashboard do
                       </td>
 
 
-                      <td class="px-6 py-4 whitespace-nowrap">
-                      <.button  phx-click="updateStatus" phx-value-id={client.id}>
-                      Change Status
-                      </.button>
-                      </td>
+
                       <td>
                       <.link  navigate={~p"/clients/#{client.id}"}>
                       <.button>View

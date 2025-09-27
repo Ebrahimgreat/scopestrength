@@ -11,7 +11,7 @@ defmodule CrohnjobsWeb.Clients do
   end
 
   def handle_event("addClient", params, socket) do
-    newClient = %{name: "client", age: 18, notes: "None", sex: "male", height: 167, trainer_id: socket.assigns.trainer_id}
+    newClient = %{name: "client", age: 18, notes: "None", active: true, sex: "male", height: 167, trainer_id: socket.assigns.trainer_id}
     case Clients.create_client(newClient) do
       {:ok, client} ->
         updatedClients = [client | socket.assigns.clients]
