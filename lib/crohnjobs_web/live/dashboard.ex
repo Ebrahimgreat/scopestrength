@@ -1,4 +1,6 @@
 defmodule CrohnjobsWeb.Dashboard do
+  alias Crohnjobs.Subscriptions
+  alias Crohnjobs.Repo
   alias Phoenix.LiveViewTest.View
   alias Crohnjobs.Clients.Client
   use CrohnjobsWeb, :live_view
@@ -18,24 +20,36 @@ defmodule CrohnjobsWeb.Dashboard do
   end
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
+    subscription = Repo.get_by(Crohnjobs.Subscriptions.Subscription, user_id: user.id)
+    IO.inspect(subscription)
     trainers = Trainers.get_trainer_byUserId(user.id)
     myClients = Clients.get_clients_for_trainer(trainers.id)
-    {:ok, assign(socket, name: user.name, clients: myClients)}
+    {:ok, assign(socket, subscription: subscription, name: user.name, clients: myClients)}
   end
 
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gray-50">
-      <!-- Header Section -->
-      <div class="bg-gradient-to-r from-blue-600 to-purple-700 text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 class="text-3xl font-bold tracking-tight">Trainer Dashboard</h1>
-          <p class="mt-2 text-blue-100 text-lg">
-            Welcome back, <span class="font-semibold"><%= @name %></span>! How is it going?
-          </p>
-        </div>
-      </div>
+   <div class="bg-gradient-to-r from-blue-600 to-purple-700 text-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <h1 class="text-3xl font-bold tracking-tight">Trainer Dashboard</h1>
+
+
+    <%= if @subscription.plan == "trial" do %>
+    <p>Subscription: <%= @subscription.plan %></p>
+  <% duration_in_seconds = DateTime.diff(@subscription.trial_end, @subscription.trial_start) %>
+  <p>Trial Remaining: <%= div(duration_in_seconds, 86400) %> days</p>
+  <%= else%>
+  <p>Subscription: <%= @subscription.plan %></p>
+
+<% end %>
+
+
+    <p class="mt-2 text-blue-100 text-lg">
+      Welcome back, <span class="font-semibold"><%= @name %></span>! How is it going?
+    </p>
+  </div>
+
 
       <!-- Main Content -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
