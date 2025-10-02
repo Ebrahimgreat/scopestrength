@@ -270,7 +270,6 @@ alias Crohnjobs.CustomExercises.CustomExercise
         >
           Chest
         </.button>
-
         <.button
           phx-click="filterExercise"
           phx-value-name="Back"
@@ -284,6 +283,49 @@ alias Crohnjobs.CustomExercises.CustomExercise
         >
           Back
         </.button>
+
+        <.button
+          phx-click="filterExercise"
+          phx-value-name="Abs"
+          class={[
+            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+            if(@filterApplied == "Abs",
+              do: "bg-blue-600 text-white shadow-md",
+              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+            )
+          ]}
+        >
+          Abs
+        </.button>
+
+
+        <.button
+          phx-click="filterExercise"
+          phx-value-name="Biceps"
+          class={[
+            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+            if(@filterApplied == "Biceps",
+              do: "bg-blue-600 text-white shadow-md",
+              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+            )
+          ]}
+        >
+          Biceps
+        </.button>
+        <.button
+          phx-click="filterExercise"
+          phx-value-name="Triceps"
+          class={[
+            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+            if(@filterApplied == "Triceps",
+              do: "bg-blue-600 text-white shadow-md",
+              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+            )
+          ]}
+        >
+          Triceps
+        </.button>
+
 
         <.button
           phx-click="filterExercise"
@@ -311,6 +353,20 @@ alias Crohnjobs.CustomExercises.CustomExercise
           ]}
         >
           Hamstrings
+        </.button>
+
+        <.button
+          phx-click="filterExercise"
+          phx-value-name="Glutes"
+          class={[
+            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+            if(@filterApplied == "Glutes",
+              do: "bg-blue-600 text-white shadow-md",
+              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+            )
+          ]}
+        >
+          Glutes
         </.button>
 
         <.button

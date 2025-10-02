@@ -31,4 +31,18 @@ defmodule Crohnjobs.FitnessFixtures do
 
     workout_detail
   end
+
+  @doc """
+  Generate a workout_detaial.
+  """
+  def workout_detaial_fixture(attrs \\ %{}) do
+    {:ok, workout_detaial} =
+      attrs
+      |> Enum.into(%{
+
+      })
+      |> Crohnjobs.Fitness.create_workout_detaial()
+
+    workout_detaial
+  end
 end

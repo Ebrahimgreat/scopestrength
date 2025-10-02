@@ -4,15 +4,10 @@ defmodule Crohnjobs.Fitness.Workout do
 
   schema "workouts" do
     field :name, :string
-    field :date , :date
-    field :notes , :string
-    belongs_to :user, Crohnjobs.Account.User
-
-
-
-
-
-
+    field :date, :date
+    field :notes, :string
+    belongs_to :client, Crohnjobs.Clients.Client
+    has_many :workout_detail, Crohnjobs.Fitness.WorkoutDetail
 
     timestamps(type: :utc_datetime)
   end
@@ -20,7 +15,7 @@ defmodule Crohnjobs.Fitness.Workout do
   @doc false
   def changeset(workout, attrs) do
     workout
-    |> cast(attrs, [:name, :date, :notes, :user_id])
+    |> cast(attrs, [:name, :date, :notes, :client_id])
     |> validate_required([])
   end
 end

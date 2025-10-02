@@ -1,5 +1,5 @@
 defmodule Crohnjobs.WorkoutTracker do
-  
+
  @spec programme(%{:date => any(), :exercises => any(), optional(any()) => any()}) ::
          :ok | {:error, atom()}
  def programme(%{ name: name, date: date, exercises: exercises}) do

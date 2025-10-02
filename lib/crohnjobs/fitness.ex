@@ -110,7 +110,7 @@ defmodule Crohnjobs.Fitness do
   ## Examples
 
       iex> list_workout_details()
-      [%WorkoutDetail{}, ...]
+      [%WorkoutDetaial{}, ...]
 
   """
   def list_workout_details do
@@ -118,30 +118,30 @@ defmodule Crohnjobs.Fitness do
   end
 
   @doc """
-  Gets a single workout_detail.
+  Gets a single workout_detaial.
 
   Raises `Ecto.NoResultsError` if the Workout detail does not exist.
 
   ## Examples
 
-      iex> get_workout_detail!(123)
-      %WorkoutDetail{}
+      iex> get_workout_detaial!(123)
+      %WorkoutDetaial{}
 
-      iex> get_workout_detail!(456)
+      iex> get_workout_detaial!(456)
       ** (Ecto.NoResultsError)
 
   """
   def get_workout_detail!(id), do: Repo.get!(WorkoutDetail, id)
 
   @doc """
-  Creates a workout_detail.
+  Creates a workout_detaial.
 
   ## Examples
 
-      iex> create_workout_detail(%{field: value})
-      {:ok, %WorkoutDetail{}}
+      iex> create_workout_detaial(%{field: value})
+      {:ok, %WorkoutDetaial{}}
 
-      iex> create_workout_detail(%{field: bad_value})
+      iex> create_workout_detaial(%{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
@@ -152,49 +152,49 @@ defmodule Crohnjobs.Fitness do
   end
 
   @doc """
-  Updates a workout_detail.
+  Updates a workout_detaial.
 
   ## Examples
 
-      iex> update_workout_detail(workout_detail, %{field: new_value})
-      {:ok, %WorkoutDetail{}}
+      iex> update_workout_detaial(workout_detaial, %{field: new_value})
+      {:ok, %WorkoutDetaial{}}
 
-      iex> update_workout_detail(workout_detail, %{field: bad_value})
+      iex> update_workout_detaial(workout_detaial, %{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_workout_detail(%WorkoutDetail{} = workout_detail, attrs) do
+  def update_workout_detaial(%WorkoutDetail{} = workout_detail, attrs) do
     workout_detail
     |> WorkoutDetail.changeset(attrs)
     |> Repo.update()
   end
 
   @doc """
-  Deletes a workout_detail.
+  Deletes a workout_detaial.
 
   ## Examples
 
-      iex> delete_workout_detail(workout_detail)
-      {:ok, %WorkoutDetail{}}
+      iex> delete_workout_detaial(workout_detaial)
+      {:ok, %WorkoutDetaial{}}
 
-      iex> delete_workout_detail(workout_detail)
+      iex> delete_workout_detaial(workout_detaial)
       {:error, %Ecto.Changeset{}}
 
   """
-  def delete_workout_detail(%WorkoutDetail{} = workout_detail) do
+  def delete_workout_detaial(%WorkoutDetail{} = workout_detail) do
     Repo.delete(workout_detail)
   end
 
   @doc """
-  Returns an `%Ecto.Changeset{}` for tracking workout_detail changes.
+  Returns an `%Ecto.Changeset{}` for tracking workout_detaial changes.
 
   ## Examples
 
-      iex> change_workout_detail(workout_detail)
-      %Ecto.Changeset{data: %WorkoutDetail{}}
+      iex> change_workout_detaial(workout_detaial)
+      %Ecto.Changeset{data: %WorkoutDetaial{}}
 
   """
-  def change_workout_detail(%WorkoutDetail{} = workout_detail, attrs \\ %{}) do
+  def change_workout_detaial(%WorkoutDetail{} = workout_detail, attrs \\ %{}) do
     WorkoutDetail.changeset(workout_detail, attrs)
   end
 end

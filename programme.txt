@@ -1,27 +1,42 @@
-Programme Name: Full Body
-Programme Description: This programme is designed for hyperophy
+Programme Name: Hybrid Workout Programme
+Programme Description: This programme is designed for hypertophy purposes. Each muscle group is trained 3 times a week.
 
-Template : Workout A
-  Exercise: Incline Dumbbell Press, Set: 3, Reps: 6-10
+Template : Push
+  Exercise: Tricep Cable Kickback, Set: 3, Reps: 10-12
+  Exercise: Machine Chest Press, Set: 3, Reps: 10-12
   Exercise: Tricep Pushdown, Set: 3, Reps: 10-12
-  Exercise: Barbell Curl, Set: 3, Reps: 10-12
-  Exercise: Leg extension, Set: 2, Reps: 8-12
-  Exercise: Barbell Bent Over Row, Set: 3, Reps: 8-12
-  Exercise: Lateral Raise, Set: 2, Reps: 8-12
+  Exercise: Chest Dips, Set: 3, Reps: 10-12
+  Exercise: Cable Chest Fly, Set: 3, Reps: 10-12
 
-Template : Workout B
-  Exercise: Overhead Press, Set: 3, Reps: 8-12
+Template : Pull
+  Exercise: Preacher Curl, Set: 3, Reps: 10-12
+  Exercise: Reverse Fly, Set: 2, Reps: 10-12
+  Exercise: Barbell Shrugs, Set: 3, Reps: 10-12
+  Exercise: Cable Row, Set: 3, Reps: 10-12
+  Exercise: Lat Pulldown, Set: 3, Reps: 10-12
+  Exercise: Incline Dumbbell Curl, Set: 3, Reps: 10-12
+
+Template : Legs
+  Exercise: Leg Press, Set: 2, Reps: 10-12
+  Exercise: Lying Leg Curl, Set: 3, Reps: 10-12
+  Exercise: Leg extension, Set: 2, Reps: 10-12
+  Exercise: Standing Calf Raise, Set: 3, Reps: 10-12
+  Exercise: Hip Thrust, Set: 3, Reps: 10-12
+  Exercise: Hip Abductor, Set: 3, Reps: 10-12
+
+Template : Full Body Workout A
+  Exercise: Barbell Curl, Set: 3, Reps: 10-12
+  Exercise: Tricep Pushdown, Set: 3, Reps: 10-12
+  Exercise: Incline Dumbbell Press, Set: 3, Reps: 6-10
+  Exercise: Romanian Deadlift, Set: 3, Reps: 10-12
+  Exercise: Lateral Raise, Set: 2, Reps: 8-12
+  Exercise: Barbell Bent Over Row, Set: 3, Reps: 8-12
+
+Template : Full Body Workout B
   Exercise: Leg Press, Set: 3, Reps: 6-10
   Exercise: Hammer Curl, Set: 3, Reps: 8-10
-  Exercise: Chest Dips, Set: 3, Reps: 10-15
   Exercise: Dumbbell Pullover, Set: 3, Reps: 10-15
-  Exercise: Lying Leg Curl, Set: 3, Reps: 10-12
-
-Template : Workout C
   Exercise: Tricep Cable Kickback, Set: 3, Reps: 10-12
-  Exercise: Lat Pulldown, Set: 3, Reps: 10-12
   Exercise: Reverse Bench , Set: 3, Reps: 8-12
-  Exercise: Incline Dumbbell Curl, Set: 3, Reps: 10-12
-  Exercise: Lateral Raise, Set: 2, Reps: 8-10
-  Exercise: Hip Thrust , Set: 3, Reps: 10-12
+  Exercise: Overhead Press, Set: 3, Reps: 8-12
 

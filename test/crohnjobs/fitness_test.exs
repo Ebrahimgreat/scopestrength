@@ -106,4 +106,56 @@ defmodule Crohnjobs.FitnessTest do
       assert %Ecto.Changeset{} = Fitness.change_workout_detail(workout_detail)
     end
   end
+
+  describe "workout_details" do
+    alias Crohnjobs.Fitness.WorkoutDetaial
+
+    import Crohnjobs.FitnessFixtures
+
+    @invalid_attrs %{}
+
+    test "list_workout_details/0 returns all workout_details" do
+      workout_detaial = workout_detaial_fixture()
+      assert Fitness.list_workout_details() == [workout_detaial]
+    end
+
+    test "get_workout_detaial!/1 returns the workout_detaial with given id" do
+      workout_detaial = workout_detaial_fixture()
+      assert Fitness.get_workout_detaial!(workout_detaial.id) == workout_detaial
+    end
+
+    test "create_workout_detaial/1 with valid data creates a workout_detaial" do
+      valid_attrs = %{}
+
+      assert {:ok, %WorkoutDetaial{} = workout_detaial} = Fitness.create_workout_detaial(valid_attrs)
+    end
+
+    test "create_workout_detaial/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Fitness.create_workout_detaial(@invalid_attrs)
+    end
+
+    test "update_workout_detaial/2 with valid data updates the workout_detaial" do
+      workout_detaial = workout_detaial_fixture()
+      update_attrs = %{}
+
+      assert {:ok, %WorkoutDetaial{} = workout_detaial} = Fitness.update_workout_detaial(workout_detaial, update_attrs)
+    end
+
+    test "update_workout_detaial/2 with invalid data returns error changeset" do
+      workout_detaial = workout_detaial_fixture()
+      assert {:error, %Ecto.Changeset{}} = Fitness.update_workout_detaial(workout_detaial, @invalid_attrs)
+      assert workout_detaial == Fitness.get_workout_detaial!(workout_detaial.id)
+    end
+
+    test "delete_workout_detaial/1 deletes the workout_detaial" do
+      workout_detaial = workout_detaial_fixture()
+      assert {:ok, %WorkoutDetaial{}} = Fitness.delete_workout_detaial(workout_detaial)
+      assert_raise Ecto.NoResultsError, fn -> Fitness.get_workout_detaial!(workout_detaial.id) end
+    end
+
+    test "change_workout_detaial/1 returns a workout_detaial changeset" do
+      workout_detaial = workout_detaial_fixture()
+      assert %Ecto.Changeset{} = Fitness.change_workout_detaial(workout_detaial)
+    end
+  end
 end
