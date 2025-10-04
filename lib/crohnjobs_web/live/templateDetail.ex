@@ -236,6 +236,23 @@ alias Crohnjobs.CustomExercises.CustomExercise
         >
           Back
         </.button>
+
+
+        <.button
+        phx-click="filterByType"
+        phx-value-name="Triceps"
+          class={[
+            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+            if(@filter_by_type == "Triceps",
+              do: "bg-blue-600 text-white shadow-md",
+              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+            )
+          ]}
+        >
+          Triceps
+        </.button>
+
+
         <.button
         phx-click="filterByType"
         phx-value-name="Biceps"

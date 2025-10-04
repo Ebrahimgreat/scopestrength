@@ -19,9 +19,22 @@ defmodule CrohnjobsWeb.WorkoutShow do
       |> Repo.preload(workout_detail: [:exercise])
       |> Fitness.change_workout()
       |> to_form()
-    IO.inspect(workout.data.name)
+
+
+      grouped = workout.data.workout_detail|> Enum.group_by(& &1.exercise_id)|>Enum.map(fn {exercise_id, details}->
+        %{
+          exercise_id: exercise_id,
+          exercise: List.first(details).exercise,
+
+          sets: details
+        }
+
+      end)
+updated_workout = %{workout | data: %{workout.data | workout_detail: grouped}}
+IO.inspect(updated_workout)
+
     fiterApplied = "All"
-    {:ok, assign(socket, workout: workout, allExercises: exercises, exercises: exercises, filterApplied: fiterApplied)}
+    {:ok, assign(socket, workout: updated_workout, allExercises: exercises, exercises: exercises, filterApplied: fiterApplied)}
   end
 
   def handle_event("updateName", params, socket) do
@@ -55,6 +68,7 @@ defmodule CrohnjobsWeb.WorkoutShow do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8 px-4 sm:px-6 lg:px-8">
+
       <div class="max-w-5xl mx-auto">
         <!-- Header Section -->
         <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 mb-8">
@@ -67,6 +81,13 @@ defmodule CrohnjobsWeb.WorkoutShow do
             <div>
               <h1 class="text-4xl font-bold text-slate-900 capitalize"><%= @workout.data.name %></h1>
               <p class="text-slate-600 mt-1">Workout Details & Exercise Log</p>
+              <%=if length(@workout.data.workout_detail)>0 do%>
+             <.link navigate={~p"/clients/#{@workout.data.client_id}/workouts/#{@workout.data.id}/details"}>
+            <.button> View
+            </.button>
+
+              </.link>
+              <%end%>
             </div>
           </div>
 
@@ -119,95 +140,45 @@ defmodule CrohnjobsWeb.WorkoutShow do
                 </.button>
               </.form>
             </div>
-          </div>
-        </div>
-
-        <!-- Exercise Details Section -->
-        <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-              </svg>
-            </div>
-            <h2 class="text-2xl font-bold text-slate-900">Exercise Log</h2>
-          </div>
-
-          <%= if length(@workout.data.workout_detail) == 0 do %>
-            <!-- Empty State -->
-            <div class="text-center py-12">
-              <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-full mb-4">
-                <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-                </svg>
-              </div>
-              <h3 class="text-lg font-semibold text-slate-900 mb-2">No exercises logged</h3>
-              <p class="text-slate-600">Start adding exercises to track your workout progress</p>
-            </div>
-          <% else %>
-            <!-- Exercise Cards Grid -->
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <%= for workoutDetail <- @workout.data.workout_detail do %>
-                <div class="bg-gradient-to-br from-slate-50 to-white rounded-xl p-5 border-2 border-slate-200 hover:border-indigo-300 transition-all duration-200 hover:shadow-md">
-                  <!-- Exercise Name -->
-                  <div class="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200">
-                    <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                    </div>
-                    <h3 class="font-bold text-slate-900 capitalize text-lg"><%= workoutDetail.exercise.name %></h3>
-                  </div>
-
-                  <!-- Exercise Stats -->
-                  <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                      <span class="flex items-center gap-2 text-sm text-slate-600">
-                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
-                        </svg>
-                        Sets
-                      </span>
-                      <span class="font-bold text-slate-900 text-lg"><%= workoutDetail.set %></span>
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                      <span class="flex items-center gap-2 text-sm text-slate-600">
-                        <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                        Reps
-                      </span>
-                      <span class="font-bold text-slate-900 text-lg"><%= workoutDetail.reps %></span>
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                      <span class="flex items-center gap-2 text-sm text-slate-600">
-                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
-                        </svg>
-                        Weight
-                      </span>
-                      <span class="font-bold text-slate-900 text-lg"><%= workoutDetail.weight %> <span class="text-sm text-slate-500">lbs</span></span>
-                    </div>
-                  </div>
-                </div>
-              <% end %>
             </div>
 
-            <!-- Summary Stats -->
-            <div class="mt-6 pt-6 border-t border-slate-200">
-              <div class="flex items-center justify-center gap-2 text-sm text-slate-600">
-                <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                </svg>
-                <span class="font-semibold text-slate-900"><%= length(@workout.data.workout_detail) %></span>
-                <%= if length(@workout.data.workout_detail) == 1, do: "exercise", else: "exercises" %> logged
-              </div>
-            </div>
-          <% end %>
-        </div>
+            <div class="space-y-6">
+  <%= for workout <- @workout.data.workout_detail do %>
+    <div class="bg-gray-900 text-white rounded-2xl shadow-md p-5">
+      <!-- Exercise Header -->
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-xl font-semibold text-blue-400">
+          <%= workout.exercise.name %>
+        </h2>
+        <span class="text-sm text-gray-400 italic">
+          <%= workout.exercise.type %> • <%= workout.exercise.equipment %>
+        </span>
       </div>
+
+      <!-- Sets Section -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+        <%= for set <- workout.sets do %>
+          <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-blue-500 transition">
+            <h3 class="font-medium text-blue-300">Set <%= set.set %></h3>
+            <p class="text-gray-300 text-sm mt-1">
+              <strong>Reps:</strong> <%= set.reps %>
+            </p>
+            <p class="text-gray-300 text-sm">
+              <strong>Weight:</strong> <%= set.weight %> kg
+            </p>
+            <p class="text-gray-300 text-sm">
+              <strong>RIR:</strong> <%= set.rir %>
+            </p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+
+      </div>
+    </div>
     </div>
     """
   end

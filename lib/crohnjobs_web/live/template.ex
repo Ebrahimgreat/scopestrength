@@ -143,8 +143,15 @@ end
                           <%= index + 1 %>
                         </span>
                       </div>
-                      <span class="text-xs font-medium text-gray-500 uppercase tracking-wide"> <%= programmeDetail.exercise.name%></span>
+                      <span class="text-xs font-medium text-gray-500 uppercase tracking-wide"> <%= programmeDetail.exercise.name%>
+
+                      </span>
+
+
                     </div>
+                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      <%=programmeDetail.exercise.type%>
+                      </span>
                   </div>
 
                   <div class="space-y-3">

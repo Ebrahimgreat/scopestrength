@@ -17,7 +17,7 @@ defmodule Crohnjobs.Fitness.WorkoutDetail do
   @doc false
   def changeset(workout_detaial, attrs) do
     workout_detaial
-    |> cast(attrs, [:set, :reps, :rir, :set, :workout_id, :exercise_id])
+    |> cast(attrs, [:set, :reps, :rir, :set, :workout_id, :exercise_id, :weight])
     |> validate_required([])
   end
 end

@@ -230,8 +230,19 @@ defmodule CrohnjobsWeb.ShowClient do
                       Change Programme
                     </.button>
                   </.link>
+
                 </div>
+
               </div>
+              <.link
+    navigate={~p"/clients/#{@client.data.id}/workouts"}
+    class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105"
+  >
+    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2h6v2m2 4H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+    View Workouts
+  </.link>
             </div>
           </div>
         </div>

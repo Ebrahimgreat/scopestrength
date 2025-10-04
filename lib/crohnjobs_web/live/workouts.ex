@@ -6,6 +6,7 @@ defmodule CrohnjobsWeb.Workouts do
   alias Crohnjobs.Fitness.Workout
   import Ecto.Query
 
+  @spec handle_event(<<_::80, _::_*24>>, any(), Phoenix.LiveView.Socket.t()) :: {:noreply, any()}
   def handle_event("addWorkout", _params, socket) do
     client_id = socket.assigns.client.id
     new_workout = %{
@@ -45,7 +46,7 @@ defmodule CrohnjobsWeb.Workouts do
 
   def mount(params, session, socket) do
     client = Repo.get!(Client, params["id"])
-    workouts = Repo.all(from w in Workout, where: w.client_id == ^client.id)
+    workouts = Repo.all(from w in Workout, where: w.client_id == ^client.id)|>Repo.preload(workout_detail: [:exercise])
     IO.inspect(workouts)
     {:ok, assign(socket, workouts: workouts, client: client)}
   end
@@ -100,8 +101,12 @@ defmodule CrohnjobsWeb.Workouts do
                     </div>
                     <div>
                       <h3 class="text-lg font-semibold text-slate-900 capitalize"><%= workout.name %></h3>
+
+
+
                       <.link  navigate={~p"/clients/#{@client.id}/workouts/#{workout.id}"}>
-                      View
+                     <.button> View
+                     </.button>
                       </.link>
                       <div class="flex items-center gap-1 text-sm text-slate-500 mt-0.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,6 +143,7 @@ defmodule CrohnjobsWeb.Workouts do
               </div>
             <% end %>
           </div>
+
 
           <!-- Workouts Count -->
           <div class="mt-6 text-center">
