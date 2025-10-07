@@ -1,39 +1,41 @@
-Programme Name: Hybrid Workout Programme
-Programme Description: This programme is designed for hypertophy purposes. Each muscle group is trained 3 times a week.
+Programme Name: 5 Day Upper Lower Push Pull Legs
+Programme Description: Trying Something NEw
 
-Template : Full Body Workout A
-  Exercise: Leg extension, Set: 4, Reps: 10-12
-  Exercise: Incline Dumbbell Press, Set: 4, Reps: 6-10
-  Exercise: Barbell Curl, Set: 4, Reps: 10-12
-  Exercise: Barbell Bent Over Row, Set: 4, Reps: 8-12
-  Exercise: Romanian Deadlift, Set: 3, Reps: 10-12
-  Exercise: Lateral Raise, Set: 3, Reps: 8-12
-  Exercise: Tricep Pushdown, Set: 4, Reps: 10-12
+Template : Upper 
+  Exercise: Barbell Curl, Set: 3, Reps: 6-10
+  Exercise: Overhead Press, Set: 3, Reps: 6-10
+  Exercise: Barbell Bent Over Row, Set: 3, Reps: 6-10
+  Exercise: Chest Dips, Set: 3, Reps: 6-10
+  Exercise: Overhead Cable Extension, Set: 3, Reps: 6-10
 
-Template : Full Body Workout B
-  Exercise: Overhead Press, Set: 4, Reps: 8-12
-  Exercise: Leg Press, Set: 4, Reps: 6-10
-  Exercise: Preacher Curl, Set: 4, Reps: 10-12
-  Exercise: Dumbbell Pullover, Set: 4, Reps: 10-15
-  Exercise: Seated Leg Curl, Set: 4, Reps: 10-12
-  Exercise: Tricep Cable Kickback, Set: 4, Reps: 10
-  Exercise: Reverse Bench , Set: 4, Reps: 8-12
+Template : Lower
+  Exercise: Seated Leg Curl, Set: 3, Reps: 10-12
+  Exercise: Leg Press, Set: 3, Reps: 10-12
+  Exercise: Leg extension, Set: 3, Reps: 10-12
+  Exercise: Standing Calf Raise, Set: 3, Reps: 10-12
+  Exercise: Hip Thrust , Set: 3, Reps: 10-12
+  Exercise: Seated Machine Hinge, Set: 3, Reps: 10-12
 
-Template : Full Body Workout C
-  Exercise: Lat Pulldown, Set: 2, Reps: 10-12
-  Exercise: Chest Dips, Set: 4, Reps: 10-12
-  Exercise: Tricep Pushdown, Set: 4, Reps: 10-12
-  Exercise: Lateral Raise, Set: 4, Reps: 10-12
-  Exercise: Leg extension, Set: 4, Reps: 10-12
-  Exercise: Incline Dumbbell Curl, Set: 4, Reps: 10-12
-  Exercise: Cable Row, Set: 2, Reps: 10-12
+Template : Push 
+  Exercise: Lying Lateral Raises, Set: 3, Reps: 12-15
+  Exercise: Deficit Pushup, Set: 3, Reps: 20-25
+  Exercise: Incline Dumbbell Press, Set: 3, Reps: 10-12
+  Exercise: Machine Peck Deck, Set: 3, Reps: 10-12
+  Exercise: Tricep Pushdown, Set: 3, Reps: 10-15
+  Exercise: Skull Crusher, Set: 3, Reps: 10-15
 
-Template : Full Body Workout D
-  Exercise: Machine Curls, Set: 4, Reps: 10-12
-  Exercise: Seated Machine Hinge, Set: 4, Reps: 10-12
+Template : Pull
+  Exercise: Face Pulls, Set: 3, Reps: 10-12
+  Exercise: Machine Chest Supported Row , Set: 3, Reps: 10-12
+  Exercise: Dumbbell Pullover, Set: 3, Reps: 10-12
+  Exercise: Lat Pulldown, Set: 3, Reps: 10-12
+  Exercise: Preacher Curl, Set: 3, Reps: 12-14
+  Exercise: Hammer Curl, Set: 3, Reps: 10-12
+
+Template : Legs
+  Exercise: Standing Calf Raise, Set: 3, Reps: 10-12
   Exercise: Bulgarian Split Squat, Set: 2, Reps: 10-12
-  Exercise: Inverted Row, Set: 4, Reps: 15-20
-  Exercise: JM Press, Set: 4, Reps: 10-12
-  Exercise: Barbell Shrugs, Set: 4, Reps: 10-12
-  Exercise: Deficit Pushup, Set: 4, Reps: 20-25
+  Exercise: Romanian Deadlift, Set: 3, Reps: 6-10
+  Exercise: Lying Leg Curl, Set: 3, Reps: 10-12
+  Exercise: Reverse Nordic Curls, Set: 3, Reps: 10-12
 

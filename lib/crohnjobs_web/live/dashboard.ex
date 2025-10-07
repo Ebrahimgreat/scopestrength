@@ -19,17 +19,38 @@ defmodule CrohnjobsWeb.Dashboard do
 
   end
   def mount(_params, _session, socket) do
+
+    chart =
+      LiveCharts.build(%{
+        type: :line,
+        series: [
+          %{name: "Clients Active", data: [
+            %{x: "2025-10-01", y: 10},
+            %{x: "2025-10-02", y: 15},
+            %{x: "2025-10-03", y: 8}
+          ]}
+        ],
+        options: %{
+          xaxis: %{type: "datetime"},
+          yaxis: %{min: 0}
+        }
+      })
     user = socket.assigns.current_user
     subscription = Repo.get_by(Crohnjobs.Subscriptions.Subscription, user_id: user.id)
     IO.inspect(subscription)
     trainers = Trainers.get_trainer_byUserId(user.id)
     myClients = Clients.get_clients_for_trainer(trainers.id)
-    {:ok, assign(socket, subscription: subscription, name: user.name, clients: myClients)}
+    {:ok, assign(socket, chart: chart ,  subscription: subscription, name: user.name, clients: myClients)}
   end
 
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
+
+
+
+
+
    <div class="bg-gradient-to-r from-blue-600 to-purple-700 text-white">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <h1 class="text-3xl font-bold tracking-tight">Trainer Dashboard</h1>
@@ -43,7 +64,6 @@ defmodule CrohnjobsWeb.Dashboard do
   <p>Subscription: <%= @subscription.plan %></p>
 
 <% end %>
-
 
     <p class="mt-2 text-blue-100 text-lg">
       Welcome back, <span class="font-semibold"><%= @name %></span>! How is it going?

@@ -100,6 +100,7 @@ end)
 
 
     end)
+    IO.inspect(my_workout)
     {:noreply, assign(socket, myWorkout: my_workout )}
 
 
@@ -164,26 +165,31 @@ def handle_event("updateExercise", params, socket) do
           w-> String.to_integer(w)
         end
 
-  workout = Fitness.get_workout_detail!(workout_id)
-  IO.inspect(workout)
+  workout = Fitness.get_workout_detail!(workout_id)|>Repo.preload(:exercise)
   case Fitness.update_workout_detaial(workout, %{ weight: weight, reps: reps, rir: rir }) do
-    {:ok, workout} ->
+    {:ok, workoutUpdated} ->
+      IO.inspect(workoutUpdated)
       new_myWorkout= Enum.map(socket.assigns.myWorkout, fn x-> if x.exercise_id == exercise_id do
-      updated_set = Enum.map(x.sets, fn set_form-> if set_form.id == workout_id do
-        Fitness.change_workout_detaial(workout)|>to_form()
+      updated_set = Enum.map(x.sets, fn set_form-> if set_form.data.id == workout_id do
+        Fitness.change_workout_detaial(workoutUpdated)|>to_form()
       else
-        x
+        set_form
       end
     end
         )
+
         %{x | sets: updated_set}
+  else
+    x
       end
 
       end)
+      IO.inspect(new_myWorkout)
+
+
       {:noreply, socket|> put_flash(:info, "Updated")|> assign(myWorkout: new_myWorkout)}
       _ ->{:noreply, socket|>put_flash(:error, "Something Happened")}
   end
-  {:noreply, socket}
 
 end
 
@@ -214,8 +220,12 @@ end
         }
       end)
 
+      IO.inspect(grouped)
+
 
     changesets = Enum.map(workoutDetails, fn workout-> workout|> Fitness.change_workout_detaial()|>to_form()end)
+
+
 
 
     {:ok, assign(socket, programme: programme, workout_id: workout_id, workoutDetails:  changesets, myWorkout: grouped, exercises: exercises, allExercises: exercises, filterApplied: "All")}
@@ -351,7 +361,7 @@ end
                 <div class="space-y-3">
                   <%= for set <- exercise.sets do %>
                     <div class="bg-gray-50 p-3 rounded-md flex flex-col md:flex-row md:items-end md:space-x-3 border border-gray-200">
-                      <.form phx-submit="updateExercise" class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <.form  for={set}  phx-submit="updateExercise" class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-3">
                         <.input type="hidden" name="exercise" value={exercise.exercise_id} field={exercise.exercise_id}/>
                         <.input type="hidden" field={set[:id]}/>
 
@@ -366,7 +376,7 @@ end
                         </div>
                       </.form>
 
-                      <.form for={set} phx-submit="removeSet" class="mt-2 md:mt-0">
+                      <.form  for={set} phx-submit="removeSet" class="mt-2 md:mt-0">
                         <.input type="hidden" field={set[:id]}/>
                         <.input type="hidden" name="exercise" value={exercise.exercise_id} field={exercise.exercise_id}/>
                         <.button class="text-red-600 hover:text-red-700 text-sm underline">

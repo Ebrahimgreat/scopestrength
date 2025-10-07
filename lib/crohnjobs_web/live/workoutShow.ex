@@ -15,6 +15,9 @@ defmodule CrohnjobsWeb.WorkoutShow do
     customExercises = Repo.all(from c in CustomExercise, where: c.trainer_id == ^trainer.id)
     exercises = Exercise.list_exercises()++ customExercises
     workout_id = String.to_integer(params["workout_id"])
+
+
+
     workout = Repo.get(Workout, workout_id)
       |> Repo.preload(workout_detail: [:exercise])
       |> Fitness.change_workout()
@@ -31,12 +34,34 @@ defmodule CrohnjobsWeb.WorkoutShow do
 
       end)
 updated_workout = %{workout | data: %{workout.data | workout_detail: grouped}}
-IO.inspect(updated_workout)
+
 
     fiterApplied = "All"
-    {:ok, assign(socket, workout: updated_workout, allExercises: exercises, exercises: exercises, filterApplied: fiterApplied)}
+    {:ok, assign(socket, unit: "Kilograms", workout: updated_workout, allExercises: exercises, exercises: exercises, filterApplied: fiterApplied)}
   end
 
+   def handle_event("changeUnit", _params, socket) do
+   unit = case socket.assigns.unit do
+     "Kilograms"-> "Pounds"
+        _ -> "Kilograms"
+
+
+    end
+    {:noreply, assign(socket, unit: unit)}
+
+
+   end
+
+  def handle_event("updateDate", params, socket) do
+    case Fitness.update_workout(socket.assigns.workout.data, %{date: params["date"]}) do
+      {:ok, workout}->
+        workout= %{socket.assigns.workout.data| data: params["date"]}
+        myWorkout = Fitness.change_workout(workout)|>to_form()
+        {:noreply, socket|> put_flash(:info, "Success")|>assign(myWorkout: myWorkout)}
+        _ ->{:noreply, socket|>put_flash(:error, "Something Happened")|>assign(socket)}
+    end
+
+  end
   def handle_event("updateName", params, socket) do
     case Fitness.update_workout(socket.assigns.workout.data, %{name: params["name"]}) do
       {:ok, workout} ->
@@ -50,6 +75,8 @@ IO.inspect(updated_workout)
           |> put_flash(:info, "Something Happened")}
     end
   end
+
+
 
   def handle_event("updateNotes", params, socket) do
     case Fitness.update_workout(socket.assigns.workout.data, %{notes: params["notes"]}) do
@@ -117,6 +144,32 @@ IO.inspect(updated_workout)
               </.form>
             </div>
 
+            <div class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border border-slate-200">
+              <div class="flex items-center gap-2 mb-4">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                <h3 class="text-lg font-semibold text-slate-900">Update Name</h3>
+              </div>
+              <.form phx-submit="updateDate" class="space-y-4">
+                <.input
+                type="date"
+                  label="Workout Name"
+                  name="date"
+                  field={@workout[:date]}
+                  class="w-full px-4 py-2 rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                />
+                <.button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  Update Date
+                </.button>
+              </.form>
+            </div>
+
+
+
             <!-- Update Notes Form -->
             <div class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border border-slate-200">
               <div class="flex items-center gap-2 mb-4">
@@ -146,10 +199,15 @@ IO.inspect(updated_workout)
   <%= for workout <- @workout.data.workout_detail do %>
     <div class="bg-gray-900 text-white rounded-2xl shadow-md p-5">
       <!-- Exercise Header -->
+     <.button phx-click="changeUnit">
+     {@unit}
+
+     </.button>
       <div class="flex justify-between items-center mb-3">
         <h2 class="text-xl font-semibold text-blue-400">
           <%= workout.exercise.name %>
         </h2>
+        <% total_volume = workout.sets|>Enum.map(fn set->set.reps*set.weight end)|> Enum.sum() %>
         <span class="text-sm text-gray-400 italic">
           <%= workout.exercise.type %> • <%= workout.exercise.equipment %>
         </span>
@@ -164,13 +222,41 @@ IO.inspect(updated_workout)
               <strong>Reps:</strong> <%= set.reps %>
             </p>
             <p class="text-gray-300 text-sm">
-              <strong>Weight:</strong> <%= set.weight %> kg
+              <strong>Weight:</strong>
+              <%= if @unit == "Kilograms" do %>
+               <%= set.weight %> <%=@unit%>
+               <%else%>
+               <%=Float.round(set.weight *2.2,1)%> <%=@unit%>
+               <%end%>
+
             </p>
             <p class="text-gray-300 text-sm">
               <strong>RIR:</strong> <%= set.rir %>
             </p>
+            <p class="text-gray-300 text-sm">
+              <strong>Volume:</strong>
+
+              <%= if @unit == "Kilograms" do %>
+               <%= set.reps * set.weight %>
+               <%else %>
+               <%= Float.round(set.reps*set.weight*2.2,1) %>
+               <%end%>
+            </p>
+
           </div>
+
         <% end %>
+        <p class="text-yellow-400 mt-2 font-semibold">
+          Total Volume
+          <%= if @unit == "Kilograms" do%>
+           <%= total_volume %> <%=@unit%>
+           <%else%>
+           <%= Float.round(total_volume* 2.2)%> <%=@unit%>
+
+           <%end%>
+
+
+          </p>
       </div>
     </div>
   <% end %>

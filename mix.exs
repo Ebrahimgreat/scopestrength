@@ -62,6 +62,7 @@ defmodule Crohnjobs.MixProject do
       {:oban, "~> 2.14"},
       {:oban_web, "~> 2.11"},
       {:gen_stage, "~> 1.0.0"},
+      {:live_charts, "~> 0.4.0"}
 
     ]
   end

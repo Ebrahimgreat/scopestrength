@@ -1,4 +1,5 @@
 defmodule CrohnjobsWeb.ShowClient do
+  alias Crohnjobs.Trainers
   alias Phoenix.LiveViewTest.View
   alias Crohnjobs.Programmes.Programme
   alias Crohnjobs.Clients
@@ -9,6 +10,8 @@ defmodule CrohnjobsWeb.ShowClient do
   use CrohnjobsWeb, :live_view
   import Ecto.Query
 
+  @spec handle_event(<<_::96>>, nil | maybe_improper_list() | map(), Phoenix.LiveView.Socket.t()) ::
+          {:noreply, any()}
   def handle_event("updateClient", params, socket) do
     client = socket.assigns.client.data
     name = params["client"]["name"]
@@ -27,21 +30,29 @@ defmodule CrohnjobsWeb.ShowClient do
   end
 
   def mount(params, session, socket) do
-  client = Repo.get!(Client,params["id"])
+    user = socket.assigns.current_user
+    trainer = Trainers.get_trainer_byUserId(user.id)
 
-  programmeUser = Repo.get_by(ProgrammeUser, client_id: client.id, is_active: true)|> Repo.preload(:programme)
+    id = String.to_integer(params["id"])
+   case Repo.get(Client,id) do
+    nil ->{:ok, socket|> put_flash(:error, "Client Not found")|>redirect(to: "/clients")}
+    client ->
+      case client.trainer_id == trainer.id do
+true-> programmeUser = Repo.get_by(ProgrammeUser, client_id: client.id, is_active: true)|> Repo.preload(:programme)
  programmes =  case programmeUser do
     nil -> nil
     pu  -> pu
   end
-  IO.inspect(programmes)
+
 
   clientForm = Clients.change_client(client)|>to_form()
 
   {:ok, assign(socket, programmeUser: programmes,  client: clientForm)}
 
-
+      end
+      false->{:ok, socket|> put_flash(:error, "Client Does not Exist")}
   end
+end
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-gradient-to-br from-purple-50 to-blue-100 py-8">
