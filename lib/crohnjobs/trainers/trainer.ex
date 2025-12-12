@@ -6,6 +6,8 @@ defmodule Crohnjobs.Trainers.Trainer do
     field :bio, :string
     field :specialization, :string
     belongs_to :user, Crohnjobs.Account.User
+    has_many :clients, Crohnjobs.Clients.Client
+    has_many :programmes, Crohnjobs.Programmes.Programme
 
     timestamps(type: :utc_datetime)
   end

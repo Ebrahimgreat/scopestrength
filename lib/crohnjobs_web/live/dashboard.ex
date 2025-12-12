@@ -1,10 +1,9 @@
 defmodule CrohnjobsWeb.Dashboard do
-  alias Crohnjobs.Subscriptions
   alias Crohnjobs.Repo
-  alias Phoenix.LiveViewTest.View
   alias Crohnjobs.Clients.Client
   use CrohnjobsWeb, :live_view
   alias Crohnjobs.Clients
+  alias Crohnjobs.Trainers.Trainer
   alias Crohnjobs.Trainers
 
 
@@ -20,77 +19,101 @@ defmodule CrohnjobsWeb.Dashboard do
   end
   def mount(_params, _session, socket) do
 
-    chart =
-      LiveCharts.build(%{
-        type: :line,
-        series: [
-          %{name: "Clients Active", data: [
-            %{x: "2025-10-01", y: 10},
-            %{x: "2025-10-02", y: 15},
-            %{x: "2025-10-03", y: 8}
-          ]}
-        ],
-        options: %{
-          xaxis: %{type: "datetime"},
-          yaxis: %{min: 0}
-        }
-      })
+
     user = socket.assigns.current_user
-    subscription = Repo.get_by(Crohnjobs.Subscriptions.Subscription, user_id: user.id)
-    IO.inspect(subscription)
+
     trainers = Trainers.get_trainer_byUserId(user.id)
-    myClients = Clients.get_clients_for_trainer(trainers.id)
-    {:ok, assign(socket, chart: chart ,  subscription: subscription, name: user.name, clients: myClients)}
+    data= Repo.get(Trainer, trainers.id)|>Repo.preload([:programmes,:clients])
+
+    {:ok, assign(socket, name: user.name, data: data )}
   end
 
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
 
+  <div class="w-full bg-gradient-to-r from-blue-600 to-purple-700 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 class="text-3xl font-bold tracking-tight">Trainer Dashboard</h1>
+      <p class="mt-2 text-blue-100 text-lg">
+        Welcome back, <span class="font-semibold"><%= @name %></span>! How is it going?
+      </p>
+    </div>
 
 
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
 
-   <div class="bg-gradient-to-r from-blue-600 to-purple-700 text-white">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <h1 class="text-3xl font-bold tracking-tight">Trainer Dashboard</h1>
-
-
-    <%= if @subscription.plan == "trial" do %>
-    <p>Subscription: <%= @subscription.plan %></p>
-  <% duration_in_seconds = DateTime.diff(@subscription.trial_end, @subscription.trial_start) %>
-  <p>Trial Remaining: <%= div(duration_in_seconds, 86400) %> days</p>
-  <%= else%>
-  <p>Subscription: <%= @subscription.plan %></p>
-
-<% end %>
-
-    <p class="mt-2 text-blue-100 text-lg">
-      Welcome back, <span class="font-semibold"><%= @name %></span>! How is it going?
-    </p>
-  </div>
-
-
-      <!-- Main Content -->
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Total Clients Card -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                </svg>
-              </div>
-            </div>
-            <div class="ml-4 flex-1">
-              <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Number of Clients</h3>
-              <p class="text-2xl font-bold text-gray-900"><%= length(@clients) %></p>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+              </svg>
             </div>
           </div>
+          <div class="ml-4 flex-1">
+            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Number of Clients</h3>
+            <p class="text-2xl font-bold text-gray-900"><%= length(@data.clients) %></p>
+            <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide">
+            Total Number of Programmes
+            </h4>
+            <p class="text-2xl font-bold text-gray-900">
+            <%=length(@data.programmes)%>
+            </p>
+          </div>
         </div>
+      </div>
 
-        <!-- Clients Table -->
+
+      <%= if length(@data.programmes) > 0 do %>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+              </svg>
+              Your Programmes
+            </h2>
+          </div>
+
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">View</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <%= for programme <-@data.programmes do %>
+                <tr class="hover:bg-gray-50 transition-colors duration-150">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                        <span class="text-sm font-medium text-white"><%= String.first(programme.name) %></span>
+                      </div>
+                      <div class="ml-4">
+                        <div class="text-sm font-medium text-gray-900"><%= programme.name %></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= programme.description %></td>
+                  <td>
+                    <.link navigate={~p"/programmes/#{programme.id}"}>
+                      <.button>View</.button>
+                    </.link>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+
+      <!-- Clients Table -->
+      <%= if length(@data.clients) > 0 do %>
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 class="text-lg font-semibold text-gray-900 flex items-center">
@@ -101,102 +124,64 @@ defmodule CrohnjobsWeb.Dashboard do
             </h2>
           </div>
 
-          <%= if length(@clients) > 0 do %>
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Age
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Active
-                    </th>
-
-                    <th>
-                    View
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  <%= for client <- @clients do %>
-                    <tr class="hover:bg-gray-50 transition-colors duration-150">
-                      <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex items-center">
-                          <div class="flex-shrink-0 h-10 w-10">
-                            <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                              <span class="text-sm font-medium text-white">
-                                <%= String.first(client.name) %>
-                              </span>
-                            </div>
-                          </div>
-                          <div class="ml-4">
-                            <div class="text-sm font-medium text-gray-900">
-                              <%= client.name %>
-                            </div>
-                          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active</th>
+                  <th>View</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <%= for client <- @data.clients do %>
+                  <tr class="hover:bg-gray-50 transition-colors duration-150">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                          <span class="text-sm font-medium text-white"><%= String.first(client.name) %></span>
                         </div>
-                      </td>
-                      <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-gray-900">
-                          <%= if client.age do %>
-                            <%= client.age %> years
-                          <% else %>
-                            <span class="text-gray-400">Not specified</span>
-                          <% end %>
+                        <div class="ml-4">
+                          <div class="text-sm font-medium text-gray-900"><%= client.name %></div>
                         </div>
-                      </td>
-
-
-                      <td class="px-6 py-4 whitespace-nowrap">
-                        <%= if client.active do %>
-                          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                            </svg>
-                            Active
-                          </span>
-                        <% else %>
-                          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-                            </svg>
-                            Inactive
-                          </span>
-                        <% end %>
-                      </td>
-
-
-
-                      <td>
-                      <.link  navigate={~p"/clients/#{client.id}"}>
-                      <.button>View
-                      </.button>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <%= if client.age, do: "#{client.age} years", else: "<span class='text-gray-400'>Not specified</span>" %>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <%= if client.active do %>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Active
+                        </span>
+                      <% else %>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Inactive
+                        </span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <.link navigate={~p"/clients/#{client.id}"}>
+                        <.button>View</.button>
                       </.link>
-
-                      </td>
-
-                    </tr>
-                  <% end %>
-                </tbody>
-              </table>
-            </div>
-          <% else %>
-            <!-- Empty State -->
-            <div class="text-center py-12">
-              <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-              </svg>
-              <h3 class="mt-4 text-lg font-medium text-gray-900">No clients yet</h3>
-              <p class="mt-2 text-gray-500">Get started by adding your first client to begin training sessions.</p>
-            </div>
-          <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      <% else %>
+        <div class="text-center py-12">
+          <h3 class="mt-4 text-lg font-medium text-gray-900">No clients yet</h3>
+          <p class="mt-2 text-gray-500">Get started by adding your first client to begin training sessions.</p>
+        </div>
+      <% end %>
+
     </div>
-    """
-  end
+  </div>
+  """
+end
+
 end
