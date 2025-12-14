@@ -6,6 +6,7 @@ A personal trainer management application built in Elixir with Phoenix LiveView,
 
 ✨ Features
 
+
 Client Management
 	•	✅ Add, edit, and remove clients
 	•	✅ Track client details: age, height, sex, notes
@@ -16,6 +17,14 @@ Programme Management
 	•	✅ Assign programmes to clients
 	•	✅ Change client programmes with historical tracking
 	•	✅ Mark programmes as active or inactive
+
+
+Strength Management
+	•	✅ Track client strength progress for each exercise
+	•	✅ Record weight, reps, and dates for each session
+	•	✅ View historical progress with real-time updates
+
+
 
 Real-Time Interactions
 	•	⚡ Live updates for client programme assignments
