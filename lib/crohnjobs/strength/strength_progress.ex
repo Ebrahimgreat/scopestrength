@@ -5,6 +5,7 @@ defmodule Crohnjobs.Strength.StrengthProgress do
   schema "strength_progress" do
     field :date, :date
     field :repRange, :string
+    field :weight, :float
 
     belongs_to :client, Crohnjobs.Accounts.Client
     belongs_to :exercise, Crohnjobs.Exercises.Exercise
@@ -16,7 +17,7 @@ defmodule Crohnjobs.Strength.StrengthProgress do
   @doc false
   def changeset(strength_progress, attrs) do
     strength_progress
-    |> cast(attrs, [:date, :client_id, :exercise_id, :custom_exercise_id, :rep_range])
+    |> cast(attrs, [:date, :client_id, :exercise_id, :custom_exercise_id, :repRange, :weight])
     |> validate_required([:date, :client_id])
     |> validate_one_of_exercise()
   end

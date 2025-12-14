@@ -170,6 +170,7 @@ end
             </div>
           </div>
 
+
           <!-- Programme Information -->
           <div class="bg-white rounded-xl shadow-lg border-2 border-green-200">
             <div class="bg-green-600 px-6 py-4 rounded-t-xl">
@@ -177,7 +178,7 @@ end
                 <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Programme Enrollment
+                Programme Enrollment and Strength Progress
               </h2>
               <p class="text-green-100 mt-1">Current programme assignment and management</p>
             </div>
@@ -227,7 +228,7 @@ end
                 </div>
               <% end %>
 
-              <!-- Change Programme Button -->
+
               <div class="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
                 <div class="flex items-center justify-between">
                   <div>
@@ -247,7 +248,28 @@ end
 
               </div>
 
+              <div class="bg-gray-50 rounded-xl p-4 border-2 mt- border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="font-bold text-gray-900">Strength Management</h4>
+                    <p class="text-sm text-gray-600">Monitor the strength progress of the client</p>
+                  </div>
+                  <.link navigate={~p"/clients/#{@client.data.id}/strengthProgress"}>
+                    <.button class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg transition-all duration-200 transform hover:scale-105">
+                      <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                      </svg>
+                    Strength Progress
+                    </.button>
+                  </.link>
+
+                </div>
+
+              </div>
+
+
             </div>
+
           </div>
         </div>
       </div>

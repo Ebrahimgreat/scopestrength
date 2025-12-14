@@ -1,328 +1,238 @@
 defmodule CrohnjobsWeb.ExerciseProgress do
-alias Crohnjobs.Exercise
-alias Crohnjobs.Exercises
-alias Crohnjobs.Repo
-use CrohnjobsWeb, :live_view
-import Ecto.Query
+  alias Crohnjobs.Strength
+  alias CrohnjobsWeb.StrengthProgress
+  alias Crohnjobs.Strength.StrengthProgress
+  alias Crohnjobs.Repo
+  alias Crohnjobs.Trainers
+  alias Crohnjobs.CustomExercises
+  alias Crohnjobs.CustomExercises.CustomExercise
+  alias Crohnjobs.Exercise
+  import Ecto.Query
+    use CrohnjobsWeb, :live_view
+
+    def mount(params, session, socket) do
+      user = socket.assigns.current_user
+      trainer=Trainers.get_trainer_byUserId(user.id)
+      exercise_id = String.to_integer(params["exercise_id"])
+      customParams = params["custom"]
+      client_id= String.to_integer( params["id"])
+
+      exercise = if customParams=="no" do
+        Exercise.get_exercise!(exercise_id)
+      else
+        Repo.get_by(CustomExercise, %{id: exercise_id, trainer_id: trainer.id})
+
+      end
+
+      if exercise == nil do
+        {:ok, socket|>put_flash(:error, "Invalid Id")|>redirect(to: "/")}
+
+    else
+
+      strengthProgress= Repo.all(from s in StrengthProgress, where: s.exercise_id == ^exercise.id)
+      IO.inspect(strengthProgress)
+      newExerciseForm = StrengthProgress.changeset(%StrengthProgress{},%{})|>to_form()
+
+      {:ok, assign(socket, newExerciseForm: newExerciseForm, client_id: client_id,   showModal: false, show_edit_exercise: false, exercise: exercise, strengthProgress: strengthProgress)}
+
+    end
+    end
 
 
+    def handle_event("deleteProgress", params, socket) do
+     client_id = socket.assigns.client_id
+     id = String.to_integer( params["id"])
+     strengthProgress = Strength.get_strength_progress!(id)
+     case Strength.delete_strength_progress(strengthProgress) do
+      {:ok, strengthProgress}->
+        updatedStrength= Enum.reject(socket.assigns.strengthProgress, &(&1.id == id))
+        {:noreply, assign(socket,strengthProgress: updatedStrength)}
+     _ -> {:noreply,socket}
 
-def handle_event("filterByType", %{"name"=> name}, socket) do
-  if socket.assigns.filterApplied == name do
-    {:noreply, assign(socket, exercises: socket.assigns.exercises)}
+    end
   end
-  filterApplied = name
-  myExercises = case name do
-    "ALL"-> socket.assigns.allExercises
-    _ -> Enum.filter(socket.assigns.allExercises, &(&1.type== name))
 
+
+    def handle_event("openModal", _params, socket) do
+      showModal = !socket.assigns.showModal
+      {:noreply, assign(socket, showModal: showModal)}
+
+
+    end
+
+
+    def handle_event("saveProgress", params, socket) do
+     client = socket.assigns.client_id
+     date =
+      case Date.from_iso8601(params["strength_progress"]["date"]) do
+        {:ok, d} -> d
+        _ -> nil
+      end
+         repRange = params["strength_progress"]["repRange"]
+     weight = String.to_integer(params["strength_progress"]["weight"])
+     case Strength.create_strength_progress(%{date: date, weight: weight, repRange: repRange, client_id: client, exercise_id: socket.assigns.exercise.id }) do
+       {:ok, strength}->
+        IO.inspect(strength)
+        strengthProgress = socket.assigns.strengthProgress ++[strength]
+        {:noreply, socket|> assign(showModal: false, strengthProgress: strengthProgress)}
+
+     _ ->{:noreply, socket|> put_flash(:error, "An error has been occured")}
+    end
   end
-  {:noreply, assign(socket, exercises: myExercises, filterApplied: filterApplied)}
-
-end
-def handle_event("changeExercise", params, socket) do
-  id = String.to_integer(params["id"])
-  exerciseSelected = Enum.find(socket.assigns.exercises, fn x-> x.id == id end)
-  workout = Repo.all(from w in Crohnjobs.Fitness.WorkoutDetail, where: w.exercise_id == ^id)|> Repo.preload([:exercise, :workout])|>Enum.filter(fn x-> x.workout.client_id == socket.assigns.client_id end)|>Enum.map(fn x-> %{
-    name: x.exercise.name,
-    date: x.workout.date,
-    weight: x.weight,
-    set: x.set,
-    reps: x.reps,
-    rir: x.rir
-
-  }
-  end)|> Enum.group_by(fn w-> w.name end)
-
-  series = Enum.map(workout, fn {name, records}->
-    %{
-      name: name,
-      data: Enum.map(records, fn r-> %{
-        x: Date.to_string(r.date),
-        y: r.weight
-
-      } end)
-    }
-
-  end)
 
 
-  chart =
-    LiveCharts.build(%{
-      type: :line,
-     series: series,
-      options: %{
-        xaxis: %{type: "datetime", title: %{text: "Date"}},
-        yaxis: %{title: %{text: "Weight (kg)"}},
-        stroke: %{curve: "smooth"}
-      }
-    })
-IO.inspect(chart)
+    def render(assigns) do
+      ~H"""
+      <div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto">
+          <!-- Header Section -->
+          <div class="bg-white rounded-2xl shadow-lg p-8 mb-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                  {@exercise.name}
+                </h1>
+                <p class="text-gray-600">Track your strength progress over time</p>
+              </div>
+              <button
+                phx-click="openModal"
+                class="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                Add Progress
+              </button>
+            </div>
+          </div>
 
+          <!-- Modal -->
+          <%= if @showModal do %>
+            <div class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+              <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
+                <div class="p-6 border-b border-gray-200">
+                  <h2 class="text-2xl font-bold text-gray-900">Add New Progress</h2>
+                  <p class="text-gray-600 text-sm mt-1">Record your latest workout performance</p>
+                </div>
 
-  {:noreply, assign(socket, workout: workout, chart: chart,
-   exerciseSelected: exerciseSelected)}
+                <.form phx-submit="saveProgress" for={@newExerciseForm}>
+                  <div class="p-6 space-y-5">
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">Date</label>
+                      <.input
+                        required
+                        type="date"
+                        field={@newExerciseForm[:date]}
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      />
+                    </div>
 
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">Rep Range</label>
+                      <.input
+                        type="select"
+                        options={["3-5","5-8","8-10", "10-12","12-14","15+"]}
+                        required
+                        field={@newExerciseForm[:repRange]}
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      />
+                    </div>
 
-end
-def mount(params, _session, socket) do
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">Weight</label>
+                      <.input
+                        type="number"
+                        field={@newExerciseForm[:weight]}
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      />
+                    </div>
+                  </div>
 
-  id = String.to_integer(params["id"])
+                  <div class="p-6 bg-gray-50 rounded-b-2xl flex gap-3">
+                    <button
+                      type="button"
+                      phx-click="openModal"
+                      class="flex-1 bg-white border-2 border-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-all duration-200">
+                      Cancel
+                    </button>
+                    <.button class="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-200">
+                      Save Progress
+                    </.button>
+                  </div>
+                </.form>
+              </div>
+            </div>
+          <% end %>
 
-
- exerciseSelected = 50
-
-  exercises = Exercise.list_exercises()
-  exerciseSelected = Enum.find(exercises, fn x-> x.id == exerciseSelected end)
-workout = Repo.all(from w in Crohnjobs.Fitness.WorkoutDetail, where: w.exercise_id == 50)|> Repo.preload([:exercise, :workout])|>Enum.filter(fn x-> x.workout.client_id == id end)|>Enum.map(fn x-> %{
-  name: x.exercise.name,
-  id: x.exercise.id,
-  date: x.workout.date,
-  weight: x.weight,
-  set: x.set,
-  reps: x.reps,
-  rir: x.rir
-
-}
-end)|> Enum.group_by(fn w-> w.name end)
-IO.inspect(workout)
-
-
-series = Enum.map(workout, fn {name, records}->
-  %{
-    name: name,
-    date: Enum.map(records, fn r-> %{
-      x: Date.to_string(r.date),
-      y: r.weight
-
-    } end)
-  }
-
-end)
-
-
-chart =
-  LiveCharts.build(%{
-    type: :line,
-   series: series,
-    options: %{
-      xaxis: %{type: "datetime", title: %{text: "Date"}},
-      yaxis: %{title: %{text: "Weight (kg)"}},
-      stroke: %{curve: "smooth"}
-    }
-  })
-  IO.inspect(chart)
-
-
-
-  {:ok, assign(socket, chart: chart, filterApplied: "All", workout: workout, exercises: exercises, allExercises: exercises, exerciseSelected: exerciseSelected, client_id: id)}
-
-end
- def render(assigns) do
- ~H"""
-
-
- <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Filter By Type -->
-    <div>
-      <h3 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
-        <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-        </svg>
-        Filter By Type
-      </h3>
-
-      Applied {@filterApplied}
-      <div class="flex flex-wrap gap-2">
-        <.button
-        phx-click="filterByType"
-        phx-value-name="ALL"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filterApplied == "ALL",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          All Types
-        </.button>
-
-        <.button
-        phx-click="filterByType"
-        phx-value-name="Chest"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filterApplied == "Chest",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Chest
-        </.button>
-
-        <.button
-        phx-click="filterByType"
-        phx-value-name="Back"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filterApplied == "Back",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Back
-        </.button>
-
-
-        <.button
-        phx-click="filterByType"
-        phx-value-name="Triceps"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filterApplied == "Triceps",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Triceps
-        </.button>
-
-
-        <.button
-        phx-click="filterByType"
-        phx-value-name="Biceps"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filterApplied == "Bicep",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Biceps
-        </.button>
-
-        <.button
-        phx-click="filterByType"
-        phx-value-name="Quads"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filterApplied == "Quads",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Quads
-        </.button>
-        <.button
-        phx-click="filterByType"
-        phx-value-name="Hamstrings"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filterApplied == "Quads",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Hamstrings
-        </.button>
-
-        <.button
-          phx-click="filterByType"
-          phx-value-name="Shoulders"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filterApplied == "Shoulders",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Shoulders
-        </.button>
+          <!-- Progress Table/Empty State -->
+          <%= if length(@strengthProgress) > 0 do %>
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                    <tr>
+                      <th class="text-left py-5 px-6 font-bold text-gray-900 text-sm uppercase tracking-wider">Date</th>
+                      <th class="text-left py-5 px-6 font-bold text-gray-900 text-sm uppercase tracking-wider">Rep Range</th>
+                      <th class="text-left py-5 px-6 font-bold text-gray-900 text-sm uppercase tracking-wider">Weight</th>
+                      <th class="text-right py-5 px-6 font-bold text-gray-900 text-sm uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200">
+                    <%= for strength <- @strengthProgress do %>
+                      <tr class="hover:bg-gray-50 transition-colors duration-150">
+                        <td class="py-5 px-6">
+                          <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-lg flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-700" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                              </svg>
+                            </div>
+                            <span class="font-semibold text-gray-900"><%= strength.date %></span>
+                          </div>
+                        </td>
+                        <td class="py-5 px-6">
+                          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800">
+                            <%= strength.repRange %> reps
+                          </span>
+                        </td>
+                        <td class="py-5 px-6">
+                          <span class="text-lg font-bold text-gray-900"><%= strength.weight %></span>
+                          <span class="text-sm text-gray-500 ml-1">KG</span>
+                        </td>
+                        <td class="py-5 px-6 text-right">
+                          <.button
+                            phx-value-id={strength.id}
+                            phx-click="deleteProgress"
+                            class="bg-red-50 hover:bg-red-100 text-red-700 font-semibold px-4 py-2 rounded-lg transition-all duration-200 border border-red-200">
+                            Delete
+                          </.button>
+                        </td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          <% else %>
+            <div class="bg-white rounded-2xl shadow-lg p-12 text-center">
+              <div class="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <h3 class="text-2xl font-bold text-gray-900 mb-2">No Progress Data Yet</h3>
+              <p class="text-gray-600 mb-6">Start tracking your strength progress by adding your first workout entry.</p>
+              <button
+                phx-click="openModal"
+                class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                Add Your First Entry
+              </button>
+            </div>
+          <% end %>
+        </div>
       </div>
-    </div>
-    </div>
-
-    <div class="grid grid-cols-2 lg:grid-cols-2 gap-8">
-          <!-- Exercise Library Section -->
-          <div class="bg-white rounded-xl shadow p-6 border">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-xl font-semibold text-gray-800">Exercise Library</h2>
-              <span class="text-sm text-gray-500">
-                <%= length(@exercises) %> available
-              </span>
-            </div>
-
-            <div class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
-              <%= for exercise <- @exercises do %>
-                <button
-                  phx-click="changeExercise"
-                  phx-value-id={exercise.id}
-                  class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-100 transition"
-                >
-                  <span class="font-medium text-gray-800"><%= exercise.name %></span>
-                  <span class="text-green-600 font-bold text-lg">+</span>
-                </button>
-              <% end %>
-            </div>
-          </div>
-          <ul class="space-y-6">
-
-
-
-  <%= for {name, workouts} <- @workout do %>
-
-
-    <li class="border p-4 rounded-lg shadow-sm">
-      <h2 class="text-lg font-semibold text-blue-500"><%= name %></h2>
-
-      <ul class="ml-4 mt-3 space-y-2">
-
-        <%= for set <- workouts do %>
-
-          <li class="text-black">
-            <p class="font-bold text--200">Date: <%= set.date %></p>
-            <p>Set <%= set.set %>:
-              <strong><%= set.weight %> kg × <%= set.reps %> reps</strong>
-              <span class="text-sm text-black">(RIR: <%= set.rir %>)</span>
-            </p>
-          </li>
-        <% end %>
-
-      </ul>
-    </li>
-  <% end %>
-</ul>
-
-
-
-
-          </div>
-
-
-
-
-
-
- <%= if map_size(@workout) == 0 do %>
-  No Record for the Given Exercise
-  <%else%>
-  <%end%>
-
-
-
-
-
-
-
-  """
-
-end
-end
+      """
+    end
+  end
