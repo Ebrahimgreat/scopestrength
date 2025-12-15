@@ -111,13 +111,22 @@ alias Crohnjobs.CustomExercises.CustomExercise
     end
     {:noreply, assign(socket, exercises: myExercises, filterApplied: filterApplied)}
   end
-  def handle_event("filterExerciseByEquipment",%{"name"=>name}, socket) do
-    filterByEquipment = name
-   exercises = Enum.filter(socket.assigns.exercises, &(&1.equipment == name))
-   {:noreply, assign(socket, exercises: exercises, filterByEquipment: filterByEquipment)}
 
+
+  def handle_event("searching", params, socket) do
+    search = params["searchExercise"] || ""
+
+    filtered_exercises =
+      if search == "" do
+        socket.assigns.exercises
+      else
+        Enum.filter(socket.assigns.exercises, fn ex ->
+          String.contains?(String.downcase(ex.name), String.downcase(search))
+        end)
+      end
+
+    {:noreply, assign(socket, exercises: filtered_exercises)}
   end
-
 
 
   def mount(_params, _session, socket) do
@@ -139,7 +148,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
     exercises = Exercise.list_exercises() ++ customExercises
 
-    {:ok, assign(socket, editExerciseForm: editExerciseForm, show_modal: show_modal, show_edit_exercise: show_edit_exercise, newExerciseForm: newExerciseForm, filterApplied: filterApplied, allExercises: exercises, exercises: exercises)}
+    {:ok, assign(socket, searchExercise: "", editExerciseForm: editExerciseForm, show_modal: show_modal, show_edit_exercise: show_edit_exercise, newExerciseForm: newExerciseForm, filterApplied: filterApplied, allExercises: exercises, exercises: exercises)}
   end
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
@@ -175,6 +184,9 @@ alias Crohnjobs.CustomExercises.CustomExercise
 <button phx-click="openModal" class="bg-green-600 text-white px-4 py-2 rounded">Create Exercise</button>
 
 
+<.form phx-change="searching">
+<.input label="Search Exercise" value={@searchExercise} field={@searchExercise}  name="searchExercise"/>
+</.form>
 
 
 

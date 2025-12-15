@@ -30,6 +30,7 @@ defmodule CrohnjobsWeb.Router do
   live "/chat", Chat
   live "/clients", Clients
   live "/clients/:id", ShowClient
+  live "/clients/:id/notes",ClientNotes
   live "/clients/:id/workouts",Workouts
   live "/clients/:id/strengthProgress", StrengthProgress
   live "/clients/:id/strengthProgress/:exercise_id",ExerciseProgress
