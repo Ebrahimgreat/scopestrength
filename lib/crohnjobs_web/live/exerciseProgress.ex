@@ -4,8 +4,7 @@ defmodule CrohnjobsWeb.ExerciseProgress do
   alias Crohnjobs.Strength.StrengthProgress
   alias Crohnjobs.Repo
   alias Crohnjobs.Trainers
-  alias Crohnjobs.CustomExercises
-  alias Crohnjobs.CustomExercises.CustomExercise
+
   alias Crohnjobs.Exercise
   import Ecto.Query
     use CrohnjobsWeb, :live_view
@@ -17,12 +16,14 @@ defmodule CrohnjobsWeb.ExerciseProgress do
       customParams = params["custom"]
       client_id= String.to_integer( params["id"])
 
-      exercise = if customParams=="no" do
-        Exercise.get_exercise!(exercise_id)
-      else
-        Repo.get_by(CustomExercise, %{id: exercise_id, trainer_id: trainer.id})
+      query =
+        from e in Crohnjobs.Exercises.Exercise,
+          where: e.id == ^exercise_id and
+                 (e.is_custom == false or (e.is_custom == true and e.trainer_id == ^trainer.id))
 
-      end
+      exercise = Repo.one(query)
+
+
 
       if exercise == nil do
         {:ok, socket|>put_flash(:error, "Invalid Id")|>redirect(to: "/")}

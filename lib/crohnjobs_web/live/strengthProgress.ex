@@ -1,6 +1,5 @@
 defmodule CrohnjobsWeb.StrengthProgress do
 alias Crohnjobs.Exercise
-alias Crohnjobs.CustomExercises.CustomExercise
 alias Crohnjobs.Trainers
 import Ecto.Query
 alias Crohnjobs.Repo
@@ -48,9 +47,12 @@ def mount(params, session, socket) do
   client_id= String.to_integer(params["id"])
 
 
-  customExercises = Repo.all(from c in CustomExercise, where: c.trainer_id==^trainer.id)
-  exercises = Exercise.list_exercises()++customExercises
-
+  exercises =
+    Repo.all(
+      from e in Crohnjobs.Exercises.Exercise,
+        where: e.is_custom == false or e.trainer_id == ^trainer.id,
+        order_by: [asc: e.name]
+    )
 
   {:ok, assign(socket, filterApplied: "All", searchExercise: "", exercises: exercises, client_id: client_id, allExercises: exercises)}
 end
@@ -269,7 +271,7 @@ end
                     <td class="py-4 px-6 text-gray-600"><%= exercise.type || "N/A" %></td>
                     <td class="py-4 px-6 text-gray-600"><%= exercise.equipment || "None" %></td>
                     <td class="py-4 px-6 text-gray-600">
-                  <%=if Map.has_key?(exercise, :trainer_id) do%>
+                  <%=if exercise.is_custom do%>
                   <.link navigate={~p"/clients/#{@client_id}/strengthProgress/#{exercise.id}?custom=yes"}>
                    <.button>
                    View

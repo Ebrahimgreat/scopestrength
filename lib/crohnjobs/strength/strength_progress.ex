@@ -9,7 +9,6 @@ defmodule Crohnjobs.Strength.StrengthProgress do
 
     belongs_to :client, Crohnjobs.Accounts.Client
     belongs_to :exercise, Crohnjobs.Exercises.Exercise
-    belongs_to :custom_exercise, Crohnjobs.Exercises.CustomExercise
 
     timestamps(type: :utc_datetime)
   end
@@ -17,7 +16,7 @@ defmodule Crohnjobs.Strength.StrengthProgress do
   @doc false
   def changeset(strength_progress, attrs) do
     strength_progress
-    |> cast(attrs, [:date, :client_id, :exercise_id, :custom_exercise_id, :repRange, :weight])
+    |> cast(attrs, [:date, :client_id, :exercise_id, :repRange, :weight])
     |> validate_required([:date, :client_id])
     |> validate_one_of_exercise()
   end

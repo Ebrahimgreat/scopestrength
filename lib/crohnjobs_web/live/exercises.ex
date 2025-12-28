@@ -146,7 +146,13 @@ alias Crohnjobs.CustomExercises.CustomExercise
      editExerciseForm = nil
 
 
-    exercises = Exercise.list_exercises()
+
+     exercises =
+      Repo.all(
+        from e in Crohnjobs.Exercises.Exercise,
+          where: e.is_custom == false or e.trainer_id == ^trainer.id,
+          order_by: [asc: e.name]
+      )
 
     {:ok, assign(socket, searchExercise: "", editExerciseForm: editExerciseForm, show_modal: show_modal, show_edit_exercise: show_edit_exercise, newExerciseForm: newExerciseForm, filterApplied: filterApplied, allExercises: exercises, exercises: exercises)}
   end

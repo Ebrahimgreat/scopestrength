@@ -149,7 +149,15 @@ alias Crohnjobs.CustomExercises.CustomExercise
     trainer = Trainers.get_trainer_byUserId(user.id)
 
     template_id = params["template_id"]
-    exercises = Exercise.list_exercises()
+
+    exercises =
+      Repo.all(
+        from e in Crohnjobs.Exercises.Exercise,
+          where: e.is_custom == false or e.trainer_id == ^trainer.id,
+          order_by: [asc: e.name]
+      )
+
+
 
     programmeTemplate =
       Repo.all(
