@@ -11,6 +11,8 @@ Client Management
 	•	✅ Add, edit, and remove clients
 	•	✅ Track client details: age, height, sex, notes
 	•	✅ Assign clients to specific trainers
+	•	✅ Manage client notes for session summaries and observations
+
 
 Programme Management
 	•	✅ Create and manage training programmes
