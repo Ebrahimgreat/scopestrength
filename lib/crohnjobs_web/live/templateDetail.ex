@@ -11,6 +11,8 @@ alias Crohnjobs.CustomExercises.CustomExercise
   import Ecto.Query
 
   def handle_event("addExercise", params, socket) do
+
+
    exercise_id = String.to_integer(params["id"])
    programmeDetails = socket.assigns.programmeDetails
    IO.inspect(programmeDetails)
@@ -38,12 +40,12 @@ alias Crohnjobs.CustomExercises.CustomExercise
   def handle_event("createExercise", params, socket) do
     user = socket.assigns.current_user
     trainer = Trainers.get_trainer_byUserId(user.id)
-    name = params["custom_exercise"]["name"]
-    type = params["custom_exercise"]["type"]
-    equipment = params["custom_exercise"]["equipment"]
-    case CustomExercises.create_custom_exercise(%{name: name, equipment: equipment, type: type, trainer_id: trainer.id}) do
-      {:ok, customExercise}->
-        exercises = socket.assigns.exercises ++ [customExercise]
+    name = params["exercise"]["name"]
+    type = params["exercise"]["type"]
+    equipment = params["exercise"]["equipment"]
+    case Exercise.create_exercise(%{name: name, equipment: equipment, type: type, trainer_id: trainer.id, is_custom: true}) do
+      {:ok, exercise}->
+        exercises = socket.assigns.exercises ++ [exercise]
       {:noreply,socket|> assign(show_modal: false, exercises: exercises)|> put_flash(:info, "exercise Created")}
       _ -> {:noreply, socket|> put_flash(:error, "An error has occured")}
     end
@@ -74,6 +76,22 @@ alias Crohnjobs.CustomExercises.CustomExercise
          filter_by_type: name
        )}
     end
+  end
+
+  def handle_event("searchExercises", %{"key" => _key, "value" => value}, socket) do
+    q = String.trim(value || "")
+
+    filtered =
+      socket.assigns.allExercises
+      |> Enum.filter(fn ex ->
+        String.contains?(String.downcase(ex.name || ""), String.downcase(q || ""))
+      end)
+
+    {:noreply, assign(socket, exercises: filtered, q: q)}
+  end
+
+  def handle_event("searchExercises", _params, socket) do
+    {:noreply, socket}
   end
   def handle_event("deleteExercise", params, socket) do
     id = String.to_integer(params["id"])
@@ -125,15 +143,13 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
 
 
-    newExerciseForm = CustomExercise.changeset(%CustomExercise{}, %{})|> to_form()
+    newExerciseForm = Crohnjobs.Exercises.Exercise.changeset(%Crohnjobs.Exercises.Exercise{}, %{})|> to_form()
 
     user = socket.assigns.current_user
     trainer = Trainers.get_trainer_byUserId(user.id)
-    customExercises = Repo.all(from c in CustomExercise, where: c.trainer_id == ^trainer.id)
-
 
     template_id = params["template_id"]
-    exercises = Exercise.list_exercises() ++ customExercises
+    exercises = Exercise.list_exercises()
 
     programmeTemplate =
       Repo.all(
@@ -143,7 +159,12 @@ alias Crohnjobs.CustomExercises.CustomExercise
       )
       changesets = Enum.map(programmeTemplate, fn template-> template|> Programmes.change_programme_details()|> to_form() end)
 
-      {:ok, assign(socket, allExercises: exercises, filter_by_type: "ALL", newExerciseForm: newExerciseForm, show_modal: show_modal, template_id: template_id, programmeDetails: changesets, exercises: exercises)}
+      socket =
+      socket
+      |> assign(allExercises: exercises, filter_by_type: "ALL", newExerciseForm: newExerciseForm, show_modal: show_modal, template_id: template_id, programmeDetails: changesets, exercises: exercises)
+      |> assign_new(:q, fn -> "" end)
+
+    {:ok, socket}
 
   end
 
@@ -166,7 +187,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
       <p> Create a new Exercise</p>
       <.input  type="text" required label="name" field={@newExerciseForm[:name]}/>
-      <.input type="select" options = {["Chest","Back","Quads","Shoulders","Abs","Bicep","Tricep"]} field={@newExerciseForm[:type]}/>
+      <.input type="select" options = {["Chest","Back","Quads","Shoulders","Abs","Biceps","Triceps", "Hamstrings"]} field={@newExerciseForm[:type]}/>
       <.input type="select" field={@newExerciseForm[:equipment]} options={["Dumbell","Cable","Barbell", "Machine", "Plate"]}/>
       <.button>
       Submit
@@ -193,7 +214,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
         Filter By Type
       </h3>
 
-      Applied {@filter_by_type}
+      <p class="text-sm text-gray-600">Applied: <span class="font-semibold"><%= if @filter_by_type == "ALL", do: "All types", else: @filter_by_type %></span></p>
       <div class="flex flex-wrap gap-2">
         <.button
         phx-click="filterByType"
@@ -321,6 +342,19 @@ alias Crohnjobs.CustomExercises.CustomExercise
               <span class="text-sm text-gray-500">
                 <%= length(@exercises) %> available
               </span>
+            </div>
+
+            <div class="mb-4">
+              <.input
+                type="search"
+                name="q"
+                id="exercise-search"
+                value={@q}
+                phx-debounce="300"
+                phx-keyup="searchExercises"
+                placeholder="Search exercises by name..."
+                class="w-full rounded-md"
+              />
             </div>
 
             <div class="divide-y divide-gray-200 max-h-96 overflow-y-auto">

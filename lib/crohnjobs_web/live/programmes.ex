@@ -166,7 +166,7 @@ end
               <div class="mt-6">
                 <.button
                   type="button"
-                  phx-click="toggleAddForm"
+                  phx-click="addNewProgramme"
                   class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                 >
                   <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,50 +1,43 @@
-Programme Name: Arnold Split
-Programme Description: Lets Try it Funning.
+Programme Name: Upper Lower Push Pull Legs
+Programme Description: This is a 5 day upper lower push pull legs
 
-Template : Chest and Back 1
-  Exercise: Dumbell Chest Supported Row, Set: 3, Reps: 10-12
-  Exercise: Dumbbell Pullover, Set: 2, Reps: 10-12
-  Exercise: Dumbbell Fly, Set: 2, Reps: 10-12
-  Exercise: Chest Dips, Set: 3, Reps: 10
-  Exercise: Pull Up, Set: 3, Reps: 10-12
-  Exercise: Incline Barbell Press, Set: 3, Reps: 10-12
+Template : Upper
+  Exercise: Incline Dumbbell Press, Set: 2, Reps: 5-8
+  Exercise: Dumbbell Fly, Set: 2, Reps: 5-8
+  Exercise: Pull-Up, Set: 2, Reps: 5-6
+  Exercise: Dumbbell Row (One Arm), Set: 2, Reps: 10-12
+  Exercise: Overhead Press, Set: 2, Reps: 5-6
+  Exercise: JM Press, Set: 2, Reps: 10-12
+  Exercise: Incline Preacher Curl, Set: 2, Reps: 10-12
 
-Template : Chest and Back 2
-  Exercise: Machine Chest Supported Row , Set: 3, Reps: 10-12
-  Exercise: Incline Chest Fly, Set: 2, Reps: 10-12
-  Exercise: Barbell Shrugs, Set: 4, Reps: 10-12
-  Exercise: Machine Chest Press, Set: 3, Reps: 10-12
-  Exercise: Decline Dumbbell Press, Set: 3, Reps: 10-12
-  Exercise: Lat Pulldown, Set: 3, Reps: 10-12
+Template : Lower
+  Exercise: Lying Leg Curl, Set: 2, Reps: 5-8
+  Exercise: Back Extension, Set: 2, Reps: 5-8
+  Exercise: Leg Press, Set: 2, Reps: 5-8
+  Exercise: Leg Extension(Single), Set: 2, Reps: 8-10
+  Exercise: Hip Adductors, Set: 2, Reps: 10-12
+  Exercise: Leg Press Calf Raise, Set: 4, Reps: 10-15
 
-Template : Shoulder and Arms 1
-  Exercise: Lateral Raise, Set: 3, Reps: 10-12
-  Exercise: Preacher Curl, Set: 3, Reps: 10-12
-  Exercise: Rear Delt Fly, Set: 3, Reps: 10-12
-  Exercise: Tricep Cable Kickback, Set: 3, Reps: 10-12
-  Exercise: Dumbell Curl, Set: 3, Reps: 10-12
-  Exercise: Overhead Cable Extension, Set: 3, Reps: 10-12
+Template : Push
+  Exercise: Dumbbell Bench Press, Set: 2, Reps: 5-8
+  Exercise: Incline Smith Machine, Set: 2, Reps: 5-8
+  Exercise: Upright Row, Set: 2, Reps: 8-10
+  Exercise: Front Raise, Set: 2, Reps: 10-12
+  Exercise: JM Press, Set: 2, Reps: 10-12
+  Exercise: Tricep Pushdown, Set: 2, Reps: 10-12
 
-Template : Shoulder and Arms 2
-  Exercise: Spider Curls, Set: 3, Reps: 10-12
-  Exercise: Lateral Raise, Set: 3, Reps: 10-12
-  Exercise: Close Grip Bench Press, Set: 3, Reps: 10-12
-  Exercise: Incline Dumbbell Curl, Set: 3, Reps: 10-12
-  Exercise: Skull Crusher, Set: 3, Reps: 10-12
-  Exercise: Machine Lateral Raises, Set: 3, Reps: 10-12
+Template : Pull
+  Exercise: Lat Pulldown, Set: 2, Reps: 8-10
+  Exercise: Dumbbell Row (One Arm), Set: 2, Reps: 10-12
+  Exercise: Hammer Curl, Set: 2, Reps: 10-12
+  Exercise: Face Pulls, Set: 2, Reps: 10-12
+  Exercise: Incline Preacher Curl, Set: 2, Reps: 10-12
+  Exercise: Lat Prayer, Set: 2, Reps: 10-12
 
-Template : Legs 1
-  Exercise: Standing Calf Raise, Set: 5, Reps: 10-12
-  Exercise: Romanian Deadlift, Set: 3, Reps: 10-12
-  Exercise: Lying Leg Curl, Set: 3, Reps: 10-12
-  Exercise: Bulgarian Split Squat, Set: 3, Reps: 10-12
-  Exercise: Leg Extension(One Leg), Set: 2, Reps: 10-12
-
-Template : Legs 2
-  Exercise: Standing Calf Raise, Set: 5, Reps: 10
-  Exercise: Seated Machine Hinge, Set: 3, Reps: 10-12
-  Exercise: Leg Extension(One Leg), Set: 2, Reps: 10-12
-  Exercise: Lying Leg Curl, Set: 3, Reps: 10-12
-  Exercise: Leg Press, Set: 3, Reps: 10-12
-  Exercise: Hip Abductor, Set: 3, Reps: 10-12
+Template : Legs
+  Exercise: Stiff Leg Deadlift, Set: 2, Reps: 5-6
+  Exercise: Snatch Grip(Deadlift), Set: 2, Reps: 6-8
+  Exercise: Leg Extension(Single), Set: 2, Reps: 5-8
+  Exercise: Cable Crunch, Set: 4, Reps: AMRAP
+  Exercise: Leg Press Calf Raise, Set: 4, Reps: 10-15
 
