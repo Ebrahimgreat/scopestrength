@@ -159,8 +159,16 @@ alias Crohnjobs.CustomExercises.CustomExercise
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
+<div class="min-h-screen bg-zinc-50">
+  <!-- Header -->
+  <div class="w-full bg-gradient-to-r from-green-600 to-teal-700 text-white px-6 lg:px-10 py-8">
+    <h1 class="text-3xl font-bold tracking-tight">Exercise Library</h1>
+    <p class="mt-2 text-green-100 text-lg">Browse and manage your exercise collection</p>
+  </div>
 
-<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+  <!-- Main Content -->
+  <div class="w-full px-6 lg:px-10 py-8">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
 
 
 
@@ -506,10 +514,8 @@ alias Crohnjobs.CustomExercises.CustomExercise
           </div>
         <% end %>
       </div>
-
-
-
-
+  </div>
+</div>
 
 
 

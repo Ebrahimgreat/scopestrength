@@ -34,10 +34,10 @@ defmodule CrohnjobsWeb.Clients do
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div class="min-h-screen bg-zinc-50">
       <!-- Header Section -->
       <div class="bg-white shadow-lg border-b border-gray-100">
-        <div class="max-w-7xl mx-auto px-6 py-8">
+        <div class="w-full px-6 lg:px-10 py-8">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
               <div class="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg">
@@ -65,7 +65,7 @@ defmodule CrohnjobsWeb.Clients do
       </div>
 
       <!-- Stats Section -->
-      <div class="max-w-7xl mx-auto px-6 py-8">
+      <div class="w-full px-6 lg:px-10 py-8">
         <div class="mb-8">
           <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300 max-w-sm">
             <div class="flex items-center justify-between">

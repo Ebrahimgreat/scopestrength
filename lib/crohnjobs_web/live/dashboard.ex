@@ -32,36 +32,41 @@ defmodule CrohnjobsWeb.Dashboard do
   def render(assigns) do
     ~H"""
 
-  <div class="w-full bg-gradient-to-r from-blue-600 to-purple-700 text-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="w-full min-h-screen bg-zinc-50">
+    <!-- Header -->
+    <div class="w-full bg-gradient-to-r from-blue-600 to-purple-700 text-white px-6 lg:px-10 py-8">
       <h1 class="text-3xl font-bold tracking-tight">Trainer Dashboard</h1>
       <p class="mt-2 text-blue-100 text-lg">
         Welcome back, <span class="font-semibold"><%= @name %></span>! How is it going?
       </p>
     </div>
 
+    <!-- Main Content -->
+    <div class="w-full px-6 lg:px-10 py-8">
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-              </svg>
-            </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-2xl p-6 shadow ring-1 ring-black/5 flex items-center gap-4">
+          <div class="p-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+            </svg>
           </div>
           <div class="ml-4 flex-1">
-            <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Number of Clients</h3>
-            <p class="text-2xl font-bold text-gray-900"><%= length(@data.clients) %></p>
-            <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide">
-            Total Number of Programmes
-            </h4>
-            <p class="text-2xl font-bold text-gray-900">
-            <%=length(@data.programmes)%>
-            </p>
+            <h3 class="text-sm font-medium text-zinc-500 uppercase tracking-wide">Total Clients</h3>
+            <p class="text-3xl font-bold text-zinc-900"><%= length(@data.clients) %></p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow ring-1 ring-black/5 flex items-center gap-4">
+          <div class="p-3 rounded-lg bg-gradient-to-r from-green-400 to-emerald-500 text-white flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h4l3 8 4-16 3 8h4"></path>
+            </svg>
+          </div>
+          <div class="ml-4 flex-1">
+            <h3 class="text-sm font-medium text-zinc-500 uppercase tracking-wide">Programmes</h3>
+            <p class="text-3xl font-bold text-zinc-900"><%= length(@data.programmes) %></p>
           </div>
         </div>
       </div>

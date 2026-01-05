@@ -55,9 +55,9 @@ end
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-zinc-50">
     <div class="bg-gradient-to-r from-purple-600 to-blue-700 text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="w-full px-6 lg:px-10 py-8">
           <h1 class="text-3xl font-bold tracking-tight">Training Programmes</h1>
           <p class="mt-2 text-purple-100 text-lg">
             Manage your custom training programmes, <%= @name %>
@@ -65,7 +65,7 @@ end
         </div>
       </div>
 
-          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <div class="w-full px-6 lg:px-10 py-4">
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold text-gray-900 flex items-center">
                 <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
