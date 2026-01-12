@@ -29,11 +29,21 @@ defmodule CrohnjobsWeb.UserAuth do
     token = Account.generate_user_session_token(user)
     user_return_to = get_session(conn, :user_return_to)
 
+    redirect_path = user_return_to || role_based_path(user)
+
     conn
     |> renew_session()
     |> put_token_in_session(token)
     |> maybe_write_remember_me_cookie(token, params)
-    |> redirect(to: user_return_to || signed_in_path(conn))
+    |> redirect(to: redirect_path)
+  end
+
+  defp role_based_path(user) do
+    case user.role do
+      "trainer" -> ~p"/trainer"
+      "client" -> ~p"/client"
+      _ -> ~p"/"
+    end
   end
 
   defp maybe_write_remember_me_cookie(conn, token, %{"remember_me" => "true"}) do
@@ -83,7 +93,7 @@ defmodule CrohnjobsWeb.UserAuth do
     conn
     |> renew_session()
     |> delete_resp_cookie(@remember_me_cookie)
-    |> redirect(to: ~p"/")
+    |> redirect(to: ~p"/users/log_in")
   end
 
   @doc """

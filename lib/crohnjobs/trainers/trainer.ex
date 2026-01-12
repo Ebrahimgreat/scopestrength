@@ -8,6 +8,7 @@ defmodule Crohnjobs.Trainers.Trainer do
     belongs_to :user, Crohnjobs.Account.User
     has_many :clients, Crohnjobs.Clients.Client
     has_many :programmes, Crohnjobs.Programmes.Programme
+    has_many :invites, Crohnjobs.Invites.Invite
 
     timestamps(type: :utc_datetime)
   end

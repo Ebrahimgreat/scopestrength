@@ -15,6 +15,9 @@ defmodule CrohnjobsWeb.UserSessionController do
   end
 
   def create(conn, params) do
+    user_email= params["user"]["email"]
+    user = Account.get_user_by_email(user_email)
+    IO.inspect(user)
     create(conn, params, "Welcome back!")
   end
 

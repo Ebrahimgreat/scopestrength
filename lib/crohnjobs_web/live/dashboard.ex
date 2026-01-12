@@ -1,10 +1,13 @@
 defmodule CrohnjobsWeb.Dashboard do
+  alias CrohnjobsWeb.Clients
   alias Crohnjobs.Repo
   alias Crohnjobs.Clients.Client
   use CrohnjobsWeb, :live_view
   alias Crohnjobs.Clients
   alias Crohnjobs.Trainers.Trainer
   alias Crohnjobs.Trainers
+
+
 
 
   def handle_event("updateStatus", params, socket) do
@@ -18,16 +21,39 @@ defmodule CrohnjobsWeb.Dashboard do
 
   end
   def mount(_params, _session, socket) do
-
-
     user = socket.assigns.current_user
 
-    trainers = Trainers.get_trainer_byUserId(user.id)
-    data= Repo.get(Trainer, trainers.id)|>Repo.preload([:programmes,:clients])
+    case user.role do
+      "trainer" ->
+        trainer = Trainers.get_trainer_byUserId(user.id)
 
-    {:ok, assign(socket, name: user.name, data: data )}
+        data =
+          Repo.get(Trainer, trainer.id)
+          |> Repo.preload([:programmes, :clients])
+
+        {:ok,
+         socket
+         |> assign(:role, :trainer)
+         |> assign(:name, user.name)
+         |>assign(:message, "Trainer Dashboard")
+         |> assign(:data, data)}
+
+
+      "client" ->
+        client = Repo.get_by(Client,%{user_id: user.id})
+
+        {:ok,
+         socket
+         |> assign(:role, :client)
+         |> assign(:name, user.name)
+         |> assign(:message, "Client Dashboard")
+         |> assign(:client, client)}
+         |>assign(:data, :"")
+
+      _ ->
+        {:halt, redirect(socket, to: "/login")}
+    end
   end
-
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
@@ -35,7 +61,7 @@ defmodule CrohnjobsWeb.Dashboard do
   <div class="w-full min-h-screen bg-zinc-50">
     <!-- Header -->
     <div class="w-full bg-gradient-to-r from-blue-600 to-purple-700 text-white px-6 lg:px-10 py-8">
-      <h1 class="text-3xl font-bold tracking-tight">Trainer Dashboard</h1>
+      <h1 class="text-3xl font-bold tracking-tight"> </h1>
       <p class="mt-2 text-blue-100 text-lg">
         Welcome back, <span class="font-semibold"><%= @name %></span>! How is it going?
       </p>
@@ -45,7 +71,7 @@ defmodule CrohnjobsWeb.Dashboard do
     <div class="w-full px-6 lg:px-10 py-8">
 
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
         <div class="bg-white rounded-2xl p-6 shadow ring-1 ring-black/5 flex items-center gap-4">
           <div class="p-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white flex items-center justify-center">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,6 +95,8 @@ defmodule CrohnjobsWeb.Dashboard do
             <p class="text-3xl font-bold text-zinc-900"><%= length(@data.programmes) %></p>
           </div>
         </div>
+
+
       </div>
 
 
@@ -106,7 +134,7 @@ defmodule CrohnjobsWeb.Dashboard do
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= programme.description %></td>
                   <td>
-                    <.link navigate={~p"/programmes/#{programme.id}"}>
+                    <.link navigate={~p"/trainer/programmes/#{programme.id}"}>
                       <.button>View</.button>
                     </.link>
                   </td>
@@ -167,7 +195,7 @@ defmodule CrohnjobsWeb.Dashboard do
                       <% end %>
                     </td>
                     <td>
-                      <.link navigate={~p"/clients/#{client.id}"}>
+                      <.link navigate={~p"/trainer/clients/#{client.id}"}>
                         <.button>View</.button>
                       </.link>
                     </td>

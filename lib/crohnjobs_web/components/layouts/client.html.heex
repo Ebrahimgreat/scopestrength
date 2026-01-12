@@ -1,0 +1,38 @@
+<nav class="bg-blue-600 shadow-sm">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between h-16">
+      <div class="flex items-center">
+        <.link href={~p"/client"} class="text-xl font-bold text-white hover:text-green-100">
+          Client Portal
+        </.link>
+      </div>
+
+      <div class="hidden md:flex items-center space-x-6">
+        <.link href={~p"/client"} class="text-sm font-medium text-white hover:text-green-100 transition-colors">
+          Dashboard
+        </.link>
+          <.link href={~p"/client/chat"} class="text-sm font-medium text-white hover:text-green-100 transition-colors">
+          Chat
+        </.link>
+
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <span class="text-sm text-green-100 hidden sm:block">
+          {@current_user.name}
+        </span>
+        <.link href={~p"/users/settings"} class="text-sm font-medium text-white hover:text-green-100 transition-colors">
+          Settings
+        </.link>
+        <.link href={~p"/users/log_out"} method="delete" class="text-sm font-medium text-red-200 hover:text-white transition-colors">
+          Log out
+        </.link>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main class="flex-1 w-full p-4">
+  <.flash_group flash={@flash} />
+  {@inner_content}
+</main>

@@ -255,7 +255,7 @@ defmodule CrohnjobsWeb.ProgrammeShow do
                        <td class="px-8 py-6 whitespace-nowrap text-right">
                          <div class="flex items-center justify-end space-x-3">
                            <.link
-                             navigate={~p"/programmes/#{@programmeId}/template/#{template.id}"}
+                             navigate={~p"/traine/programmes/#{@programmeId}/template/#{template.id}"}
                              class="group bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2 rounded-lg font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center space-x-2"
                            >
                              <svg class="w-4 h-4 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">

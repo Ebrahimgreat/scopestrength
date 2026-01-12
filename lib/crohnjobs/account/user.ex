@@ -5,6 +5,7 @@ defmodule Crohnjobs.Account.User do
   schema "users" do
     field :email, :string
     field :name, :string
+    field :role, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
@@ -14,6 +15,20 @@ defmodule Crohnjobs.Account.User do
     timestamps(type: :utc_datetime)
   end
 
+  @spec registration_changeset(
+          {map(),
+           %{
+             optional(atom()) =>
+               atom()
+               | {:array | :assoc | :embed | :in | :map | :parameterized | :supertype | :try,
+                  any()}
+           }}
+          | %{
+              :__struct__ => atom() | %{:__changeset__ => any(), optional(any()) => any()},
+              optional(atom()) => any()
+            },
+          :invalid | %{optional(:__struct__) => none(), optional(atom() | binary()) => any()}
+        ) :: Ecto.Changeset.t()
   @doc """
   A user changeset for registration.
 
@@ -39,7 +54,7 @@ defmodule Crohnjobs.Account.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password, :name])
+    |> cast(attrs, [:email, :password, :name, :role])
     |> validate_email(opts)
     |> validate_password(opts)
   end

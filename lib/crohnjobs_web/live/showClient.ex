@@ -75,7 +75,7 @@ end
               </div>
             </div>
             <.link
-              navigate={~p"/clients"}
+              navigate={~p"/trainer/clients"}
               class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200"
             >
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,7 +180,7 @@ end
                     </div>
 
                     <div class="flex justify-end">
-                      <.link navigate={~p"/programmes/#{@programmeUser.programme_id}"} class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105">
+                      <.link navigate={~p"/trainer/programmes/#{@programmeUser.programme_id}"} class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105">
                         View Programme Details
                       </.link>
                     </div>
@@ -192,7 +192,7 @@ end
                   </div>
                 <% end %>
 
-                <.link navigate={~p"/client/#{@client.data.id}/programme"}>
+                <.link navigate={~p"/trainer/client/#{@client.data.id}/programme"}>
                   <.button class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg transition-all duration-200 transform hover:scale-105 w-full">
                     Change Programme
                   </.button>
@@ -209,7 +209,7 @@ end
                 <p class="text-gray-100 mt-1">Monitor the strength progress of the client</p>
               </div>
               <div class="p-6">
-                <.link navigate={~p"/clients/#{@client.data.id}/strengthProgress"}>
+                <.link navigate={~p"/trainer/clients/#{@client.data.id}/strengthProgress"}>
                   <.button class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg transition-all duration-200 transform hover:scale-105 w-full">
                     View Strength Progress
                   </.button>
@@ -226,7 +226,7 @@ end
                 <p class="text-indigo-100 mt-1">Add or review additional notes for the client</p>
               </div>
               <div class="p-6">
-                <.link navigate={~p"/clients/#{@client.data.id}/notes"}>
+                <.link navigate={~p"/trainer/clients/#{@client.data.id}/notes"}>
                   <.button class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg transition-all duration-200 transform hover:scale-105 w-full">
                     Manage Notes
                   </.button>

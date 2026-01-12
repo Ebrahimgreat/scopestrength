@@ -1,4 +1,5 @@
 defmodule CrohnjobsWeb.UserRegistrationLive do
+alias Crohnjobs.Clients
   use CrohnjobsWeb, :live_view
 
   alias Crohnjobs.Account
@@ -36,6 +37,7 @@ defmodule CrohnjobsWeb.UserRegistrationLive do
           <.input field={@form[:name]} type="text" label="Full name" required/>
           <.input field={@form[:email]} type="email" label="Email" required />
           <.input field={@form[:password]} type="password" label="Password" required />
+          <.input options={[{"Trainer","trainer"},{"Client","client"}]} label=" I am a" type="select"  field={@form[:role]}/>
 
           <p class="text-sm text-zinc-500 mt-2">By creating an account you agree to our <.link href="#" class="underline">terms</.link> and <.link href="#" class="underline">privacy policy</.link>.</p>
 
@@ -46,7 +48,7 @@ defmodule CrohnjobsWeb.UserRegistrationLive do
       </div>
 
       <p class="text-center text-sm mt-4 text-zinc-500">
-        Or <.link navigate={~p"/"} class="font-semibold hover:underline">Return home</.link>
+        Or <.link navigate={~p"/users/log_in"} class="font-semibold hover:underline">Log in Instead</.link>
       </p>
     </div>
     """
@@ -74,7 +76,12 @@ defmodule CrohnjobsWeb.UserRegistrationLive do
           )
 
         changeset = Account.change_user_registration(user)
-        Trainers.create_trainer(%{user_id: user.id, bio: "Weight Lifting"})
+      case user.role do
+        "trainer" -> Trainers.create_trainer(%{user_id: user.id, invite_code: Trainers.generate_unique_invite_code()})
+        "client"-> Clients.create_client(%{user_id: user.id})
+      end
+
+
         {:noreply, socket |> assign(trigger_submit: true) |> assign_form(changeset)}
 
       {:error, %Ecto.Changeset{} = changeset} ->

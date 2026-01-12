@@ -1,10 +1,19 @@
 defmodule CrohnjobsWeb.Router do
 
 
+
+
   use CrohnjobsWeb, :router
 
   import CrohnjobsWeb.UserAuth
   import Oban.Web.Router
+
+  pipeline :require_trainer do
+    plug CrohnjobsWeb.RequireRole, "trainer"
+  end
+  pipeline :require_client do
+    plug CrohnjobsWeb.Plugs.RequireRole, "client"
+  end
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -20,14 +29,31 @@ defmodule CrohnjobsWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", CrohnjobsWeb do
-  pipe_through [:browser, :require_authenticated_user]
-  live_session :require_authenticated_user,
-  on_mount: [{CrohnjobsWeb.UserAuth, :ensure_authenticated}] do
+
+
+  scope "/client", CrohnjobsWeb do
+    pipe_through [:browser, :require_authenticated_user]
+    live_session :client_session,
+      on_mount: [{CrohnjobsWeb.UserAuth, :ensure_authenticated},
+                 {CrohnjobsWeb.RequireRole, "client"}],
+      layout: {CrohnjobsWeb.Layouts, :client} do
+      live "/", ClientDashboard
+      live "/chat",ClientChat
+    end
+  end
 
 
 
-  live "/chat", Chat
+  scope "/trainer", CrohnjobsWeb do
+    pipe_through [:browser, :require_authenticated_user]
+    live_session :trainer_session,
+      on_mount: [{CrohnjobsWeb.UserAuth, :ensure_authenticated},
+                 {CrohnjobsWeb.RequireRole, "trainer"}],
+      layout: {CrohnjobsWeb.Layouts, :trainer} do
+
+
+  live "/chat", TrainerChat
+  live "/invites", Invites
   live "/clients", Clients
   live "/clients/:id", ShowClient
   live "/clients/:id/notes",ClientNotes
@@ -48,7 +74,6 @@ defmodule CrohnjobsWeb.Router do
   live "/users/settings", UserSettingsLive, :edit
   live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
   end
-  get "/download/workout", DownloadController, :workout
   oban_dashboard "/oban"
 
   end
@@ -78,14 +103,27 @@ defmodule CrohnjobsWeb.Router do
   ## Authentication routes
 
   scope "/", CrohnjobsWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :authenticated,
+      on_mount: [{CrohnjobsWeb.UserAuth, :ensure_authenticated}] do
+
+      live "/chat/:room", Chat
+      get "/download/workout", DownloadController, :workout
+
+    end
+  end
+  scope "/", CrohnjobsWeb do
     pipe_through [:browser, :redirect_if_user_is_authenticated]
 
     live_session :redirect_if_user_is_authenticated,
       on_mount: [{CrohnjobsWeb.UserAuth, :redirect_if_user_is_authenticated}] do
+      live "/", UserLoginLive, :new
       live "/users/register", UserRegistrationLive, :new
       live "/users/log_in", UserLoginLive, :new
       live "/users/reset_password", UserForgotPasswordLive, :new
       live "/users/reset_password/:token", UserResetPasswordLive, :edit
+
     end
 
     post "/users/log_in", UserSessionController, :create

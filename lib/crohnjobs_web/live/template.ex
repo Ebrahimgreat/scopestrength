@@ -67,7 +67,7 @@ end
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center space-x-4">
             <.link
-              navigate={~p"/programmes/#{@template.data.programme_id}"}
+              navigate={~p"/trainer/programmes/#{@template.data.programme_id}"}
               class="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
             >
               <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +83,7 @@ end
             </h1>
           </div>
           <.link
-            navigate={~p"/programmes/#{@template.data.programme_id}/template/#{@template.data.id}/details"}
+            navigate={~p"/trainer/programmes/#{@template.data.programme_id}/template/#{@template.data.id}/details"}
             class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200"
           >
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,7 +192,7 @@ end
               <p class="mt-1 text-sm text-gray-500">Add some exercises to get started with this template.</p>
               <div class="mt-6">
                 <.link
-                  navigate={~p"/programmes/#{@template.data.programme_id}/template/#{@template.data.id}/details"}
+                  navigate={~p"/trainer/programmes/#{@template.data.programme_id}/template/#{@template.data.id}/details"}
                   class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200"
                 >
                   <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

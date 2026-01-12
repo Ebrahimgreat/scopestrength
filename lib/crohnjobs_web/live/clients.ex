@@ -116,7 +116,7 @@ defmodule CrohnjobsWeb.Clients do
                   <!-- Action Buttons -->
                   <div class="flex space-x-3">
                     <.link
-                      navigate={~p"/clients/#{client.id}"}
+                      navigate={~p"/trainer/clients/#{client.id}"}
                       class="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-center py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm"
                     >
                       <div class="flex items-center justify-center space-x-2">

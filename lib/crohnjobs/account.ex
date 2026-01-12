@@ -318,11 +318,18 @@ defmodule Crohnjobs.Account do
       iex> get_user_by_reset_password_token("invalidtoken")
       nil
 
+
+
+
   """
 
   def update_name(%User{}= user, attrs) do
     user|> Ecto.Changeset.cast(attrs, [:name])
     |> Repo.update()
+  end
+
+  def update_role(%User{}= user,attrs) do
+    user|>Ecto.Changeset.cast(attrs,[:role])|>Repo.update()
   end
 
 
