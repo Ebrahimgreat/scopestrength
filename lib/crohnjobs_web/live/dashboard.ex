@@ -29,7 +29,7 @@ defmodule CrohnjobsWeb.Dashboard do
 
         data =
           Repo.get(Trainer, trainer.id)
-          |> Repo.preload([:programmes, :clients])
+          |> Repo.preload([:programmes, clients: [:user]])
 
         {:ok,
          socket
@@ -125,7 +125,7 @@ defmodule CrohnjobsWeb.Dashboard do
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                       <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                        <span class="text-sm font-medium text-white"><%= String.first(programme.name) %></span>
+                        <span class="text-sm font-medium text-white"><%= (programme.name) %></span>
                       </div>
                       <div class="ml-4">
                         <div class="text-sm font-medium text-gray-900"><%= programme.name %></div>
@@ -162,7 +162,6 @@ defmodule CrohnjobsWeb.Dashboard do
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active</th>
                   <th>View</th>
                 </tr>
@@ -173,16 +172,14 @@ defmodule CrohnjobsWeb.Dashboard do
                     <td class="px-6 py-4 whitespace-nowrap">
                       <div class="flex items-center">
                         <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                          <span class="text-sm font-medium text-white"><%= String.first(client.name) %></span>
+                          <span class="text-sm font-medium text-white"><%= String.first(client.user.name || "?") %></span>
                         </div>
                         <div class="ml-4">
-                          <div class="text-sm font-medium text-gray-900"><%= client.name %></div>
+                          <div class="text-sm font-medium text-gray-900"><%= client.user.name %></div>
                         </div>
                       </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <%= if client.age, do: "#{client.age} years", else: "<span class='text-gray-400'>Not specified</span>" %>
-                    </td>
+
                     <td class="px-6 py-4 whitespace-nowrap">
                       <%= if client.active do %>
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">

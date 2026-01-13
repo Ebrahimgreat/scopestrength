@@ -9,7 +9,7 @@ alias Crohnjobs.Trainers
   def mount(_params, session, socket) do
     user = socket.assigns.current_user
     trainer = Trainers.get_trainer_byUserId(user.id)
-    clients = Repo.all(from c in Client, where: c.trainer_id == ^trainer.id)
+    clients = Repo.all(from c in Client, where: c.trainer_id == ^trainer.id)|>Repo.preload(:user)
     {:ok, assign(socket, clients: clients)}
 
 
@@ -35,12 +35,12 @@ alias Crohnjobs.Trainers
               <div class="flex items-center px-4 py-4">
                 <div class="flex-shrink-0">
                   <div class="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-lg">
-                    <%= String.first(client.name || "?") |> String.upcase() %>
+                    <%= String.first(client.user.name || "?") |> String.upcase() %>
                   </div>
                 </div>
                 <div class="ml-4 flex-1">
                   <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium text-gray-900"><%= client.name %></p>
+                    <p class="text-sm font-medium text-gray-900"><%= client.user.name %></p>
                     <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>

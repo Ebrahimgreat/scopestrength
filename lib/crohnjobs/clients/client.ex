@@ -3,7 +3,6 @@ defmodule Crohnjobs.Clients.Client do
   import Ecto.Changeset
 
   schema "clients" do
-    field :name, :string
     field :age, :integer
     field :height, :decimal
     field :notes, :string
@@ -32,7 +31,7 @@ defmodule Crohnjobs.Clients.Client do
   @doc false
   def changeset(client, attrs) do
     client
-    |> cast(attrs, [ :name, :age, :user_id, :height, :notes, :sex, :trainer_id, :active])
+    |> cast(attrs, [:age, :user_id, :height, :notes, :sex, :trainer_id, :active])
 
 
 

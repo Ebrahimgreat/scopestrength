@@ -43,6 +43,7 @@ defmodule Crohnjobs.Clients do
   def get_clients_for_trainer(trainer_id) do
     from(c in Client,
       where: c.trainer_id == ^trainer_id,
+      preload: [:user]
     )
     |> Repo.all()
   end

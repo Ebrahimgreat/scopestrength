@@ -1,53 +1,23 @@
 defmodule CrohnjobsWeb.ShowClient do
   alias Crohnjobs.Trainers
-  alias Phoenix.LiveViewTest.View
-  alias Crohnjobs.Programmes.Programme
-  alias Crohnjobs.Clients
   alias Crohnjobs.Clients.Client
   alias Crohnjobs.Repo
-  alias Crohnjobs.Account
   alias Crohnjobs.Programmes.ProgrammeUser
   use CrohnjobsWeb, :live_view
-  import Ecto.Query
 
-  @spec handle_event(<<_::96>>, nil | maybe_improper_list() | map(), Phoenix.LiveView.Socket.t()) ::
-          {:noreply, any()}
-  def handle_event("updateClient", params, socket) do
-    client = socket.assigns.client.data
-    name = params["client"]["name"]
-    age =  String.to_integer(params["client"]["age"])
-    height = String.to_integer(params["client"]["height"])
-    sex = params["client"]["sex"]
-    notes = params["client"]["notes"]
-    case Clients.update_client(client, %{name: name, age: age, sex: sex, height: height, notes: notes }) do
-      {:ok, client}->
-        client = Clients.change_client(client)|> to_form()
-        {:noreply,  socket|> put_flash(:info, "Client Updated")|> assign(client: client)}
-        _ -> {:noreply, socket|> put_flash(:error, "Something Happened")}
-
-    end
-
-  end
-
-  def mount(params, session, socket) do
+  def mount(params, _session, socket) do
     user = socket.assigns.current_user
     trainer = Trainers.get_trainer_byUserId(user.id)
 
     id = String.to_integer(params["id"])
-   case Repo.get(Client,id) do
-    nil ->{:ok, socket|> put_flash(:error, "Client Not found")|>redirect(to: "/clients")}
+   case Repo.get(Client, id) |> Repo.preload(:user) do
+    nil -> {:ok, socket |> put_flash(:error, "Client Not found") |> redirect(to: "/clients")}
     client ->
       case client.trainer_id == trainer.id do
-true-> programmeUser = Repo.get_by(ProgrammeUser, client_id: client.id, is_active: true)|> Repo.preload(:programme)
- programmes =  case programmeUser do
-    nil -> nil
-    pu  -> pu
-  end
+        true ->
+          programmeUser = Repo.get_by(ProgrammeUser, client_id: client.id, is_active: true) |> Repo.preload(:programme)
 
-
-  clientForm = Clients.change_client(client)|>to_form()
-
-  {:ok, assign(socket, programmeUser: programmes,  client: clientForm)}
+          {:ok, assign(socket, programmeUser: programmeUser, client: client)}
 
 
       false->{:ok, socket|> put_flash(:error, "Client Does not Exist")}
@@ -66,11 +36,11 @@ end
             <div class="flex items-center space-x-6">
               <div class="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center shadow-lg">
                 <span class="text-3xl font-bold text-white">
-                  <%= String.first(@client.data.name || "C") |> String.upcase() %>
+                  <%= String.first(@client.user.name || "?") |> String.upcase() %>
                 </span>
               </div>
               <div>
-                <h1 class="text-4xl font-bold text-gray-900"><%= @client.data.name || "Client" %></h1>
+                <h1 class="text-4xl font-bold text-gray-900"><%= @client.user.name %></h1>
                 <p class="text-lg text-gray-600 mt-1">Client Profile & Management</p>
               </div>
             </div>
@@ -88,7 +58,7 @@ end
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-          <!-- Client Information Form -->
+          <!-- Client Information -->
           <div class="bg-white rounded-xl shadow-lg border-2 border-blue-200">
             <div class="bg-blue-600 px-6 py-4 rounded-t-xl">
               <h2 class="text-xl font-bold text-white flex items-center">
@@ -97,50 +67,39 @@ end
                 </svg>
                 Client Information
               </h2>
-              <p class="text-blue-100 mt-1">Update client details and personal information</p>
+              <p class="text-blue-100 mt-1">Client details and personal information</p>
             </div>
 
-            <div class="p-6">
-              <.form phx-submit="updateClient" for={@client} class="space-y-6">
-                <!-- Name & Age -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div class="bg-green-50 p-4 rounded-lg border-2 border-green-200">
-                    <label class="block text-sm font-bold text-green-700 mb-2">Full Name</label>
-                    <.input field={@client[:name]} class="w-full px-3 py-2 text-lg font-semibold border-2 border-green-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white" placeholder="Enter client's full name" />
-                  </div>
-                  <div class="bg-orange-50 p-4 rounded-lg border-2 border-orange-200">
-                    <label class="block text-sm font-bold text-orange-700 mb-2">Age</label>
-                    <.input field={@client[:age]} type="number" min="1" max="120" class="w-full px-3 py-2 text-lg font-semibold border-2 border-orange-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-white" />
-                  </div>
+            <div class="p-6 space-y-4">
+              <!-- Name & Age -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-green-50 p-4 rounded-lg border-2 border-green-200">
+                  <label class="block text-sm font-bold text-green-700 mb-2">Full Name</label>
+                  <p class="text-lg font-semibold text-gray-900"><%= @client.user.name %></p>
                 </div>
+                <div class="bg-orange-50 p-4 rounded-lg border-2 border-orange-200">
+                  <label class="block text-sm font-bold text-orange-700 mb-2">Age</label>
+                  <p class="text-lg font-semibold text-gray-900"><%= @client.age || "Not specified" %></p>
+                </div>
+              </div>
 
-                <!-- Height & Gender -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div class="bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
-                    <label class="block text-sm font-bold text-purple-700 mb-2">Height (cm)</label>
-                    <.input field={@client[:height]} type="number" min="1" max="300" class="w-full px-3 py-2 text-lg font-semibold border-2 border-purple-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 bg-white" />
-                  </div>
-                  <div class="bg-pink-50 p-4 rounded-lg border-2 border-pink-200">
-                    <label class="block text-sm font-bold text-pink-700 mb-2">Gender</label>
-                    <.input type="select" options={[{"Male", "male"}, {"Female", "female"}, {"Other", "other"}]} field={@client[:sex]} class="w-full px-3 py-2 text-lg font-semibold border-2 border-pink-300 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 bg-white" />
-                  </div>
+              <!-- Height & Gender -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
+                  <label class="block text-sm font-bold text-purple-700 mb-2">Height (cm)</label>
+                  <p class="text-lg font-semibold text-gray-900"><%= @client.height || "Not specified" %></p>
                 </div>
+                <div class="bg-pink-50 p-4 rounded-lg border-2 border-pink-200">
+                  <label class="block text-sm font-bold text-pink-700 mb-2">Gender</label>
+                  <p class="text-lg font-semibold text-gray-900"><%= String.capitalize(@client.sex || "Not specified") %></p>
+                </div>
+              </div>
 
-                <!-- Notes -->
-                <div class="bg-indigo-50 p-4 rounded-lg border-2 border-indigo-200">
-                  <label class="block text-sm font-bold text-indigo-700 mb-2">Notes</label>
-                  <.input field={@client[:notes]} type="textarea" rows="4" class="w-full px-3 py-2 text-lg border-2 border-indigo-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 bg-white" placeholder="Add any additional notes about the client..." />
-                </div>
-
-                <div class="flex justify-end">
-                  <.button class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold text-lg shadow-lg transition-all duration-200 transform hover:scale-105">
-                    <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                    Update Client
-                  </.button>
-                </div>
-              </.form>
+              <!-- Notes -->
+              <div class="bg-indigo-50 p-4 rounded-lg border-2 border-indigo-200">
+                <label class="block text-sm font-bold text-indigo-700 mb-2">Notes</label>
+                <p class="text-lg text-gray-900"><%= @client.notes || "No notes" %></p>
+              </div>
             </div>
           </div>
 
@@ -192,7 +151,7 @@ end
                   </div>
                 <% end %>
 
-                <.link navigate={~p"/trainer/client/#{@client.data.id}/programme"}>
+                <.link navigate={~p"/trainer/client/#{@client.id}/programme"}>
                   <.button class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg transition-all duration-200 transform hover:scale-105 w-full">
                     Change Programme
                   </.button>
@@ -209,7 +168,7 @@ end
                 <p class="text-gray-100 mt-1">Monitor the strength progress of the client</p>
               </div>
               <div class="p-6">
-                <.link navigate={~p"/trainer/clients/#{@client.data.id}/strengthProgress"}>
+                <.link navigate={~p"/trainer/clients/#{@client.id}/strengthProgress"}>
                   <.button class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg transition-all duration-200 transform hover:scale-105 w-full">
                     View Strength Progress
                   </.button>
@@ -226,7 +185,7 @@ end
                 <p class="text-indigo-100 mt-1">Add or review additional notes for the client</p>
               </div>
               <div class="p-6">
-                <.link navigate={~p"/trainer/clients/#{@client.data.id}/notes"}>
+                <.link navigate={~p"/trainer/clients/#{@client.id}/notes"}>
                   <.button class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg transition-all duration-200 transform hover:scale-105 w-full">
                     Manage Notes
                   </.button>
