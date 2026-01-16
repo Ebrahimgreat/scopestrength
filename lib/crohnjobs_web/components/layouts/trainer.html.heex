@@ -1,50 +1,70 @@
-<nav class="bg-blue-600 shadow-sm">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between h-16">
-      <div class="flex items-center">
-        <.link href={~p"/trainer"} class="text-xl font-bold text-white hover:text-blue-100">
-          Trainer Portal
-        </.link>
-      </div>
-
-      <div class="hidden md:flex items-center space-x-6">
-        <.link href={~p"/trainer"} class="text-sm font-medium text-white hover:text-blue-100 transition-colors">
-          Dashboard
-        </.link>
-        <.link href={~p"/trainer/clients"} class="text-sm font-medium text-white hover:text-blue-100 transition-colors">
-          Clients
-        </.link>
-        <.link href={~p"/trainer/programmes"} class="text-sm font-medium text-white hover:text-blue-100 transition-colors">
-          Programmes
-        </.link>
-        <.link href={~p"/trainer/exercises"} class="text-sm font-medium text-white hover:text-blue-100 transition-colors">
-          Exercises
-        </.link>
-        <.link href={~p"/trainer/invites"} class="text-sm font-medium text-white hover:text-blue-100 transition-colors">
-          Invites
-        </.link>
-        <.link href={~p"/trainer/chat"} class="text-sm font-medium text-white hover:text-blue-100 transition-colors">
-          Chat
-        </.link>
-        
-      </div>
-
-      <div class="flex items-center space-x-4">
-        <span class="text-sm text-blue-100 hidden sm:block">
-          {@current_user.name}
-        </span>
-        <.link href={~p"/users/settings"} class="text-sm font-medium text-white hover:text-blue-100 transition-colors">
-          Settings
-        </.link>
-        <.link href={~p"/users/log_out"} method="delete" class="text-sm font-medium text-red-200 hover:text-white transition-colors">
-          Log out
-        </.link>
-      </div>
+<div class="min-h-screen flex bg-zinc-50">
+  <aside class="w-64 bg-blue-600 text-white flex flex-col">
+    <div class="px-6 py-5 border-b border-blue-500">
+      <.link href={~p"/trainer"} class="text-xl font-bold text-white hover:text-blue-100">
+        Trainer Portal
+      </.link>
+      <p class="text-xs text-blue-100 mt-1">{@current_user.name}</p>
     </div>
-  </div>
-</nav>
 
-<main class="flex-1 w-full p-4">
-  <.flash_group flash={@flash} />
-  {@inner_content}
-</main>
+    <nav class="flex-1 px-4 py-4 space-y-2">
+      <.link
+        href={~p"/trainer"}
+        class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-blue-500"
+      >
+        Dashboard
+      </.link>
+      <.link
+        href={~p"/trainer/clients"}
+        class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-blue-500"
+      >
+        Clients
+      </.link>
+      <.link
+        href={~p"/trainer/programmes"}
+        class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-blue-500"
+      >
+        Programmes
+      </.link>
+      <.link
+        href={~p"/trainer/exercises"}
+        class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-blue-500"
+      >
+        Exercises
+      </.link>
+      <.link
+        href={~p"/trainer/invites"}
+        class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-blue-500"
+      >
+        Invites
+      </.link>
+      <.link
+        href={~p"/trainer/chat"}
+        class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-blue-500"
+      >
+        Chat
+      </.link>
+    </nav>
+
+    <div class="px-4 py-4 border-t border-blue-500 space-y-2">
+      <.link
+        href={~p"/trainer/settings"}
+        class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-blue-500"
+      >
+        Settings
+      </.link>
+      <.link
+        href={~p"/users/log_out"}
+        method="delete"
+        class="block rounded-md px-3 py-2 text-sm font-medium text-red-200 hover:text-white hover:bg-blue-500"
+      >
+        Log out
+      </.link>
+    </div>
+  </aside>
+
+  <main class="flex-1 p-6">
+    <.flash_group flash={@flash} />
+    {@inner_content}
+  </main>
+</div>

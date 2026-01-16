@@ -38,7 +38,8 @@ defmodule CrohnjobsWeb.Router do
       live "/", ClientDashboard
       live "/chat", ClientChat
       live "/workouts", Client.Workouts
-      live "/exercises",Exercises
+      live "/exercises", Exercises
+      live "/settings",UserSettingsLive
     end
   end
 
@@ -59,6 +60,7 @@ defmodule CrohnjobsWeb.Router do
       live "/clients/:id/workouts", Workouts
       live "/clients/:id/strengthProgress", StrengthProgress
       live "/clients/:id/strengthProgress/:exercise_id", ExerciseProgress
+      live "/exercises", Exercises
 
       live "/clients/:id/workouts/:workout_id", WorkoutShow
       live "/clients/:id/workouts/:workout_id/details", WorkoutDetail
@@ -67,10 +69,8 @@ defmodule CrohnjobsWeb.Router do
       live "/programmes/:id", ProgrammeShow
       live "/programmes/:id/template/:template_id", Template
       live "/programmes/:id/template/:template_id/details", TemplateDetail
-      live "/exercises",Exercises
       live "/", Dashboard
-      live "/users/settings", UserSettingsLive, :edit
-      live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
+      live "/settings",UserSettingsLive
     end
 
     oban_dashboard("/oban")
@@ -106,6 +106,7 @@ defmodule CrohnjobsWeb.Router do
     live_session :authenticated,
       on_mount: [{CrohnjobsWeb.UserAuth, :ensure_authenticated}] do
       live "/chat/:room", Chat
+
       get "/download/workout", DownloadController, :workout
     end
   end
