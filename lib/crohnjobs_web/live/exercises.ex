@@ -17,13 +17,12 @@ alias Crohnjobs.CustomExercises.CustomExercise
   def handle_event("addExercise", params, socket) do
 
     user = socket.assigns.current_user
-    trainer = Trainers.get_trainer_byUserId(user.id)
 
-    name = params["custom_exercise"]["name"]
-    equipment = params["custom_exercise"]["equipment"]
-    type = params["custom_exercise"]["type"]
+    name = params["exercise"]["name"]
+    equipment = params["exercise"]["equipment"]
+    type = params["exercise"]["type"]
 
-   case Exercise.create_exercise(%{name: name, equipment: equipment, type: type, is_custom: true, trainer_id: trainer.id}) do
+   case Exercise.create_exercise(%{name: name, equipment: equipment, type: type, is_custom: true, user_id: user.id}) do
      {:ok, exercise}->
       exercises = socket.assigns.exercises ++ [exercise]
 
@@ -37,13 +36,12 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
   def handle_event("deleteExercise", params, socket) do
     user = socket.assigns.current_user
-    trainer = Trainers.get_trainer_byUserId(user.id)
 
     id = String.to_integer(params["id"])
     exercise = Exercise.get_exercise!(id)
    case Exercise.delete_exercise(exercise) do
     {:ok, _customExercise }->
-      updatedExercise = Enum.reject(socket.assigns.exercises, fn x-> Map.has_key?(x, :trainer_id) and x.id == id and x.trainer_id == trainer.id end)
+      updatedExercise = Enum.reject(socket.assigns.exercises, fn x-> Map.has_key?(x, :user_id) and x.id == id end)
       {:noreply,socket|>put_flash(:info, "Deleted Successfully")|> assign(exercises: updatedExercise)}
       _ ->{:noreply, socket|>put_flash(:error, "Something Happened")}
    end
@@ -134,7 +132,6 @@ alias Crohnjobs.CustomExercises.CustomExercise
   def mount(_params, _session, socket) do
 
     user = socket.assigns.current_user
-    trainer = Trainers.get_trainer_byUserId(user.id)
 
     filterApplied = "All"
 
@@ -150,7 +147,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
      exercises =
       Repo.all(
         from e in Crohnjobs.Exercises.Exercise,
-          where: e.is_custom == false or e.trainer_id == ^trainer.id,
+          where: e.is_custom == false or e.user_id == ^user.id,
           order_by: [asc: e.name]
       )
 

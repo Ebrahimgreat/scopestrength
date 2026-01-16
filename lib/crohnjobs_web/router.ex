@@ -1,8 +1,4 @@
 defmodule CrohnjobsWeb.Router do
-
-
-
-
   use CrohnjobsWeb, :router
 
   import CrohnjobsWeb.UserAuth
@@ -11,6 +7,7 @@ defmodule CrohnjobsWeb.Router do
   pipeline :require_trainer do
     plug CrohnjobsWeb.RequireRole, "trainer"
   end
+
   pipeline :require_client do
     plug CrohnjobsWeb.Plugs.RequireRole, "client"
   end
@@ -29,53 +26,54 @@ defmodule CrohnjobsWeb.Router do
     plug :accepts, ["json"]
   end
 
-
-
   scope "/client", CrohnjobsWeb do
     pipe_through [:browser, :require_authenticated_user]
+
     live_session :client_session,
-      on_mount: [{CrohnjobsWeb.UserAuth, :ensure_authenticated},
-                 {CrohnjobsWeb.RequireRole, "client"}],
+      on_mount: [
+        {CrohnjobsWeb.UserAuth, :ensure_authenticated},
+        {CrohnjobsWeb.RequireRole, "client"}
+      ],
       layout: {CrohnjobsWeb.Layouts, :client} do
       live "/", ClientDashboard
-      live "/chat",ClientChat
+      live "/chat", ClientChat
+      live "/workouts", Client.Workouts
+      live "/exercises",Exercises
     end
   end
 
-
-
   scope "/trainer", CrohnjobsWeb do
     pipe_through [:browser, :require_authenticated_user]
+
     live_session :trainer_session,
-      on_mount: [{CrohnjobsWeb.UserAuth, :ensure_authenticated},
-                 {CrohnjobsWeb.RequireRole, "trainer"}],
+      on_mount: [
+        {CrohnjobsWeb.UserAuth, :ensure_authenticated},
+        {CrohnjobsWeb.RequireRole, "trainer"}
+      ],
       layout: {CrohnjobsWeb.Layouts, :trainer} do
+      live "/chat", TrainerChat
+      live "/invites", Invites
+      live "/clients", Clients
+      live "/clients/:id", ShowClient
+      live "/clients/:id/notes", ClientNotes
+      live "/clients/:id/workouts", Workouts
+      live "/clients/:id/strengthProgress", StrengthProgress
+      live "/clients/:id/strengthProgress/:exercise_id", ExerciseProgress
 
+      live "/clients/:id/workouts/:workout_id", WorkoutShow
+      live "/clients/:id/workouts/:workout_id/details", WorkoutDetail
+      live "/client/:id/programme", ChangeProgramme
+      live "/programmes", Programmes
+      live "/programmes/:id", ProgrammeShow
+      live "/programmes/:id/template/:template_id", Template
+      live "/programmes/:id/template/:template_id/details", TemplateDetail
+      live "/exercises",Exercises
+      live "/", Dashboard
+      live "/users/settings", UserSettingsLive, :edit
+      live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
+    end
 
-  live "/chat", TrainerChat
-  live "/invites", Invites
-  live "/clients", Clients
-  live "/clients/:id", ShowClient
-  live "/clients/:id/notes",ClientNotes
-  live "/clients/:id/workouts",Workouts
-  live "/clients/:id/strengthProgress", StrengthProgress
-  live "/clients/:id/strengthProgress/:exercise_id",ExerciseProgress
-
-  live "/clients/:id/workouts/:workout_id",WorkoutShow
-  live "/clients/:id/workouts/:workout_id/details", WorkoutDetail
-  live "/client/:id/programme", ChangeProgramme
-  live "/programmes", Programmes
-  live "/programmes/:id", ProgrammeShow
-  live "/programmes/:id/template/:template_id", Template
-  live "/programmes/:id/template/:template_id/details",TemplateDetail
-  live "/", Dashboard
-  live "/exercises",Exercises
-  live "/workout", Exercise
-  live "/users/settings", UserSettingsLive, :edit
-  live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
-  end
-  oban_dashboard "/oban"
-
+    oban_dashboard("/oban")
   end
 
   # Other scopes may use custom stacks.
@@ -107,12 +105,11 @@ defmodule CrohnjobsWeb.Router do
 
     live_session :authenticated,
       on_mount: [{CrohnjobsWeb.UserAuth, :ensure_authenticated}] do
-
       live "/chat/:room", Chat
       get "/download/workout", DownloadController, :workout
-
     end
   end
+
   scope "/", CrohnjobsWeb do
     pipe_through [:browser, :redirect_if_user_is_authenticated]
 
@@ -123,12 +120,10 @@ defmodule CrohnjobsWeb.Router do
       live "/users/log_in", UserLoginLive, :new
       live "/users/reset_password", UserForgotPasswordLive, :new
       live "/users/reset_password/:token", UserResetPasswordLive, :edit
-
     end
 
     post "/users/log_in", UserSessionController, :create
   end
-
 
   scope "/", CrohnjobsWeb do
     pipe_through [:browser]
