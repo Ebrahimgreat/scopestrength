@@ -197,4 +197,57 @@ defmodule Crohnjobs.Training do
   def change_workout_details(%WorkoutDetails{} = workout_details, attrs \\ %{}) do
     WorkoutDetails.changeset(workout_details, attrs)
   end
+
+  def parse_note_into_workout(workout_id, note) do
+    with {:ok, workout} <- fetch_workout(workout_id),
+         {:ok, sets} <- Crohnjobs.AI.Gemini.parse_workout_note(note) do
+      Repo.transaction(fn ->
+        Enum.reduce_while(sets, {:ok, []}, fn set, {:ok, acc} ->
+          attrs = build_detail_attrs(workout, set)
+
+          case create_workout_details(attrs) do
+            {:ok, detail} -> {:cont, {:ok, [detail | acc]}}
+            {:error, reason} -> {:halt, {:error, reason}}
+          end
+        end)
+        |> case do
+          {:ok, details} -> {:ok, Enum.reverse(details)}
+          {:error, reason} -> Repo.rollback(reason)
+        end
+      end)
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp fetch_workout(workout_id) do
+    case Repo.get(Workout, workout_id) do
+      %Workout{} = workout -> {:ok, workout}
+      _ -> {:error, :workout_not_found}
+    end
+  end
+
+  defp build_detail_attrs(workout, set) do
+    %{
+      workout: workout.id,
+      exercise_id: find_exercise_id(set[:exercise] || set["exercise"]),
+      set: set[:set] || set["set"],
+      reps: set[:reps] || set["reps"],
+      weight: set[:weight] || set["weight"],
+      rir: set[:rir] || set["rir"]
+    }
+  end
+
+  defp find_exercise_id(nil), do: nil
+
+  defp find_exercise_id(name) do
+    Crohnjobs.Exercises.Exercise
+    |> where([e], ilike(e.name, ^name))
+    |> limit(1)
+    |> Repo.one()
+    |> case do
+      nil -> nil
+      exercise -> exercise.id
+    end
+  end
 end
