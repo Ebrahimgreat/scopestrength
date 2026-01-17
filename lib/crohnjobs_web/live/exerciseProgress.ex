@@ -19,7 +19,7 @@ defmodule CrohnjobsWeb.ExerciseProgress do
       query =
         from e in Crohnjobs.Exercises.Exercise,
           where: e.id == ^exercise_id and
-                 (e.is_custom == false or (e.is_custom == true and e.trainer_id == ^trainer.id))
+                 (e.is_custom == false or (e.is_custom == true and e.user_id == ^user.id))
 
       exercise = Repo.one(query)
 
