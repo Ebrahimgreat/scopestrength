@@ -17,7 +17,12 @@ defmodule CrohnjobsWeb.StrengthProgress do
         end)
       end
 
-    {:noreply, assign(socket, filterApplied: "All", exercises: filtered_exercises)}
+    {:noreply,
+     assign(socket,
+       filterApplied: "All",
+       exercises: filtered_exercises,
+       searchExercise: search
+     )}
   end
 
   def handle_event("filterExercise", %{"name" => name}, socket) do
@@ -63,257 +68,244 @@ defmodule CrohnjobsWeb.StrengthProgress do
 
   def render(assigns) do
     ~H"""
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-semibold text-gray-900">Filter Exercises</h2>
-        <%= if @filterApplied != "All" do %>
-          <.button
-            phx-click="filterExercise"
-            phx-value-name="All"
-            class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md transition-colors duration-200"
-          >
-            Clear All Filters
-          </.button>
-        <% end %>
-      </div>
-      
-    <!-- Active Filter Display -->
-      <%= if @filterApplied != "All" do %>
-        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 py-8">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div class="bg-white border border-blue-100 shadow-xl rounded-2xl p-6 md:p-8">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-sm font-semibold text-blue-600 uppercase tracking-wide">
+                Strength Dashboard
+              </p>
+              <h1 class="text-3xl font-bold text-gray-900 mt-1">Strength Progress</h1>
+              <p class="text-gray-600 mt-2">Browse and track strength exercises for this client.</p>
+              <div class="mt-4 flex flex-wrap gap-3 text-sm">
+                <span class="inline-flex items-center gap-2 bg-blue-50 text-blue-800 px-3 py-1 rounded-full border border-blue-100">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+                    />
+                  </svg>
+                  <span class="font-semibold">Total Exercises:</span>
+                  <span class="font-bold">{length(@allExercises)}</span>
+                </span>
+                <span class="inline-flex items-center gap-2 bg-green-50 text-green-800 px-3 py-1 rounded-full border border-green-100">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  <span class="font-semibold">Showing:</span>
+                  <span class="font-bold">{length(@exercises)}</span>
+                </span>
+              </div>
+            </div>
+            <div class="hidden md:flex items-center gap-3 bg-blue-50 text-blue-900 px-4 py-3 rounded-xl border border-blue-100">
+              <svg
+                class="w-10 h-10 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   stroke-width="2"
-                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707v6.586a1 1 0 01-1.447.894l-4-2A1 1 0 018 18.586v-4.586a1 1 0 00-.293-.707L1.293 7.293A1 1 0 011 6.586V4z"
-                >
-                </path>
+                  d="M3 7h18M3 12h18M3 17h18"
+                />
               </svg>
-              <span class="text-sm font-medium text-blue-800">Active Filter:</span>
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {@filterApplied}
-              </span>
+              <div>
+                <p class="text-xs font-semibold uppercase">Active Filter</p>
+                <p class="text-lg font-bold text-gray-900">{@filterApplied}</p>
+              </div>
             </div>
           </div>
         </div>
-      <% end %>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Filter By Type -->
-        <div>
-          <h3 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
-            <svg
-              class="w-4 h-4 mr-2 text-gray-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-              >
-              </path>
-            </svg>
-            Filter By Type
-          </h3>
-          <div class="flex flex-wrap gap-2">
-            <.button
-              phx-click="filterExercise"
-              phx-value-name="All"
-              class={[
-                "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                if(@filterApplied == "All",
-                  do: "bg-blue-600 text-white shadow-md",
-                  else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-                )
-              ]}
-            >
-              All Types
-            </.button>
-
-            <.button
-              phx-click="filterExercise"
-              phx-value-name="Chest"
-              class={[
-                "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                if(@filterApplied == "Chest",
-                  do: "bg-blue-600 text-white shadow-md",
-                  else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-                )
-              ]}
-            >
-              Chest
-            </.button>
-            <.button
-              phx-click="filterExercise"
-              phx-value-name="Back"
-              class={[
-                "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                if(@filterApplied == "Back",
-                  do: "bg-blue-600 text-white shadow-md",
-                  else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-                )
-              ]}
-            >
-              Back
-            </.button>
-
-            <.button
-              phx-click="filterExercise"
-              phx-value-name="Abs"
-              class={[
-                "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                if(@filterApplied == "Abs",
-                  do: "bg-blue-600 text-white shadow-md",
-                  else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-                )
-              ]}
-            >
-              Abs
-            </.button>
-
-            <.button
-              phx-click="filterExercise"
-              phx-value-name="Biceps"
-              class={[
-                "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                if(@filterApplied == "Biceps",
-                  do: "bg-blue-600 text-white shadow-md",
-                  else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-                )
-              ]}
-            >
-              Biceps
-            </.button>
-            <.button
-              phx-click="filterExercise"
-              phx-value-name="Triceps"
-              class={[
-                "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                if(@filterApplied == "Triceps",
-                  do: "bg-blue-600 text-white shadow-md",
-                  else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-                )
-              ]}
-            >
-              Triceps
-            </.button>
-
-            <.button
-              phx-click="filterExercise"
-              phx-value-name="Quads"
-              class={[
-                "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                if(@filterApplied == "Quads",
-                  do: "bg-blue-600 text-white shadow-md",
-                  else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-                )
-              ]}
-            >
-              Quads
-            </.button>
-
-            <.button
-              phx-click="filterExercise"
-              phx-value-name="Hamstrings"
-              class={[
-                "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                if(@filterApplied == "Hamstrings",
-                  do: "bg-blue-600 text-white shadow-md",
-                  else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-                )
-              ]}
-            >
-              Hamstrings
-            </.button>
-
-            <.button
-              phx-click="filterExercise"
-              phx-value-name="Glutes"
-              class={[
-                "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                if(@filterApplied == "Glutes",
-                  do: "bg-blue-600 text-white shadow-md",
-                  else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-                )
-              ]}
-            >
-              Glutes
-            </.button>
-
-            <.button
-              phx-click="filterExercise"
-              phx-value-name="Shoulders"
-              class={[
-                "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                if(@filterApplied == "Shoulders",
-                  do: "bg-blue-600 text-white shadow-md",
-                  else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-                )
-              ]}
-            >
-              Shoulders
-            </.button>
+        <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 space-y-4">
+          <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="w-full md:max-w-xl">
+              <form phx-change="searchExercise" class="space-y-2">
+                <label class="text-sm font-semibold text-gray-700">Search exercises</label>
+                <div class="relative">
+                  <svg
+                    class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 105.65 5.65a7.5 7.5 0 0011 11z"
+                    />
+                  </svg>
+                  <input
+                    type="text"
+                    name="searchExercise"
+                    value={@searchExercise}
+                    placeholder="Search by name (e.g. Bench Press)"
+                    class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-gray-900"
+                  />
+                </div>
+              </form>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <%= for type <- ["All", "Chest", "Back", "Abs", "Biceps", "Triceps", "Quads", "Hamstrings", "Glutes", "Shoulders"] do %>
+                <.button
+                  phx-click="filterExercise"
+                  phx-value-name={type}
+                  class={
+                    "px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 " <>
+                      if(@filterApplied == type,
+                        do: "bg-blue-600 text-white shadow-md shadow-blue-200",
+                        else: "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      )
+                  }
+                >
+                  {type}
+                </.button>
+              <% end %>
+            </div>
           </div>
-        </div>
-        
-    <!-- Filter By Equipment -->
 
-      </div>
-
-      <.form phx-change="searchExercise">
-        <.input
-          label="Search Exercise"
-          name="searchExercise"
-          value={@searchExercise}
-          field={@searchExercise}
-        />
-      </.form>
-
-      <table class="w-full">
-        <thead class="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th class="text-left py-4 px-6 font-semibold text-gray-900">Exercise</th>
-            <th class="text-left py-4 px-6 font-semibold text-gray-900">Type</th>
-            <th class="text-left py-4 px-6 font-semibold text-gray-900">Equipment</th>
-            <th class="text-left py-4 px-6 font-semibold text-gray-900">
-              View
-            </th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200">
-          <%= for exercise<-@exercises do %>
-            <tr>
-              <td class="py-4 px-6 font-medium text-gray-900">{exercise.name}</td>
-              <td class="py-4 px-6 text-gray-600">{exercise.type || "N/A"}</td>
-              <td class="py-4 px-6 text-gray-600">{exercise.equipment || "None"}</td>
-              <td class="py-4 px-6 text-gray-600">
-                <%= if exercise.is_custom do %>
-                  <.link navigate={
-                    ~p"/trainer/clients/#{@client_id}/strengthProgress/#{exercise.id}?custom=yes"
-                  }>
-                    <.button>
-                      View
-                    </.button>
-                  </.link>
-                <% else %>
-                  <.link navigate={
-                    ~p"/trainer/clients/#{@client_id}/strengthProgress/#{exercise.id}?custom=no"
-                  }>
-                    <.button>
-                      View
-                    </.button>
-                  </.link>
-                <% end %>
-              </td>
-            </tr>
+          <%= if @filterApplied != "All" do %>
+            <div class="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+              <div class="flex items-center gap-2 text-sm text-blue-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                <span class="font-semibold">Filter applied:</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-white border border-blue-200 text-blue-700">
+                  {@filterApplied}
+                </span>
+              </div>
+              <.button
+                phx-click="filterExercise"
+                phx-value-name="All"
+                class="text-sm font-semibold text-blue-700 hover:text-blue-900 bg-white border border-blue-200 px-3 py-1.5 rounded-lg shadow-sm"
+              >
+                Reset filter
+              </.button>
+            </div>
           <% end %>
-        </tbody>
-      </table>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <%= if Enum.empty?(@exercises) do %>
+            <div class="col-span-1 md:col-span-2">
+              <div class="bg-white border border-dashed border-gray-300 rounded-2xl p-10 text-center shadow-sm">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 text-blue-700 mb-4">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900">No exercises found</h3>
+                <p class="text-gray-600 mt-2">Try adjusting the search or clearing filters.</p>
+                <div class="mt-4 flex justify-center">
+                  <.button
+                    phx-click="filterExercise"
+                    phx-value-name="All"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-semibold"
+                  >
+                    Clear filters
+                  </.button>
+                </div>
+              </div>
+            </div>
+          <% else %>
+            <%= for exercise <- @exercises do %>
+              <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex flex-col gap-3">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide">
+                      Exercise
+                    </p>
+                    <h3 class="text-xl font-bold text-gray-900">{exercise.name}</h3>
+                  </div>
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-100">
+                    {exercise.type || "N/A"}
+                  </span>
+                </div>
+
+                <div class="flex flex-wrap gap-2 text-sm text-gray-700">
+                  <span class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-gray-50 border border-gray-200">
+                    <svg
+                      class="w-4 h-4 text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2m2-9h-1a2 2 0 01-2-2V4M7 8H6a2 2 0 00-2 2v1m0 4v1a2 2 0 002 2h1"
+                      />
+                    </svg>
+                    <span class="font-semibold">Equipment:</span>
+                    <span class="text-gray-900">{exercise.equipment || "None"}</span>
+                  </span>
+                  <span class={[
+                    "inline-flex items-center gap-2 px-3 py-1 rounded-lg border text-xs font-bold",
+                    if(exercise.is_custom,
+                      do: "bg-amber-50 border-amber-200 text-amber-800",
+                      else: "bg-emerald-50 border-emerald-200 text-emerald-800"
+                    )
+                  ]}>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 11c0 1.657-1.343 3-3 3H5v3h3c3.314 0 6-2.686 6-6V6h3V3h-3a3 3 0 00-3 3v5z"
+                      />
+                    </svg>
+                    {if exercise.is_custom, do: "Custom Exercise", else: "Standard Library"}
+                  </span>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                  <p class="text-sm text-gray-500">Open to view progress history</p>
+                  <%= if exercise.is_custom do %>
+                    <.link navigate={
+                      ~p"/trainer/clients/#{@client_id}/strengthProgress/#{exercise.id}?custom=yes"
+                    }>
+                      <.button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow-sm">
+                        View progress
+                      </.button>
+                    </.link>
+                  <% else %>
+                    <.link navigate={
+                      ~p"/trainer/clients/#{@client_id}/strengthProgress/#{exercise.id}?custom=no"
+                    }>
+                      <.button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow-sm">
+                        View progress
+                      </.button>
+                    </.link>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
     </div>
     """
   end
