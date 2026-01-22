@@ -43,7 +43,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
     name = params["exercise"]["name"]
     type = params["exercise"]["type"]
     equipment = params["exercise"]["equipment"]
-    case Exercise.create_exercise(%{name: name, equipment: equipment, type: type, trainer_id: trainer.id, is_custom: true}) do
+    case Exercise.create_exercise(%{name: name, equipment: equipment, type: type, user_id: user.id, is_custom: true}) do
       {:ok, exercise}->
         exercises = socket.assigns.exercises ++ [exercise]
       {:noreply,socket|> assign(show_modal: false, exercises: exercises)|> put_flash(:info, "exercise Created")}
@@ -90,9 +90,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
     {:noreply, assign(socket, exercises: filtered, q: q)}
   end
 
-  def handle_event("searchExercises", _params, socket) do
-    {:noreply, socket}
-  end
+
   def handle_event("deleteExercise", params, socket) do
     id = String.to_integer(params["id"])
     programmeDetails = socket.assigns.programmeDetails
@@ -153,7 +151,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
     exercises =
       Repo.all(
         from e in Crohnjobs.Exercises.Exercise,
-          where: e.is_custom == false or e.trainer_id == ^trainer.id,
+          where: e.is_custom == false or e.user_id == ^user.id,
           order_by: [asc: e.name]
       )
 

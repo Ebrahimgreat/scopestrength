@@ -7,21 +7,15 @@ defmodule Crohnjobs.Training.WorkoutDetails do
     field :weight, :float
     field :set, :integer
     belongs_to :exercise, Crohnjobs.Exercises.Exercise
-    belongs_to :workout_ref, Crohnjobs.Training.Workout, foreign_key: :workout
+    belongs_to :workout, Crohnjobs.Training.Workout
     timestamps(type: :utc_datetime)
   end
 
   @doc false
   def changeset(workout_details, attrs) do
-    attrs =
-      case attrs do
-        %{"workout_id" => workout_id} -> Map.put(attrs, "workout", workout_id)
-        %{workout_id: workout_id} -> Map.put(attrs, :workout, workout_id)
-        _ -> attrs
-      end
 
     workout_details
-    |> cast(attrs, [:reps, :weight, :set, :workout, :exercise_id])
+    |> cast(attrs, [:reps, :weight, :set, :workout_id, :exercise_id])
     |> validate_required([])
   end
 end

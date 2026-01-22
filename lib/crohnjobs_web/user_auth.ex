@@ -235,5 +235,7 @@ defmodule CrohnjobsWeb.UserAuth do
 
   defp maybe_store_return_to(conn), do: conn
 
-  defp signed_in_path(_conn), do: ~p"/"
+  defp signed_in_path(%{assigns: %{current_user: %{role: "trainer"}}}), do: ~p"/trainer"
+  defp signed_in_path(%{assigns: %{current_user: %{role: "client"}}}), do: ~p"/client"
+  defp signed_in_path(_), do: ~p"/"
 end

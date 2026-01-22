@@ -198,6 +198,62 @@ defmodule Crohnjobs.Training do
     WorkoutDetails.changeset(workout_details, attrs)
   end
 
+  @doc """
+  Creates a workout from AI-generated response.
+  Takes client_id and the AI response map with workout_name and exercises.
+  """
+  def create_workout_from_ai(client_id, ai_response) do
+    Repo.transaction(fn ->
+      workout_attrs = %{
+        name: ai_response["workout_name"],
+        date: DateTime.utc_now(),
+        client_id: client_id
+      }
+
+      case create_workout(workout_attrs) do
+        {:ok, workout} ->
+          # Create workout details for each exercise/set
+          details = create_workout_details_from_exercises(workout.id, ai_response["exercises"])
+          case details do
+            {:ok, _} -> workout
+            {:error, reason} -> Repo.rollback(reason)
+          end
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
+  end
+
+  defp create_workout_details_from_exercises(workout_id, exercises) when is_list(exercises) do
+    results = Enum.flat_map(exercises, fn exercise ->
+      exercise_id = find_exercise_id(exercise["name"])
+      Enum.map(exercise["sets"], fn set ->
+        attrs = %{
+          workout_id: workout_id,
+          exercise_id: exercise_id,
+          set: set["set"],
+          reps: set["reps"],
+          weight: set["weight"]
+        }
+        create_workout_details(attrs)
+      end)
+    end)
+
+    errors = Enum.filter(results, fn
+      {:error, _} -> true
+      _ -> false
+    end)
+
+    if Enum.empty?(errors) do
+      {:ok, results}
+    else
+      {:error, :failed_to_create_details}
+    end
+  end
+
+  defp create_workout_details_from_exercises(_, _), do: {:error, :invalid_exercises}
+
   def parse_note_into_workout(workout_id, note) do
     with {:ok, workout} <- fetch_workout(workout_id),
          {:ok, sets} <- Crohnjobs.AI.Gemini.parse_workout_note(note) do
@@ -229,7 +285,7 @@ defmodule Crohnjobs.Training do
 
   defp build_detail_attrs(workout, set) do
     %{
-      workout: workout.id,
+      workout_id: workout.id,
       exercise_id: find_exercise_id(set[:exercise] || set["exercise"]),
       set: set[:set] || set["set"],
       reps: set[:reps] || set["reps"],
