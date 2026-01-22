@@ -38,6 +38,7 @@ defmodule CrohnjobsWeb.Router do
       live "/", ClientDashboard
       live "/chat", ClientChat
       live "/workouts", Client.Workouts
+      live "/workouts/:id",Client.WorkoutShow
       live "/exercises", Exercises
       live "/settings",UserSettingsLive
     end

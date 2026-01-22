@@ -39,7 +39,7 @@ defmodule CrohnjobsWeb.Client.Workouts do
           </div>
         </div>
       </div>
-      
+
     <!-- Stats Section -->
       <div class="w-full px-6 lg:px-10 py-8">
         <div class="mb-8">
@@ -70,8 +70,7 @@ defmodule CrohnjobsWeb.Client.Workouts do
             </div>
           </div>
         </div>
-        
-    <!-- Workout List -->
+
         <%= if @workouts == [] do %>
           <div class="text-center py-16">
             <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
@@ -118,6 +117,8 @@ defmodule CrohnjobsWeb.Client.Workouts do
                       </svg>
                     </div>
                     <div>
+
+                     <.link navigate={~p"/client/workouts/#{workout.id}"}>
                       <h3 class="text-xl font-bold text-gray-900 group-hover:text-emerald-600 transition-colors duration-200">
                         {workout.name || "Workout"}
                       </h3>
@@ -142,6 +143,7 @@ defmodule CrohnjobsWeb.Client.Workouts do
                           No date set
                         <% end %>
                       </p>
+                      </.link>
                     </div>
                   </div>
                 </div>

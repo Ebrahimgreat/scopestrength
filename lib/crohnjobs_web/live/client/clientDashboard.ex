@@ -61,6 +61,8 @@ alias Crohnjobs.Repo
       nil -> nil
       pu -> Repo.preload(pu, [programme: [programmeTemplates: [programmeDetails: :exercise]]])
     end
+    workoutDetails= Repo.get_by(Crohnjobs.Training.Workout,%{client_id: client.id})
+
 
     {:ok,assign(socket, report: false, client: client, current_programme: currentProgramme, invite_code: "")}
   end
