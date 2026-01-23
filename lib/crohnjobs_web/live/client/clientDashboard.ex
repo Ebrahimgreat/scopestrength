@@ -101,7 +101,9 @@ import Ecto.Query
       No Progression of Exercises
       <%else%>
       <%=for exercise <-@exerciseProgress do %>
+      <.link navigate={~p"/client/strengthProgress/#{exercise.exercise_id}"}>
       <%=exercise.name%>
+      </.link>
       <%end%>
 
       <%end%>
