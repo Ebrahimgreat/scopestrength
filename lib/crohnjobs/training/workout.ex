@@ -6,7 +6,7 @@ defmodule Crohnjobs.Training.Workout do
     field :name, :string
     field :date, :utc_datetime
     belongs_to :client, Crohnjobs.Clients.Client
-    has_many :workoutDetails,Crohnjobs.Training.WokoutDetails
+    has_many :workoutDetails,Crohnjobs.Training.WorkoutDetails
 
     timestamps(type: :utc_datetime)
   end
