@@ -7,6 +7,8 @@ alias Crohnjobs.Clients.Client
 alias Crohnjobs.DownloadProgramme
 alias Crohnjobs.Invites
 alias Crohnjobs.Repo
+alias Crohnjobs.Training.{Workout, WorkoutDetails}
+import Ecto.Query
   use CrohnjobsWeb, :live_view
 
   def handle_event("submit_invite_code", %{"code" => code}, socket) do
@@ -61,10 +63,27 @@ alias Crohnjobs.Repo
       nil -> nil
       pu -> Repo.preload(pu, [programme: [programmeTemplates: [programmeDetails: :exercise]]])
     end
-    workoutDetails= Repo.get_by(Crohnjobs.Training.Workout,%{client_id: client.id})
+    workoutDetails= Repo.get_by(Crohnjobs.Training.Workout,%{client_id: client.id})|>Repo.preload(workoutDetails: :exercise)
+    grouped =
+      workoutDetails.workoutDetails
+      |> Enum.group_by(& &1.exercise_id)
+
+    collapsed =
+      grouped
+      |> Enum.map(fn {_exercise_id, rows} ->
+        base = hd(rows)
+
+        %{
+          id: base.id,
+          name: base.exercise.name,
+          exercise_id: base.exercise_id,
+
+        }
+      end)
+      IO.inspect(collapsed)
 
 
-    {:ok,assign(socket, report: false, client: client, current_programme: currentProgramme, invite_code: "")}
+    {:ok,assign(socket, report: false, client: client, current_programme: currentProgramme, invite_code: "", exerciseProgress: collapsed)}
   end
   def render(assigns) do
     ~H"""
@@ -76,6 +95,17 @@ alias Crohnjobs.Repo
           Your Trainer: <%= @client.trainer.user.name %>
         <% end %>
       </h1>
+
+      <!-- Client Exercises -->
+      <%=if length(@exerciseProgress)==0 do %>
+      No Progression of Exercises
+      <%else%>
+      <%=for exercise <-@exerciseProgress do %>
+      <%=exercise.name%>
+      <%end%>
+
+      <%end%>
+
 
       <%= if @client.trainer == nil do %>
         <!-- Invite Code Entry -->
