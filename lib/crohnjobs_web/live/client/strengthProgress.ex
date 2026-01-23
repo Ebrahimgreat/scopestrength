@@ -1,40 +1,54 @@
-defmodule CrohnjobsWeb.ExerciseProgress do
-alias Crohnjobs.Repo
-alias Crohnjobs.Training.WorkoutDetails
-alias Crohnjobs.Training.Workout
-import Ecto.Query
+defmodule CrohnjobsWeb.Client.StrengthProgress do
+  alias Crohnjobs.Training.Workout
+  alias Crohnjobs.Training.WorkoutDetails
+  alias Crohnjobs.Repo
   use CrohnjobsWeb, :live_view
+  import Ecto.Query
 
-
+  @spec mount(nil | maybe_improper_list() | map(), any(), any()) :: {:ok, any()}
   def mount(params, session, socket) do
     exercise_id = String.to_integer(params["exercise_id"])
-    client_id = String.to_integer(params["id"])
     user = socket.assigns.current_user
+    client = Repo.get_by(Crohnjobs.Clients.Client, %{user_id: user.id})
     workout_details =
       Repo.all(
         from wd in WorkoutDetails,
           join: w in Workout,
           on: wd.workout_id == w.id,
-          where: w.client_id == ^client_id and wd.exercise_id == ^exercise_id,
+          where: w.client_id == ^client.id and wd.exercise_id == ^exercise_id,
           order_by: [desc: wd.inserted_at],
           preload: :exercise
       )
-      {exercise_name, max_detail} =
-        if length(workout_details) > 0 do
-          max_detail = Enum.max_by(workout_details, &(&1.weight))
-          {hd(workout_details).exercise.name, max_detail}
-        else
-          {"", nil}
-        end
 
-{:ok,assign(socket,workout_details: workout_details, max_detail: max_detail)}
+    {exercise_name, max_detail} =
+      if length(workout_details) > 0 do
+        max_detail = Enum.max_by(workout_details, &(&1.weight))
+        {hd(workout_details).exercise.name, max_detail}
+      else
+        {"", nil}
+      end
 
-
+    {:ok,
+     assign(socket,
+       workout_details: workout_details,
+       exercise_name: exercise_name,
+       max_detail: max_detail
+     )}
   end
+
   def render(assigns) do
     ~H"""
-    <div>
-  <%= if length(@workout_details) == 0 do %>
+    <div class="space-y-6">
+      <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900">
+          <%= @exercise_name %> - Strength Progress
+        </h1>
+        <.link navigate={~p"/client"} class="text-emerald-600 hover:text-emerald-700">
+          ← Back to Dashboard
+        </.link>
+      </div>
+
+      <%= if length(@workout_details) == 0 do %>
         <div class="bg-gray-100 rounded-lg p-6 text-center">
           <p class="text-gray-600">No workout data available for this exercise yet.</p>
         </div>

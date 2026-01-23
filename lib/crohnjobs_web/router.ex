@@ -39,6 +39,7 @@ defmodule CrohnjobsWeb.Router do
       live "/chat", ClientChat
       live "/workouts", Client.Workouts
       live "/workouts/:id",Client.WorkoutShow
+      live "/strengthProgress/:exercise_id",Client.StrengthProgress
       live "/exercises", Exercises
       live "/settings",UserSettingsLive
     end
