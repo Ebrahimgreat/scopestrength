@@ -5,11 +5,12 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
   use CrohnjobsWeb, :live_view
   import Ecto.Query
 
-  @spec mount(nil | maybe_improper_list() | map(), any(), any()) :: {:ok, any()}
   def mount(params, session, socket) do
     exercise_id = String.to_integer(params["exercise_id"])
     user = socket.assigns.current_user
     client = Repo.get_by(Crohnjobs.Clients.Client, %{user_id: user.id})
+
+    # Get all workout details for this exercise across all client's workouts
     workout_details =
       Repo.all(
         from wd in WorkoutDetails,

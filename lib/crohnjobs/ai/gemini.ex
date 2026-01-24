@@ -4,32 +4,137 @@ defmodule Crohnjobs.AI.Gemini do
   import Ecto.Query
 
   defp api_key do
-    System.fetch_env!("GEMINI_API_KEY")
+    case System.get_env("GEMINI_API_KEY") do
+      nil -> {:error, :api_key_not_set}
+      "" -> {:error, :api_key_not_set}
+      key -> {:ok, key}
+    end
   end
 
-  def generate_workout(user_request) when is_binary(user_request) do
-    exercises = list_available_exercises()
+  @doc """
+  Checks if Gemini API is configured and available.
+  """
+  def available? do
+    case api_key() do
+      {:ok, _} -> true
+      {:error, _} -> false
+    end
+  end
 
-    body = %{
-      contents: [
-        %{
-          parts: [
-            %{text: build_generation_prompt(user_request, exercises)}
+  @doc """
+  Returns the API key status for external use.
+  Returns {:ok, key} if configured, {:error, reason} otherwise.
+  """
+  def api_key_status do
+    api_key()
+  end
+
+  @doc """
+  Simple chat function for conversational AI.
+  """
+  def chat(message, context \\ []) do
+    case api_key() do
+      {:error, :api_key_not_set} ->
+        {:error, "Gemini API key not configured. Please set GEMINI_API_KEY environment variable."}
+
+      {:ok, key} ->
+        # Build conversation history
+        history = Enum.map(context, fn %{role: role, content: content} ->
+          %{
+            role: if(role == :user, do: "user", else: "model"),
+            parts: [%{text: content}]
+          }
+        end)
+
+        # Add current message
+        contents = history ++ [%{role: "user", parts: [%{text: message}]}]
+
+        body = %{
+          contents: contents,
+          systemInstruction: %{
+            parts: [%{text: system_prompt()}]
+          }
+        }
+
+        headers = [{"content-type", "application/json"}]
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=#{key}"
+
+        case HTTPoison.post(url, Jason.encode!(body), headers) do
+          {:ok, %{status: 200, body: response_body}} ->
+            case Jason.decode(response_body) do
+              {:ok, decoded} ->
+                extract_chat_response(decoded)
+              {:error, _} ->
+                {:error, "Failed to parse response"}
+            end
+
+          {:ok, %{status: status, body: body}} ->
+            {:error, "API error (#{status}): #{body}"}
+
+          {:error, %HTTPoison.Error{reason: reason}} ->
+            {:error, "Network error: #{inspect(reason)}"}
+        end
+    end
+  end
+
+  defp system_prompt do
+    """
+    You are a helpful fitness AI assistant for a workout tracking app called CrohnJobs.
+
+    Your main capabilities:
+    1. Help users track their workouts by parsing natural language
+    2. Answer fitness-related questions
+    3. Provide workout suggestions and tips
+    4. Analyze workout progress
+
+    When users describe their workouts, parse them and return structured data.
+    Be encouraging, helpful, and concise. Use emojis sparingly to keep things friendly.
+
+    If a user wants to log a workout, ask them to describe what they did (exercises, sets, reps, weight).
+    """
+  end
+
+  defp extract_chat_response(%{
+    "candidates" => [
+      %{
+        "content" => %{
+          "parts" => [%{"text" => text}]
+        }
+      } | _
+    ]
+  }) do
+    {:ok, String.trim(text)}
+  end
+
+  defp extract_chat_response(_), do: {:error, "Invalid response format"}
+
+  def generate_workout(user_request) when is_binary(user_request) do
+    case api_key() do
+      {:error, reason} -> {:error, reason}
+      {:ok, key} ->
+        exercises = list_available_exercises()
+
+        body = %{
+          contents: [
+            %{
+              parts: [
+                %{text: build_generation_prompt(user_request, exercises)}
+              ]
+            }
           ]
         }
-      ]
-    }
 
-    headers = [{"content-type", "application/json"}]
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=#{api_key()}"
+        headers = [{"content-type", "application/json"}]
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=#{key}"
 
-    with {:ok, %{status: 200, body: response_body}} <-
-           HTTPoison.post(url, Jason.encode!(body), headers),
-         {:ok, decoded} <- Jason.decode(response_body),
-         {:ok, parsed} <- extract_json(decoded) do
-      {:ok, parsed}
-    else
-      error -> {:error, error}
+        with {:ok, %{status: 200, body: response_body}} <-
+               HTTPoison.post(url, Jason.encode!(body), headers),
+             {:ok, decoded} <- Jason.decode(response_body),
+             {:ok, parsed} <- extract_json(decoded) do
+          {:ok, parsed}
+        else
+          error -> {:error, error}
+        end
     end
   end
 
@@ -126,30 +231,31 @@ defp extract_json(_), do: {:error, :invalid_gemini_response}
   end
 
   def parse_workout(text) when is_binary(text) do
-    body = %{
-      contents: [
-        %{
-          parts: [
-            %{text: build_prompt(text)}
+    case api_key() do
+      {:error, reason} -> {:error, reason}
+      {:ok, key} ->
+        body = %{
+          contents: [
+            %{
+              parts: [
+                %{text: build_prompt(text)}
+              ]
+            }
           ]
         }
-      ]
-    }
 
-    headers = [
-      {"content-type", "application/json"}
-    ]
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=#{api_key()}"
+        headers = [{"content-type", "application/json"}]
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=#{key}"
 
-
-    with {:ok, %{status: 200, body: response_body}} <-
-           HTTPoison.post(url, Jason.encode!(body), headers),
-         {:ok, decoded} <- Jason.decode(response_body),
-         {:ok, parsed} <- extract_json(decoded) do
-      {:ok, parsed}
-    else
-      error ->
-        {:error, error}
+        with {:ok, %{status: 200, body: response_body}} <-
+               HTTPoison.post(url, Jason.encode!(body), headers),
+             {:ok, decoded} <- Jason.decode(response_body),
+             {:ok, parsed} <- extract_json(decoded) do
+          {:ok, parsed}
+        else
+          error ->
+            {:error, error}
+        end
     end
   end
 

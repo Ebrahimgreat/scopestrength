@@ -1,43 +1,5 @@
-Programme Name: Upper Lower Push Pull Legs
-Programme Description: This is a 5 day upper lower push pull legs
+Programme Name: Untitled
+Programme Description: untitled
 
-Template : Upper
-  Exercise: Incline Dumbbell Press, Set: 2, Reps: 5-8
-  Exercise: Dumbbell Fly, Set: 2, Reps: 5-8
-  Exercise: Pull-Up, Set: 2, Reps: 5-6
-  Exercise: Dumbbell Row (One Arm), Set: 2, Reps: 10-12
-  Exercise: Overhead Press, Set: 2, Reps: 5-6
-  Exercise: JM Press, Set: 2, Reps: 10-12
-  Exercise: Incline Preacher Curl, Set: 2, Reps: 10-12
-
-Template : Lower
-  Exercise: Lying Leg Curl, Set: 2, Reps: 5-8
-  Exercise: Back Extension, Set: 2, Reps: 5-8
-  Exercise: Leg Press, Set: 2, Reps: 5-8
-  Exercise: Leg Extension(Single), Set: 2, Reps: 8-10
-  Exercise: Hip Adductors, Set: 2, Reps: 10-12
-  Exercise: Leg Press Calf Raise, Set: 4, Reps: 10-15
-
-Template : Push
-  Exercise: Dumbbell Bench Press, Set: 2, Reps: 5-8
-  Exercise: Incline Smith Machine, Set: 2, Reps: 5-8
-  Exercise: Upright Row, Set: 2, Reps: 8-10
-  Exercise: Front Raise, Set: 2, Reps: 10-12
-  Exercise: JM Press, Set: 2, Reps: 10-12
-  Exercise: Tricep Pushdown, Set: 2, Reps: 10-12
-
-Template : Pull
-  Exercise: Lat Pulldown, Set: 2, Reps: 8-10
-  Exercise: Dumbbell Row (One Arm), Set: 2, Reps: 10-12
-  Exercise: Hammer Curl, Set: 2, Reps: 10-12
-  Exercise: Face Pulls, Set: 2, Reps: 10-12
-  Exercise: Incline Preacher Curl, Set: 2, Reps: 10-12
-  Exercise: Lat Prayer, Set: 2, Reps: 10-12
-
-Template : Legs
-  Exercise: Stiff Leg Deadlift, Set: 2, Reps: 5-6
-  Exercise: Snatch Grip(Deadlift), Set: 2, Reps: 6-8
-  Exercise: Leg Extension(Single), Set: 2, Reps: 5-8
-  Exercise: Cable Crunch, Set: 4, Reps: AMRAP
-  Exercise: Leg Press Calf Raise, Set: 4, Reps: 10-15
+Template : Untitled
 
