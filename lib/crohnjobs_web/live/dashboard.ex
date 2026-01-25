@@ -175,7 +175,9 @@ defmodule CrohnjobsWeb.Dashboard do
                           <span class="text-sm font-medium text-white"><%= String.first(client.user.name || "?") %></span>
                         </div>
                         <div class="ml-4">
-                          <div class="text-sm font-medium text-gray-900"><%= client.user.name %></div>
+                          <div class="text-sm font-medium text-gray-900">
+                          <img class="w-32 h-32 rounded-full object-cover border-4 border-emerald-100" src={client.profile_picture_url}/>
+                          <%= client.user.name %></div>
                         </div>
                       </div>
                     </td>
