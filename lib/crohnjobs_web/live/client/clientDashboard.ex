@@ -98,21 +98,48 @@ import Ecto.Query
   def render(assigns) do
     ~H"""
     <div class="max-w-4xl mx-auto px-4 py-6 space-y-6">
-      <!-- Header with Date -->
+      <!-- Header with Date and Profile -->
       <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p class="text-gray-500 text-sm mt-1">
-            <%= Calendar.strftime(DateTime.utc_now(), "%A, %B %d, %Y") %>
-          </p>
+        <div class="flex items-center gap-4">
+          <.link navigate={~p"/client/settings"} class="flex-shrink-0 group">
+            <%= if @client.profile_picture_url do %>
+              <img
+                src={@client.profile_picture_url}
+                alt="Profile"
+                class="w-16 h-16 rounded-full object-cover border-2 border-emerald-200 group-hover:border-emerald-400 transition-colors"
+              />
+            <% else %>
+              <div class="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xl font-bold border-2 border-emerald-200 group-hover:border-emerald-400 transition-colors">
+                <%= get_user_initials(@client) %>
+              </div>
+            <% end %>
+          </.link>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p class="text-gray-500 text-sm mt-1">
+              <%= Calendar.strftime(DateTime.utc_now(), "%A, %B %d, %Y") %>
+            </p>
+          </div>
         </div>
-        <div class="text-right">
-          <%= if @client.trainer do %>
-            <p class="text-sm text-gray-500">Your Trainer</p>
-            <p class="font-semibold text-gray-900"><%= @client.trainer.user.name %></p>
-          <% else %>
-            <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">No trainer assigned</span>
-          <% end %>
+        <div class="flex items-center gap-3">
+          <div class="text-right">
+            <%= if @client.trainer do %>
+              <p class="text-sm text-gray-500">Your Trainer</p>
+              <p class="font-semibold text-gray-900"><%= @client.trainer.user.name %></p>
+            <% else %>
+              <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">No trainer assigned</span>
+            <% end %>
+          </div>
+          <.link
+            navigate={~p"/client/settings"}
+            class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Settings"
+          >
+            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+          </.link>
         </div>
       </div>
 
@@ -305,5 +332,18 @@ import Ecto.Query
     """
   end
 
+  defp get_user_initials(client) do
+    case Repo.preload(client, :user) do
+      %{user: %{name: name}} when not is_nil(name) ->
+        name
+        |> String.split(" ")
+        |> Enum.take(2)
+        |> Enum.map(&String.first/1)
+        |> Enum.join("")
+        |> String.upcase()
 
+      _ ->
+        "U"
+    end
+  end
 end

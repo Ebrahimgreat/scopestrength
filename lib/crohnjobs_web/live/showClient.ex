@@ -35,12 +35,13 @@ end
           <div class="bg-white rounded-xl shadow-lg border-2 border-purple-200 p-8 flex justify-between items-center">
             <div class="flex items-center space-x-6">
               <div class="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                <span class="text-3xl font-bold text-white">
-                  <%= String.first(@client.user.name || "?") |> String.upcase() %>
-                </span>
+              <img class="w-32 h-32 rounded-full object-cover border-4 border-emerald-100" src={@client.profile_picture_url}/>
+
               </div>
               <div>
-                <h1 class="text-4xl font-bold text-gray-900"><%= @client.user.name %></h1>
+                <h1 class="text-4xl font-bold text-gray-900">
+
+                <%= @client.user.name %></h1>
                 <p class="text-lg text-gray-600 mt-1">Client Profile & Management</p>
               </div>
             </div>
@@ -75,7 +76,8 @@ end
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-green-50 p-4 rounded-lg border-2 border-green-200">
                   <label class="block text-sm font-bold text-green-700 mb-2">Full Name</label>
-                  <p class="text-lg font-semibold text-gray-900"><%= @client.user.name %></p>
+                  <p class="text-lg font-semibold text-gray-900">
+                  <%= @client.user.name %></p>
                 </div>
                 <div class="bg-orange-50 p-4 rounded-lg border-2 border-orange-200">
                   <label class="block text-sm font-bold text-orange-700 mb-2">Age</label>

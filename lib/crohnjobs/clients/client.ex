@@ -8,6 +8,7 @@ defmodule Crohnjobs.Clients.Client do
     field :notes, :string
     field :sex, :string
     field :active, :boolean
+    field :profile_picture_url, :string
     belongs_to :user, Crohnjobs.Account.User
     belongs_to :trainer, Crohnjobs.Trainers.Trainer
 
@@ -31,10 +32,7 @@ defmodule Crohnjobs.Clients.Client do
   @doc false
   def changeset(client, attrs) do
     client
-    |> cast(attrs, [:age, :user_id, :height, :notes, :sex, :trainer_id, :active])
-
-
-
+    |> cast(attrs, [:age, :user_id, :height, :notes, :sex, :trainer_id, :active, :profile_picture_url])
     |> validate_required([])
   end
 end

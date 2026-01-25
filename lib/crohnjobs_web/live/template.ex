@@ -44,10 +44,22 @@ alias Phoenix.LiveViewTest.View
           template = Repo.preload(template, programmeDetails: [:exercise])
           template_changeset = Programmes.change_programme_template(template) |> to_form()
 
+          # Calculate muscle group set volume
+          muscle_group_frequencies = template.programmeDetails
+            |> Enum.group_by(fn detail -> detail.exercise.type end)
+            |> Enum.map(fn {muscle_group, details} ->
+              total_sets = details
+                |> Enum.map(&String.to_integer(&1.set))
+                |> Enum.sum()
+              {muscle_group, total_sets}
+            end)
+            |> Map.new()
+
           {:ok,
            assign(socket,
              template: template_changeset,
-             template_id: template_id
+             template_id: template_id,
+             muscle_group_frequencies: muscle_group_frequencies
            )}
 
         false ->
@@ -119,6 +131,32 @@ end
           </.form>
         </div>
       </div>
+
+      <!-- Muscle Group Distribution Section -->
+      <%= if map_size(@muscle_group_frequencies) > 0 do %>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800">Muscle Group Set Volume</h2>
+          </div>
+          <div class="p-6">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <%= for {muscle_group, total_sets} <- @muscle_group_frequencies do %>
+                <div class="bg-gradient-to-br from-indigo-50 to-white border border-indigo-200 rounded-lg p-4">
+                  <div class="flex flex-col space-y-2">
+                    <span class="text-sm font-medium text-gray-700"><%= muscle_group %></span>
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs text-gray-500">Total Sets</span>
+                      <span class="inline-flex items-center justify-center px-3 py-1 bg-indigo-600 text-white text-sm font-bold rounded-full">
+                        <%= total_sets %>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
 
       <!-- Programme Details Section -->
       <div class="bg-white rounded-lg shadow-sm border border-gray-200">
