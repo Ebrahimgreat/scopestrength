@@ -41,10 +41,11 @@ alias Crohnjobs.CustomExercises.CustomExercise
     user = socket.assigns.current_user
     trainer = Trainers.get_trainer_byUserId(user.id)
     name = params["exercise"]["name"]
-    type = params["exercise"]["type"]
-    equipment = params["exercise"]["equipment"]
-    case Exercise.create_exercise(%{name: name, equipment: equipment, type: type, user_id: user.id, is_custom: true}) do
+    muscle_id = params["exercise"]["muscle_id"]
+    equipment_id = params["exercise"]["equipment_id"]
+    case Exercise.create_exercise(%{name: name, muscle_id: muscle_id, equipment_id: equipment_id, user_id: user.id, is_custom: true}) do
       {:ok, exercise}->
+        exercise = Repo.preload(exercise, [:muscle, :equipment])
         exercises = socket.assigns.exercises ++ [exercise]
       {:noreply,socket|> assign(show_modal: false, exercises: exercises)|> put_flash(:info, "exercise Created")}
       _ -> {:noreply, socket|> put_flash(:error, "An error has occured")}
@@ -67,7 +68,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
       filtered_exercises =
         case name do
           "ALL" -> socket.assigns.allExercises
-          _ -> Enum.filter(socket.assigns.allExercises, &(&1.type == name))
+          _ -> Enum.filter(socket.assigns.allExercises, &(&1.muscle && &1.muscle.name == name))
         end
 
       {:noreply,
@@ -148,11 +149,15 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
     template_id = params["template_id"]
 
+    muscles = Crohnjobs.Exercises.list_mucles()
+    equipment_list = Crohnjobs.Exercises.list_equipment()
+
     exercises =
       Repo.all(
         from e in Crohnjobs.Exercises.Exercise,
           where: e.is_custom == false or e.user_id == ^user.id,
-          order_by: [asc: e.name]
+          order_by: [asc: e.name],
+          preload: [:muscle, :equipment]
       )
 
 
@@ -167,7 +172,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
       socket =
       socket
-      |> assign(allExercises: exercises, filter_by_type: "ALL", newExerciseForm: newExerciseForm, show_modal: show_modal, template_id: template_id, programmeDetails: changesets, exercises: exercises)
+      |> assign(allExercises: exercises, filter_by_type: "ALL", newExerciseForm: newExerciseForm, show_modal: show_modal, template_id: template_id, programmeDetails: changesets, exercises: exercises, muscles: muscles, equipment_list: equipment_list)
       |> assign_new(:q, fn -> "" end)
 
     {:ok, socket}
@@ -193,8 +198,8 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
       <p> Create a new Exercise</p>
       <.input  type="text" required label="name" field={@newExerciseForm[:name]}/>
-      <.input type="select" options = {["Chest","Back","Quads","Shoulders","Abs","Biceps","Triceps", "Hamstrings"]} field={@newExerciseForm[:type]}/>
-      <.input type="select" field={@newExerciseForm[:equipment]} options={["Dumbell","Cable","Barbell", "Machine", "Plate"]}/>
+      <.input type="select" options={Enum.map(@muscles, &{&1.name, &1.id})} field={@newExerciseForm[:muscle_id]} label="Muscle group"/>
+      <.input type="select" field={@newExerciseForm[:equipment_id]} options={Enum.map(@equipment_list, &{&1.name, &1.id})} label="Equipment"/>
       <.button>
       Submit
       </.button>
@@ -236,104 +241,21 @@ alias Crohnjobs.CustomExercises.CustomExercise
           All Types
         </.button>
 
-        <.button
-        phx-click="filterByType"
-        phx-value-name="Chest"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filter_by_type == "Chest",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Chest
-        </.button>
-
-        <.button
-        phx-click="filterByType"
-        phx-value-name="Back"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filter_by_type == "Back",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Back
-        </.button>
-
-
-        <.button
-        phx-click="filterByType"
-        phx-value-name="Triceps"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filter_by_type == "Triceps",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Triceps
-        </.button>
-
-
-        <.button
-        phx-click="filterByType"
-        phx-value-name="Biceps"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filter_by_type == "Bicep",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Biceps
-        </.button>
-
-        <.button
-        phx-click="filterByType"
-        phx-value-name="Quads"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filter_by_type == "Quads",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Quads
-        </.button>
-        <.button
-        phx-click="filterByType"
-        phx-value-name="Hamstrings"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filter_by_type == "Quads",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Hamstrings
-        </.button>
-
-        <.button
+        <%= for muscle <- @muscles do %>
+          <.button
           phx-click="filterByType"
-          phx-value-name="Shoulders"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filter_by_type == "Shoulders",
-              do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
-            )
-          ]}
-        >
-          Shoulders
-        </.button>
+          phx-value-name={muscle.name}
+            class={[
+              "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+              if(@filter_by_type == muscle.name,
+                do: "bg-blue-600 text-white shadow-md",
+                else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+              )
+            ]}
+          >
+            {muscle.name}
+          </.button>
+        <% end %>
       </div>
     </div>
 </div>

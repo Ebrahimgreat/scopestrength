@@ -15,7 +15,8 @@ defmodule CrohnjobsWeb.StrengthProgress do
       Repo.all(
         from e in Exercise,
           where: e.is_custom == false or e.user_id == ^user.id,
-          order_by: [asc: e.name]
+          order_by: [asc: e.name],
+          preload: [:muscle, :equipment]
       )
 
     {:ok, assign(socket, exercises: exercises, client_id: id)}
@@ -62,11 +63,11 @@ defmodule CrohnjobsWeb.StrengthProgress do
                       </td>
                       <td class="py-4 px-6">
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                          {exercise.type || "N/A"}
+                          {if exercise.muscle, do: exercise.muscle.name, else: "N/A"}
                         </span>
                       </td>
                       <td class="py-4 px-6 text-slate-700">
-                        {exercise.equipment || "None"}
+                        {if exercise.equipment, do: exercise.equipment.name, else: "None"}
                       </td>
                       <td class="py-4 px-6">
                         <span class={[

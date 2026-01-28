@@ -41,12 +41,11 @@ alias Phoenix.LiveViewTest.View
 
       case programme.trainer_id == trainer.id do
         true ->
-          template = Repo.preload(template, programmeDetails: [:exercise])
+          template = Repo.preload(template, programmeDetails: [exercise: [:muscle, :equipment]])
           template_changeset = Programmes.change_programme_template(template) |> to_form()
 
-          # Calculate muscle group set volume
           muscle_group_frequencies = template.programmeDetails
-            |> Enum.group_by(fn detail -> detail.exercise.type end)
+            |> Enum.group_by(fn detail -> if detail.exercise.muscle, do: detail.exercise.muscle.name, else: "Unknown" end)
             |> Enum.map(fn {muscle_group, details} ->
               total_sets = details
                 |> Enum.map(&String.to_integer(&1.set))
@@ -188,7 +187,7 @@ end
 
                     </div>
                     <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      <%=programmeDetail.exercise.type%>
+                      <%= if programmeDetail.exercise.muscle, do: programmeDetail.exercise.muscle.name, else: "N/A" %>
                       </span>
                   </div>
 
