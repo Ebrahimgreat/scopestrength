@@ -110,4 +110,56 @@ defmodule Crohnjobs.ExercisesTest do
       assert %Ecto.Changeset{} = Exercises.change_equipment(equipment)
     end
   end
+
+  describe "exercise_muscle_contribution" do
+    alias Crohnjobs.Exercises.ExerciseMuscleContribution
+
+    import Crohnjobs.ExercisesFixtures
+
+    @invalid_attrs %{}
+
+    test "list_exercise_muscle_contribution/0 returns all exercise_muscle_contribution" do
+      exercise_muscle_contribution = exercise_muscle_contribution_fixture()
+      assert Exercises.list_exercise_muscle_contribution() == [exercise_muscle_contribution]
+    end
+
+    test "get_exercise_muscle_contribution!/1 returns the exercise_muscle_contribution with given id" do
+      exercise_muscle_contribution = exercise_muscle_contribution_fixture()
+      assert Exercises.get_exercise_muscle_contribution!(exercise_muscle_contribution.id) == exercise_muscle_contribution
+    end
+
+    test "create_exercise_muscle_contribution/1 with valid data creates a exercise_muscle_contribution" do
+      valid_attrs = %{}
+
+      assert {:ok, %ExerciseMuscleContribution{} = exercise_muscle_contribution} = Exercises.create_exercise_muscle_contribution(valid_attrs)
+    end
+
+    test "create_exercise_muscle_contribution/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Exercises.create_exercise_muscle_contribution(@invalid_attrs)
+    end
+
+    test "update_exercise_muscle_contribution/2 with valid data updates the exercise_muscle_contribution" do
+      exercise_muscle_contribution = exercise_muscle_contribution_fixture()
+      update_attrs = %{}
+
+      assert {:ok, %ExerciseMuscleContribution{} = exercise_muscle_contribution} = Exercises.update_exercise_muscle_contribution(exercise_muscle_contribution, update_attrs)
+    end
+
+    test "update_exercise_muscle_contribution/2 with invalid data returns error changeset" do
+      exercise_muscle_contribution = exercise_muscle_contribution_fixture()
+      assert {:error, %Ecto.Changeset{}} = Exercises.update_exercise_muscle_contribution(exercise_muscle_contribution, @invalid_attrs)
+      assert exercise_muscle_contribution == Exercises.get_exercise_muscle_contribution!(exercise_muscle_contribution.id)
+    end
+
+    test "delete_exercise_muscle_contribution/1 deletes the exercise_muscle_contribution" do
+      exercise_muscle_contribution = exercise_muscle_contribution_fixture()
+      assert {:ok, %ExerciseMuscleContribution{}} = Exercises.delete_exercise_muscle_contribution(exercise_muscle_contribution)
+      assert_raise Ecto.NoResultsError, fn -> Exercises.get_exercise_muscle_contribution!(exercise_muscle_contribution.id) end
+    end
+
+    test "change_exercise_muscle_contribution/1 returns a exercise_muscle_contribution changeset" do
+      exercise_muscle_contribution = exercise_muscle_contribution_fixture()
+      assert %Ecto.Changeset{} = Exercises.change_exercise_muscle_contribution(exercise_muscle_contribution)
+    end
+  end
 end

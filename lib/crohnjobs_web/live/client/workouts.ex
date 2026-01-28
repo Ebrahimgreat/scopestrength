@@ -1,4 +1,5 @@
 defmodule CrohnjobsWeb.Client.Workouts do
+  alias Crohnjobs.Training
   alias Crohnjobs.Repo
   alias Crohnjobs.Clients.Client
   alias Crohnjobs.Training.Workout
@@ -11,6 +12,20 @@ defmodule CrohnjobsWeb.Client.Workouts do
     workouts = Repo.all(from w in Workout, where: w.client_id == ^client.id)
     {:ok, assign(socket, workouts: workouts)}
   end
+
+  def handle_event("createWorkout", _params, socket) do
+    user = socket.assigns.current_user
+    client = Repo.get_by(Client, user_id: user.id)
+    case Training.create_workout(%{client_id: client.id, name: "Untitled"}) do
+      {:ok,workout}->
+        workouts = socket.assigns.workouts++[workout]
+        {:noreply, assign(socket,workouts: workouts)}
+        _->{:noreply,socket|>put_flash(:error, "Unable To create workout")}
+    end
+
+  end
+
+
 
   def render(assigns) do
     ~H"""
@@ -90,9 +105,10 @@ defmodule CrohnjobsWeb.Client.Workouts do
               </svg>
             </div>
             <h3 class="text-xl font-semibold text-gray-900 mb-2">No workouts yet</h3>
-            <p class="text-gray-600 max-w-md mx-auto">
-              Your trainer hasn't assigned any workouts yet. Check back soon!
-            </p>
+            <.button phx-click="createWorkout">
+            Create
+            </.button>
+
           </div>
         <% else %>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

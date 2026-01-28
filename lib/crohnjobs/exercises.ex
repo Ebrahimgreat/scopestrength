@@ -197,4 +197,100 @@ defmodule Crohnjobs.Exercises do
   def change_equipment(%Equipment{} = equipment, attrs \\ %{}) do
     Equipment.changeset(equipment, attrs)
   end
+
+  alias Crohnjobs.Exercises.ExerciseMuscleContribution
+
+  @doc """
+  Returns the list of exercise_muscle_contribution.
+
+  ## Examples
+
+      iex> list_exercise_muscle_contribution()
+      [%ExerciseMuscleContribution{}, ...]
+
+  """
+  def list_exercise_muscle_contribution do
+    Repo.all(ExerciseMuscleContribution)
+  end
+
+  @doc """
+  Gets a single exercise_muscle_contribution.
+
+  Raises `Ecto.NoResultsError` if the Exercise muscle contribution does not exist.
+
+  ## Examples
+
+      iex> get_exercise_muscle_contribution!(123)
+      %ExerciseMuscleContribution{}
+
+      iex> get_exercise_muscle_contribution!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_exercise_muscle_contribution!(id), do: Repo.get!(ExerciseMuscleContribution, id)
+
+  @doc """
+  Creates a exercise_muscle_contribution.
+
+  ## Examples
+
+      iex> create_exercise_muscle_contribution(%{field: value})
+      {:ok, %ExerciseMuscleContribution{}}
+
+      iex> create_exercise_muscle_contribution(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_exercise_muscle_contribution(attrs \\ %{}) do
+    %ExerciseMuscleContribution{}
+    |> ExerciseMuscleContribution.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a exercise_muscle_contribution.
+
+  ## Examples
+
+      iex> update_exercise_muscle_contribution(exercise_muscle_contribution, %{field: new_value})
+      {:ok, %ExerciseMuscleContribution{}}
+
+      iex> update_exercise_muscle_contribution(exercise_muscle_contribution, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_exercise_muscle_contribution(%ExerciseMuscleContribution{} = exercise_muscle_contribution, attrs) do
+    exercise_muscle_contribution
+    |> ExerciseMuscleContribution.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a exercise_muscle_contribution.
+
+  ## Examples
+
+      iex> delete_exercise_muscle_contribution(exercise_muscle_contribution)
+      {:ok, %ExerciseMuscleContribution{}}
+
+      iex> delete_exercise_muscle_contribution(exercise_muscle_contribution)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_exercise_muscle_contribution(%ExerciseMuscleContribution{} = exercise_muscle_contribution) do
+    Repo.delete(exercise_muscle_contribution)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking exercise_muscle_contribution changes.
+
+  ## Examples
+
+      iex> change_exercise_muscle_contribution(exercise_muscle_contribution)
+      %Ecto.Changeset{data: %ExerciseMuscleContribution{}}
+
+  """
+  def change_exercise_muscle_contribution(%ExerciseMuscleContribution{} = exercise_muscle_contribution, attrs \\ %{}) do
+    ExerciseMuscleContribution.changeset(exercise_muscle_contribution, attrs)
+  end
 end

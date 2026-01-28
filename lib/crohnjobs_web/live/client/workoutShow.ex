@@ -1,7 +1,9 @@
 defmodule CrohnjobsWeb.Client.WorkoutShow do
+alias Crohnjobs.Programmes.ProgrammeUser
 alias GenLSP.Structures.ConfigurationItem
 alias Crohnjobs.Training
 alias Crohnjobs.Exercises.Exercise
+alias Crohnjobs.Exercises.ExerciseMuscleContribution
 alias CrohnjobsWeb.Exercises
   use CrohnjobsWeb, :live_view
   alias Crohnjobs.Repo
@@ -155,6 +157,68 @@ alias CrohnjobsWeb.Exercises
     {:noreply, assign(socket, edit_mode: !socket.assigns.edit_mode)}
   end
 
+  def handle_event("load_from_programme", %{"template-id" => template_id}, socket) do
+    workout_id = socket.assigns.workout_id
+
+    template =
+      socket.assigns.programme
+      |> case do
+        nil -> nil
+        programme_user -> programme_user.programme.programmeTemplates
+      end
+      |> case do
+        nil -> nil
+        templates -> Enum.find(templates, &("#{&1.id}" == template_id))
+      end
+
+    if template do
+      result =
+        Repo.transaction(fn ->
+          Repo.delete_all(from w in WorkoutDetails, where: w.workout_id == ^workout_id)
+
+          template.programmeDetails
+          |> Enum.uniq_by(& &1.exercise_id)
+          |> Enum.each(fn detail ->
+            attrs = %{
+              workout_id: workout_id,
+              exercise_id: detail.exercise_id,
+              set: 1,
+              reps: 10,
+              weight: nil
+            }
+
+            case Training.create_workout_details(attrs) do
+              {:ok, _} -> :ok
+              {:error, changeset} -> Repo.rollback(changeset)
+            end
+          end)
+        end)
+
+      case result do
+        {:ok, _} ->
+          workouts =
+            Repo.all(
+              from w in WorkoutDetails,
+                where: w.workout_id == ^workout_id
+            )
+            |> Repo.preload(:exercise)
+
+          {grouped_workouts, muscle_group_frequencies} = build_workout_assigns(workouts)
+
+          {:noreply,
+           socket
+           |> assign(:workouts, grouped_workouts)
+           |> assign(:muscle_group_frequencies, muscle_group_frequencies)
+           |> put_flash(:info, "Workout loaded from programme")}
+
+        {:error, _} ->
+          {:noreply, socket |> put_flash(:error, "Failed to load programme")}
+      end
+    else
+      {:noreply, socket |> put_flash(:error, "Template not found")}
+    end
+  end
+
   def mount(params, _session, socket) do
     user = socket.assigns.current_user
 
@@ -192,14 +256,21 @@ alias CrohnjobsWeb.Exercises
                     from w in WorkoutDetails,
                       where: w.workout_id == ^workout_id_int
                   )|>Repo.preload(:exercise)
-                  changesets=Enum.map(workouts, fn workout-> workout|>Training.change_workout_details()|>to_form()end)
-                  grouped_workouts = Enum.group_by(changesets, fn form-> form.data.exercise_id end)
+                  IO.inspect(workouts)
+                {grouped_workouts, muscle_group_frequencies} = build_workout_assigns(workouts)
 
+                  programme =
+                    Repo.get_by(ProgrammeUser, %{
+                      client_id: client.id,
+                      is_active: true
+                    })|>Repo.preload(programme: [programmeTemplates: [programmeDetails: :exercise]])
+                    IO.inspect(programme)
                   newForm = WorkoutDetails.changeset(%WorkoutDetails{},%{})|>to_form()
 
                 {:ok,
                  socket
                  |> assign(:client, client)
+                 |>assign(:programme, programme)
                  |> assign(:workout_id, workout_id_int)
                  |> assign(editForm: nil)
                  |> assign(newForm: newForm)
@@ -208,6 +279,7 @@ alias CrohnjobsWeb.Exercises
                  |> assign(exercises: exercises)
                  |> assign(allExercises: exercises)
                  |> assign(filter_by_type: "ALL")
+                 |> assign(muscle_group_frequencies: muscle_group_frequencies)
                  |> assign(edit_mode: false)
                  |> assign_new(:q, fn -> "" end)}
 
@@ -251,6 +323,31 @@ alias CrohnjobsWeb.Exercises
       <%= if @edit_mode do %>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <%= if @programme && @programme.programme && length(@programme.programme.programmeTemplates) > 0 do %>
+              <div class="mb-6 border border-emerald-100 bg-emerald-50/40 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <div>
+                    <h2 class="text-sm font-semibold text-emerald-900">Load from programme</h2>
+                    <p class="text-xs text-emerald-700">Replaces current workout with 1 set per exercise.</p>
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <%= for template <- @programme.programme.programmeTemplates do %>
+                    <button
+                      type="button"
+                      phx-click="load_from_programme"
+                      phx-value-template-id={template.id}
+                      data-confirm="This will replace your current workout. Continue?"
+                      class="flex items-center justify-between rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50"
+                    >
+                      <span class="truncate"><%= template.name %></span>
+                      <span class="text-[10px] text-emerald-600">Load</span>
+                    </button>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-xl font-semibold text-gray-800">Exercise Library</h2>
               <span class="text-sm text-gray-500">
@@ -350,8 +447,11 @@ alias CrohnjobsWeb.Exercises
             <% end %>
           </div>
         </div>
+        <!-- Programme loading -->
+
+
+
       <% else %>
-        <!-- VIEW MODE: Clean Display of Completed Workout -->
         <div class="bg-white rounded-2xl shadow-lg border border-gray-200">
           <%= if Enum.empty?(@workouts) do %>
             <div class="text-center py-16">
@@ -365,6 +465,35 @@ alias CrohnjobsWeb.Exercises
             </div>
           <% else %>
             <div class="p-6">
+              <%= if map_size(@muscle_group_frequencies) > 0 do %>
+                <div class="mb-6 bg-white rounded-xl border border-gray-200 p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 class="text-base font-semibold text-gray-900">Session Volume</h3>
+                      <p class="text-xs text-gray-500">Direct vs effective sets per muscle</p>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <%= for {muscle_group, volumes} <- @muscle_group_frequencies do %>
+                      <div class="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-lg px-3 py-2.5">
+                        <p class="text-xs font-semibold text-slate-700 truncate"><%= muscle_group %></p>
+                        <div class="flex items-center justify-between mt-2 text-[11px] text-slate-500">
+                          <span>Direct</span>
+                          <span class="inline-flex items-center justify-center px-2 py-0.5 bg-emerald-600 text-white text-xs font-semibold rounded-full">
+                            <%= round(volumes.direct) %>
+                          </span>
+                        </div>
+                        <div class="flex items-center justify-between mt-1 text-[11px] text-slate-500">
+                          <span>Effective</span>
+                          <span class="inline-flex items-center justify-center px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
+                            <%= round(volumes.effective) %>
+                          </span>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
               <div class="grid gap-6">
                 <%= for {_exercise_id, sets} <- @workouts do %>
                   <div class="border border-gray-200 rounded-xl p-5 bg-gradient-to-br from-white to-gray-50">
@@ -412,5 +541,64 @@ alias CrohnjobsWeb.Exercises
       <% end %>
     </div>
     """
+  end
+
+  defp build_workout_assigns(workouts) do
+    changesets =
+      Enum.map(workouts, fn workout ->
+        workout |> Training.change_workout_details() |> to_form()
+      end)
+
+    grouped_workouts = Enum.group_by(changesets, fn form -> form.data.exercise_id end)
+    muscle_group_frequencies = build_volume_from_workouts(workouts)
+
+    {grouped_workouts, muscle_group_frequencies}
+  end
+
+  defp build_volume_from_workouts(workouts) do
+    exercise_ids =
+      workouts
+      |> Enum.map(& &1.exercise_id)
+      |> Enum.uniq()
+
+    if Enum.empty?(exercise_ids) do
+      %{}
+    else
+      muscle_contributions =
+        Repo.all(
+          from c in ExerciseMuscleContribution,
+            where: c.exercise_id in ^exercise_ids
+        )
+        |> Repo.preload(:muscle)
+
+      contributions_by_exercise =
+        muscle_contributions
+        |> Enum.group_by(& &1.exercise_id)
+
+      workouts
+      |> Enum.flat_map(fn detail ->
+        contributions = Map.get(contributions_by_exercise, detail.exercise_id, [])
+
+        Enum.map(contributions, fn c ->
+          {c.muscle.name, c.role, 1 * c.multiplier}
+        end)
+      end)
+      |> Enum.group_by(fn {muscle, _role, _volume} -> muscle end)
+      |> Enum.map(fn {muscle, rows} ->
+        direct_sets =
+          rows
+          |> Enum.filter(fn {_m, role, _v} -> role == "primary" end)
+          |> Enum.map(fn {_m, _r, v} -> v end)
+          |> Enum.sum()
+
+        effective_sets =
+          rows
+          |> Enum.map(fn {_m, _r, v} -> v end)
+          |> Enum.sum()
+
+        {muscle, %{direct: direct_sets, effective: effective_sets}}
+      end)
+      |> Map.new()
+    end
   end
 end
