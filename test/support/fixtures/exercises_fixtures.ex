@@ -31,4 +31,18 @@ defmodule Crohnjobs.ExercisesFixtures do
 
     equipment
   end
+
+  @doc """
+  Generate a exercise_muscle_contribution.
+  """
+  def exercise_muscle_contribution_fixture(attrs \\ %{}) do
+    {:ok, exercise_muscle_contribution} =
+      attrs
+      |> Enum.into(%{
+
+      })
+      |> Crohnjobs.Exercises.create_exercise_muscle_contribution()
+
+    exercise_muscle_contribution
+  end
 end

@@ -11,6 +11,7 @@
 # and so on) as they will fail if something goes wrong.
 alias Crohnjobs.Repo
 alias Crohnjobs.Exercises.{Exercise, Muscles, Equipment}
+alias Crohnjobs.Exercises.ExerciseMuscleContribution
 
 # ── Seed muscle groups ──────────────────────────────────────────────
 muscle_names = [
@@ -50,6 +51,8 @@ equipment =
     equip = Repo.insert!(%Equipment{name: name})
     {name, equip.id}
   end)
+
+
 
 # ── Seed exercises ──────────────────────────────────────────────────
 exercises = [
@@ -125,12 +128,55 @@ exercises = [
   %{name: "Leg Raise", muscle: "Abs", equipment: "Bodyweight"}
 ]
 
-Enum.each(exercises, fn attrs ->
-  Repo.insert!(%Exercise{}
-    |> Exercise.changeset(%{
-      name: attrs.name,
-      muscle_id: muscles[attrs.muscle],
-      equipment_id: equipment[attrs.equipment]
+# Insert exercises and build exercise_map
+exercise_map =
+  Enum.into(exercises, %{}, fn attrs ->
+    ex =
+      %Exercise{}
+      |> Exercise.changeset(%{
+        name: attrs.name,
+        muscle_id: muscles[attrs.muscle],
+        equipment_id: equipment[attrs.equipment]
+      })
+      |> Repo.insert!()
+
+    {attrs.name, ex}
+  end)
+
+# ── Seed exercise muscle contributions ──────────────────────────────
+contributions = [
+  %{exercise: "Dumbbell Bench Press", muscle: "Chest", role: "primary", multiplier: 1.0},
+  %{exercise: "Dumbbell Bench Press", muscle: "Triceps", role: "secondary", multiplier: 0.3},
+  %{exercise: "Dumbbell Bench Press", muscle: "Front Delts", role: "secondary", multiplier: 0.2},
+
+  %{exercise: "Barbell Bench Press", muscle: "Chest", role: "primary", multiplier: 1.0},
+  %{exercise: "Barbell Bench Press", muscle: "Triceps", role: "secondary", multiplier: 0.25},
+  %{exercise: "Barbell Bench Press", muscle: "Front Delts", role: "secondary", multiplier: 0.2},
+
+  %{exercise: "Barbell Bent Over Row", muscle: "Upper Back", role: "primary", multiplier: 1.0},
+  %{exercise: "Barbell Bent Over Row", muscle: "Biceps", role: "secondary", multiplier: 0.3},
+
+  %{exercise: "Lat Pulldown", muscle: "Lats", role: "primary", multiplier: 1.0},
+  %{exercise: "Lat Pulldown", muscle: "Biceps", role: "secondary", multiplier: 0.25},
+
+  %{exercise: "Barbell Curl", muscle: "Biceps", role: "primary", multiplier: 1.0}
+]
+
+Enum.each(contributions, fn attrs ->
+  exercise = Map.fetch!(exercise_map, attrs.exercise)
+  muscle_id =
+    case Map.fetch(muscles, attrs.muscle) do
+      {:ok, id} -> id
+      :error -> raise "Muscle #{attrs.muscle} not found in muscles map"
+    end
+
+  Repo.insert!(%ExerciseMuscleContribution{}
+    |> ExerciseMuscleContribution.changeset(%{
+      exercise_id: exercise.id,
+      muscle_id: muscle_id,
+      role: attrs.role,
+      multiplier: attrs.multiplier,
+      trainer_id: nil
     })
   )
 end)

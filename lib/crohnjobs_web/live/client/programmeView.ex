@@ -96,14 +96,14 @@ defmodule CrohnjobsWeb.Client.ProgrammeView do
               <h2 class="text-lg font-semibold text-gray-900">Weekly Muscle Group Volume</h2>
               <p class="text-sm text-gray-500 mt-1">Total sets per muscle group across all sessions</p>
             </div>
-            <div class="p-5">
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div class="p-4">
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 <%= for {muscle_group, total_sets} <- @muscle_group_volume do %>
-                  <div class="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-4 hover:shadow-md transition-all duration-200">
-                    <p class="text-sm font-semibold text-gray-700"><%= muscle_group %></p>
-                    <div class="flex items-center justify-between mt-2">
-                      <span class="text-xs text-gray-500">Total Sets</span>
-                      <span class="inline-flex items-center justify-center px-3 py-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-bold rounded-full">
+                  <div class="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 rounded-lg px-3 py-2.5">
+                    <p class="text-xs font-semibold text-slate-700 truncate"><%= muscle_group %></p>
+                    <div class="flex items-center justify-between mt-2 text-[11px] text-slate-500">
+                      <span>Total Sets</span>
+                      <span class="inline-flex items-center justify-center px-2 py-0.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold rounded-full">
                         <%= total_sets %>
                       </span>
                     </div>

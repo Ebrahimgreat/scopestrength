@@ -1,4 +1,5 @@
 defmodule CrohnjobsWeb.Router do
+
   use CrohnjobsWeb, :router
 
   import CrohnjobsWeb.UserAuth
@@ -64,6 +65,7 @@ defmodule CrohnjobsWeb.Router do
       live "/clients/:id/strengthProgress", StrengthProgress
       live "/clients/:id/strengthProgress/:exercise_id", ExerciseProgress
       live "/exercises", Exercises
+      live "exercises/contribution",ExerciseVolume
 
       live "/clients/:id/workouts/:workout_id", WorkoutShow
       live "/clients/:id/workouts/:workout_id/details", WorkoutDetail

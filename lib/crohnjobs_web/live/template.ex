@@ -1,12 +1,13 @@
 defmodule CrohnjobsWeb.Template do
+alias Crohnjobs.Exercises.ExerciseMuscleContribution
+alias Crohnjobs.Exercise
 alias Crohnjobs.Trainers
-alias CrohnjobsWeb.Template
-alias Phoenix.LiveViewTest.View
   use CrohnjobsWeb, :live_view
   alias Crohnjobs.Programmes
   alias Crohnjobs.Programmes.Programme
   alias Crohnjobs.Programmes.ProgrammeTemplate
   alias Crohnjobs.Repo
+  import Ecto.Query
 
   def handle_event("updateForm", params, socket) do
     IO.inspect(params)
@@ -42,17 +43,64 @@ alias Phoenix.LiveViewTest.View
       case programme.trainer_id == trainer.id do
         true ->
           template = Repo.preload(template, programmeDetails: [exercise: [:muscle, :equipment]])
-          template_changeset = Programmes.change_programme_template(template) |> to_form()
 
-          muscle_group_frequencies = template.programmeDetails
-            |> Enum.group_by(fn detail -> if detail.exercise.muscle, do: detail.exercise.muscle.name, else: "Unknown" end)
-            |> Enum.map(fn {muscle_group, details} ->
-              total_sets = details
-                |> Enum.map(&String.to_integer(&1.set))
-                |> Enum.sum()
-              {muscle_group, total_sets}
-            end)
-            |> Map.new()
+
+          template_changeset = Programmes.change_programme_template(template) |> to_form()
+          exercise_ids =
+            template.programmeDetails
+            |> Enum.map(& &1.exercise_id)
+            |> Enum.uniq()
+            muscleContributions = Repo.all(from c in ExerciseMuscleContribution, where: c.exercise_id in ^exercise_ids)|>Repo.preload(:muscle)
+
+            contributions_by_exercise =
+              muscleContributions
+              |> Enum.group_by(& &1.exercise_id)
+
+
+              expanded =
+                template.programmeDetails
+                |> Enum.flat_map(fn detail ->
+                  sets = String.to_integer(detail.set)
+
+                  contributions =
+                    Map.get(contributions_by_exercise, detail.exercise_id, [])
+
+
+                  Enum.map(contributions, fn c ->
+                    {
+                      c.muscle.name,
+                      c.role,
+                      sets * c.multiplier
+                    }
+                  end)
+                end)
+
+
+                grouped =
+                  expanded
+                  |> Enum.group_by(fn {muscle, role, _volume} ->
+                    muscle
+                  end)
+
+                  muscle_group_frequencies =
+                    grouped
+                    |> Enum.map(fn {muscle, rows} ->
+                      direct_sets =
+                        rows
+                        |> Enum.filter(fn {_m, role, _v} -> role == "primary" end)
+                        |> Enum.map(fn {_m, _r, v} -> v end)
+                        |> Enum.sum()
+
+                      effective_sets =
+                        rows
+                        |> Enum.map(fn {_m, _r, v} -> v end)
+                        |> Enum.sum()
+
+                      {muscle, %{direct: direct_sets, effective: effective_sets}}
+                    end)
+                    |> Map.new()
+                    IO.inspect(muscle_group_frequencies)
+
 
           {:ok,
            assign(socket,
@@ -131,31 +179,31 @@ end
         </div>
       </div>
 
-      <!-- Muscle Group Distribution Section -->
-      <%= if map_size(@muscle_group_frequencies) > 0 do %>
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-800">Muscle Group Set Volume</h2>
-          </div>
-          <div class="p-6">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              <%= for {muscle_group, total_sets} <- @muscle_group_frequencies do %>
-                <div class="bg-gradient-to-br from-indigo-50 to-white border border-indigo-200 rounded-lg p-4">
-                  <div class="flex flex-col space-y-2">
-                    <span class="text-sm font-medium text-gray-700"><%= muscle_group %></span>
-                    <div class="flex items-center justify-between">
-                      <span class="text-xs text-gray-500">Total Sets</span>
-                      <span class="inline-flex items-center justify-center px-3 py-1 bg-indigo-600 text-white text-sm font-bold rounded-full">
-                        <%= total_sets %>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              <% end %>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <%= for {muscle_group, volumes} <- @muscle_group_frequencies do %>
+          <div class="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-lg px-3 py-2.5">
+            <div class="flex flex-col gap-2">
+              <span class="text-xs font-semibold text-slate-700 truncate">
+                <%= muscle_group %>
+              </span>
+
+              <div class="flex items-center justify-between text-[11px] text-slate-500">
+                <span>Direct</span>
+                <span class="inline-flex items-center justify-center px-2 py-0.5 bg-indigo-600 text-white text-xs font-semibold rounded-full">
+                  <%= round(volumes.direct) %>
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-slate-500">
+                <span>Effective</span>
+                <span class="inline-flex items-center justify-center px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">
+                  <%= round(volumes.effective) %>
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-      <% end %>
+        <% end %>
+      </div>
 
       <!-- Programme Details Section -->
       <div class="bg-white rounded-lg shadow-sm border border-gray-200">
