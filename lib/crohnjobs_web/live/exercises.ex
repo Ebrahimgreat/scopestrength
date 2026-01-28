@@ -4,6 +4,7 @@ defmodule CrohnjobsWeb.Exercises do
   import Ecto.Query
 
   alias Crohnjobs.Exercise, as: ExerciseContext
+  alias Crohnjobs.Exercises
   alias Crohnjobs.Exercises.Exercise
   alias Crohnjobs.Repo
 
@@ -12,14 +13,15 @@ defmodule CrohnjobsWeb.Exercises do
 
     attrs = %{
       name: params["exercise"]["name"],
-      equipment: params["exercise"]["equipment"],
-      type: params["exercise"]["type"],
+      muscle_id: params["exercise"]["muscle_id"],
+      equipment_id: params["exercise"]["equipment_id"],
       is_custom: true,
       user_id: user.id
     }
 
     case ExerciseContext.create_exercise(attrs) do
       {:ok, exercise} ->
+        exercise = Repo.preload(exercise, [:muscle, :equipment])
         all_exercises = socket.assigns.allExercises ++ [exercise]
 
         exercises =
@@ -88,14 +90,16 @@ defmodule CrohnjobsWeb.Exercises do
 
     attrs = %{
       name: params["exercise"]["name"],
-      type: params["exercise"]["type"],
-      equipment: params["exercise"]["equipment"]
+      muscle_id: params["exercise"]["muscle_id"],
+      equipment_id: params["exercise"]["equipment_id"]
     }
 
     exercise = ExerciseContext.get_exercise!(id)
 
     case ExerciseContext.update_exercise(exercise, attrs) do
       {:ok, updated_exercise} ->
+        updated_exercise = Repo.preload(updated_exercise, [:muscle, :equipment])
+
         updated_all =
           Enum.map(socket.assigns.allExercises, fn current ->
             if current.id == updated_exercise.id do
@@ -152,12 +156,15 @@ defmodule CrohnjobsWeb.Exercises do
 
     new_exercise_form = Exercise.changeset(%Exercise{}, %{}) |> to_form()
     edit_exercise_form = nil
+    muscles = Exercises.list_mucles()
+    equipment_list = Exercises.list_equipment()
 
     exercises =
       Repo.all(
         from e in Exercise,
           where: e.is_custom == false or e.user_id == ^user.id,
-          order_by: [asc: e.name]
+          order_by: [asc: e.name],
+          preload: [:muscle, :equipment]
       )
 
     {:ok,
@@ -169,7 +176,9 @@ defmodule CrohnjobsWeb.Exercises do
        newExerciseForm: new_exercise_form,
        filterApplied: "All",
        allExercises: exercises,
-       exercises: exercises
+       exercises: exercises,
+       muscles: muscles,
+       equipment_list: equipment_list
      )}
   end
 
@@ -275,20 +284,20 @@ defmodule CrohnjobsWeb.Exercises do
           </div>
 
           <div class="flex flex-wrap gap-2">
-            <%= for type <- Enum.drop(type_options(), 1) do %>
+            <%= for muscle <- @muscles do %>
               <button
                 type="button"
                 phx-click="filterExercise"
-                phx-value-name={type}
+                phx-value-name={muscle.name}
                 class={[
                   "px-3 py-1.5 rounded-full text-xs font-semibold border transition",
-                  if(@filterApplied == type,
+                  if(@filterApplied == muscle.name,
                     do: "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm",
                     else: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                   )
                 ]}
               >
-                {type}
+                {muscle.name}
               </button>
             <% end %>
           </div>
@@ -327,11 +336,11 @@ defmodule CrohnjobsWeb.Exercises do
                       </td>
                       <td class="py-4 px-6">
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                          {exercise.type || "N/A"}
+                          {if exercise.muscle, do: exercise.muscle.name, else: "N/A"}
                         </span>
                       </td>
                       <td class="py-4 px-6 text-slate-700">
-                        {exercise.equipment || "None"}
+                        {if exercise.equipment, do: exercise.equipment.name, else: "None"}
                       </td>
                       <td class="py-4 px-6">
                         <span class={[
@@ -451,14 +460,14 @@ defmodule CrohnjobsWeb.Exercises do
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <.input
                   type="select"
-                  options={Enum.drop(type_options(), 1)}
-                  field={@newExerciseForm[:type]}
+                  options={Enum.map(@muscles, &{&1.name, &1.id})}
+                  field={@newExerciseForm[:muscle_id]}
                   label="Muscle group"
                 />
                 <.input
                   type="select"
-                  options={equipment_options()}
-                  field={@newExerciseForm[:equipment]}
+                  options={Enum.map(@equipment_list, &{&1.name, &1.id})}
+                  field={@newExerciseForm[:equipment_id]}
                   label="Equipment"
                 />
               </div>
@@ -516,14 +525,14 @@ defmodule CrohnjobsWeb.Exercises do
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <.input
                   type="select"
-                  options={Enum.drop(type_options(), 1)}
-                  field={@editExerciseForm[:type]}
+                  options={Enum.map(@muscles, &{&1.name, &1.id})}
+                  field={@editExerciseForm[:muscle_id]}
                   label="Muscle group"
                 />
                 <.input
                   type="select"
-                  options={equipment_options()}
-                  field={@editExerciseForm[:equipment]}
+                  options={Enum.map(@equipment_list, &{&1.name, &1.id})}
+                  field={@editExerciseForm[:equipment_id]}
                   label="Equipment"
                 />
               </div>
@@ -551,7 +560,7 @@ defmodule CrohnjobsWeb.Exercises do
   defp apply_filters(exercises, filter_applied, search) do
     exercises
     |> Enum.filter(fn ex ->
-      filter_applied == "All" or (ex.type && ex.type == filter_applied)
+      filter_applied == "All" or (ex.muscle && ex.muscle.name == filter_applied)
     end)
     |> Enum.filter(fn ex ->
       search == "" ||
@@ -560,22 +569,4 @@ defmodule CrohnjobsWeb.Exercises do
     |> Enum.sort_by(fn ex -> String.downcase(ex.name || "") end)
   end
 
-  defp type_options do
-    [
-      "All",
-      "Chest",
-      "Back",
-      "Quads",
-      "Hamstrings",
-      "Glutes",
-      "Shoulders",
-      "Abs",
-      "Bicep",
-      "Tricep"
-    ]
-  end
-
-  defp equipment_options do
-    ["Dumbbell", "Cable", "Barbell", "Machine", "Plate","Body Weight"]
-  end
 end

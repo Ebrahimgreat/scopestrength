@@ -4,9 +4,9 @@ defmodule Crohnjobs.Exercises.Exercise do
 
   schema "exercises" do
     field :name, :string
-    field :type, :string
-    field :equipment, :string
     field :is_custom, :boolean, default: false
+    belongs_to :muscle, Crohnjobs.Exercises.Muscles
+    belongs_to :equipment, Crohnjobs.Exercises.Equipment
     belongs_to :user, Crohnjobs.Accounts.User
 
     timestamps(type: :utc_datetime)
@@ -15,8 +15,8 @@ defmodule Crohnjobs.Exercises.Exercise do
   @doc false
   def changeset(exercise, attrs) do
     exercise
-    |> cast(attrs, [:name, :equipment, :type, :is_custom, :user_id])
-    |> validate_required([:name, :equipment, :type])
+    |> cast(attrs, [:name, :muscle_id, :equipment_id, :is_custom, :user_id])
+    |> validate_required([:name, :muscle_id, :equipment_id])
     |> unique_constraint(:name)
   end
 end

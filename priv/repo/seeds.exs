@@ -10,74 +10,127 @@
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
 alias Crohnjobs.Repo
-alias Crohnjobs.Exercises.Exercise
+alias Crohnjobs.Exercises.{Exercise, Muscles, Equipment}
 
+# ── Seed muscle groups ──────────────────────────────────────────────
+muscle_names = [
+  "Chest",
+  "Upper Back",
+  "Lats",
+  "Quads",
+  "Side Delts",
+  "Front Delts",
+  "Hamstrings",
+  "Glutes",
+  "Rear Delts",
+  "Abs",
+  "Biceps",
+  "Triceps",
+  "Calves"
+]
+
+muscles =
+  Enum.into(muscle_names, %{}, fn name ->
+    muscle = Repo.insert!(%Muscles{name: name})
+    {name, muscle.id}
+  end)
+
+# ── Seed equipment ──────────────────────────────────────────────────
+equipment_names = [
+  "Barbell",
+  "Dumbbell",
+  "Cable",
+  "Machine",
+  "Plate",
+  "Bodyweight"
+]
+
+equipment =
+  Enum.into(equipment_names, %{}, fn name ->
+    equip = Repo.insert!(%Equipment{name: name})
+    {name, equip.id}
+  end)
+
+# ── Seed exercises ──────────────────────────────────────────────────
 exercises = [
-  # BACK
-  %{name: "Deadlift", type: "Back", equipment: "Barbell"},
-  %{name: "Conventional Deadlift", type: "Back", equipment: "Barbell"},
-  %{name: "Barbell Bent Over Row", type: "Back", equipment: "Barbell"},
-  %{name: "Dumbbell Row (One Arm)", type: "Back", equipment: "Dumbbell"},
-  %{name: "Wide Lat Pulldown", type: "Back", equipment: "Cable"},
-  %{name: "Lat Pulldown", type: "Back", equipment: "Cable"},
-  %{name: "Cable Row", type: "Back", equipment: "Cable"},
-  %{name: "Wide Grip Cable Row", type: "Back", equipment: "Cable"},
-  %{name: "Machine Pullover", type: "Back", equipment: "Machine"},
-  %{name: "Dumbbell Pullover", type: "Back", equipment: "Dumbbell"},
-  %{name: "Seated Row", type: "Back", equipment: "Machine"},
+  # LATS
+  %{name: "Deadlift", muscle: "Lats", equipment: "Barbell"},
+  %{name: "Conventional Deadlift", muscle: "Lats", equipment: "Barbell"},
+  %{name: "Wide Lat Pulldown", muscle: "Lats", equipment: "Cable"},
+  %{name: "Lat Pulldown", muscle: "Lats", equipment: "Cable"},
+  %{name: "Machine Pullover", muscle: "Lats", equipment: "Machine"},
+  %{name: "Dumbbell Pullover", muscle: "Lats", equipment: "Dumbbell"},
+
+  # UPPER BACK
+  %{name: "Barbell Bent Over Row", muscle: "Upper Back", equipment: "Barbell"},
+  %{name: "Dumbbell Row (One Arm)", muscle: "Upper Back", equipment: "Dumbbell"},
+  %{name: "Cable Row", muscle: "Upper Back", equipment: "Cable"},
+  %{name: "Wide Grip Cable Row", muscle: "Upper Back", equipment: "Cable"},
+  %{name: "Seated Row", muscle: "Upper Back", equipment: "Machine"},
 
   # HAMSTRINGS
-  %{name: "Romanian Deadlift", type: "Hamstrings", equipment: "Barbell"},
-  %{name: "Lying Leg Curl", type: "Hamstrings", equipment: "Machine"},
-  %{name: "Seated Leg Curl", type: "Hamstrings", equipment: "Machine"},
-  %{name: "Seated Machine Hinge", type: "Hamstrings", equipment: "Machine"},
+  %{name: "Romanian Deadlift", muscle: "Hamstrings", equipment: "Barbell"},
+  %{name: "Lying Leg Curl", muscle: "Hamstrings", equipment: "Machine"},
+  %{name: "Seated Leg Curl", muscle: "Hamstrings", equipment: "Machine"},
+  %{name: "Seated Machine Hinge", muscle: "Hamstrings", equipment: "Machine"},
 
-  # SHOULDERS
-  %{name: "Overhead Press", type: "Shoulders", equipment: "Barbell"},
-  %{name: "Dumbbell Shoulder Press", type: "Shoulders", equipment: "Dumbbell"},
-  %{name: "Lateral Raise", type: "Shoulders", equipment: "Dumbbell"},
-  %{name: "Cable Lateral Raise", type: "Shoulders", equipment: "Cable"},
-  %{name: "Reverse Fly", type: "Shoulders", equipment: "Dumbbell"},
-  %{name: "One Arm Reverse Fly", type: "Shoulders", equipment: "Dumbbell"},
-  %{name: "Front Raise", type: "Shoulders", equipment: "Dumbbell"},
-  %{name: "Arnold Press", type: "Shoulders", equipment: "Dumbbell"},
-  %{name: "Face Pull", type: "Rear Delts", equipment: "Cable"},
+  # FRONT DELTS
+  %{name: "Overhead Press", muscle: "Front Delts", equipment: "Barbell"},
+  %{name: "Dumbbell Shoulder Press", muscle: "Front Delts", equipment: "Dumbbell"},
+  %{name: "Front Raise", muscle: "Front Delts", equipment: "Dumbbell"},
+  %{name: "Arnold Press", muscle: "Front Delts", equipment: "Dumbbell"},
+
+  # SIDE DELTS
+  %{name: "Lateral Raise", muscle: "Side Delts", equipment: "Dumbbell"},
+  %{name: "Cable Lateral Raise", muscle: "Side Delts", equipment: "Cable"},
+
+  # REAR DELTS
+  %{name: "Reverse Fly", muscle: "Rear Delts", equipment: "Dumbbell"},
+  %{name: "One Arm Reverse Fly", muscle: "Rear Delts", equipment: "Dumbbell"},
+  %{name: "Face Pull", muscle: "Rear Delts", equipment: "Cable"},
 
   # CHEST
-  %{name: "Barbell Bench Press", type: "Chest", equipment: "Barbell"},
-  %{name: "Incline Barbell Press", type: "Chest", equipment: "Barbell"},
-  %{name: "Decline Barbell Press", type: "Chest", equipment: "Barbell"},
-  %{name: "Dumbbell Bench Press", type: "Chest", equipment: "Dumbbell"},
-  %{name: "Incline Dumbbell Press", type: "Chest", equipment: "Dumbbell"},
-  %{name: "Decline Dumbbell Press", type: "Chest", equipment: "Dumbbell"},
-  %{name: "Dumbbell Fly", type: "Chest", equipment: "Dumbbell"},
-  %{name: "Cable Chest Fly", type: "Chest", equipment: "Cable"},
-  %{name: "Machine Chest Press", type: "Chest", equipment: "Machine"},
-  %{name: "Incline Machine Chest Press", type: "Chest", equipment: "Machine"},
+  %{name: "Barbell Bench Press", muscle: "Chest", equipment: "Barbell"},
+  %{name: "Incline Barbell Press", muscle: "Chest", equipment: "Barbell"},
+  %{name: "Decline Barbell Press", muscle: "Chest", equipment: "Barbell"},
+  %{name: "Dumbbell Bench Press", muscle: "Chest", equipment: "Dumbbell"},
+  %{name: "Incline Dumbbell Press", muscle: "Chest", equipment: "Dumbbell"},
+  %{name: "Decline Dumbbell Press", muscle: "Chest", equipment: "Dumbbell"},
+  %{name: "Dumbbell Fly", muscle: "Chest", equipment: "Dumbbell"},
+  %{name: "Cable Chest Fly", muscle: "Chest", equipment: "Cable"},
+  %{name: "Machine Chest Press", muscle: "Chest", equipment: "Machine"},
+  %{name: "Incline Machine Chest Press", muscle: "Chest", equipment: "Machine"},
 
   # BICEPS
-  %{name: "Barbell Curl", type: "Biceps", equipment: "Barbell"},
-  %{name: "Preacher Curl", type: "Biceps", equipment: "Machine"},
-  %{name: "Hammer Curl", type: "Biceps", equipment: "Dumbbell"},
-  %{name: "Incline Dumbbell Curl", type: "Biceps", equipment: "Dumbbell"},
-  %{name: "Bayesian Curl", type: "Biceps", equipment: "Cable"},
+  %{name: "Barbell Curl", muscle: "Biceps", equipment: "Barbell"},
+  %{name: "Preacher Curl", muscle: "Biceps", equipment: "Machine"},
+  %{name: "Hammer Curl", muscle: "Biceps", equipment: "Dumbbell"},
+  %{name: "Incline Dumbbell Curl", muscle: "Biceps", equipment: "Dumbbell"},
+  %{name: "Bayesian Curl", muscle: "Biceps", equipment: "Cable"},
 
   # TRICEPS
-  %{name: "Tricep Pushdown", type: "Triceps", equipment: "Cable"},
-  %{name: "Tricep Cable Kickback", type: "Triceps", equipment: "Cable"},
-  %{name: "Skull Crusher", type: "Triceps", equipment: "Barbell"},
-  %{name: "JM Press", type: "Triceps", equipment: "Barbell"},
+  %{name: "Tricep Pushdown", muscle: "Triceps", equipment: "Cable"},
+  %{name: "Tricep Cable Kickback", muscle: "Triceps", equipment: "Cable"},
+  %{name: "Skull Crusher", muscle: "Triceps", equipment: "Barbell"},
+  %{name: "JM Press", muscle: "Triceps", equipment: "Barbell"},
 
   # CALVES
-  %{name: "Standing Calf Raise", type: "Calves", equipment: "Machine"},
-  %{name: "Seated Calf Raise", type: "Calves", equipment: "Machine"},
-  %{name: "Leg Press Calf Raise", type: "Calves", equipment: "Machine"},
+  %{name: "Standing Calf Raise", muscle: "Calves", equipment: "Machine"},
+  %{name: "Seated Calf Raise", muscle: "Calves", equipment: "Machine"},
+  %{name: "Leg Press Calf Raise", muscle: "Calves", equipment: "Machine"},
 
-  # ABS (just a few defaults)
-  %{name: "Cable Crunch", type: "Abs", equipment: "Cable"},
-  %{name: "Plank", type: "Abs", equipment: "Bodyweight"},
-  %{name: "Leg Raise", type: "Abs", equipment: "Bodyweight"}
+  # ABS
+  %{name: "Cable Crunch", muscle: "Abs", equipment: "Cable"},
+  %{name: "Plank", muscle: "Abs", equipment: "Bodyweight"},
+  %{name: "Leg Raise", muscle: "Abs", equipment: "Bodyweight"}
 ]
+
 Enum.each(exercises, fn attrs ->
-  Repo.insert!(%Exercise{} |> Exercise.changeset(attrs))
+  Repo.insert!(%Exercise{}
+    |> Exercise.changeset(%{
+      name: attrs.name,
+      muscle_id: muscles[attrs.muscle],
+      equipment_id: equipment[attrs.equipment]
+    })
+  )
 end)
