@@ -7,6 +7,7 @@ defmodule CrohnjobsWeb.ChangeProgramme do
   alias Crohnjobs.Repo
   alias Crohnjobs.Programmes.Programme
   alias Crohnjobs.Programmes.ProgrammeUser
+  alias Crohnjobs.Notifications
 
   import Ecto.Query
 
@@ -33,47 +34,111 @@ defmodule CrohnjobsWeb.ChangeProgramme do
   end
 
   def handle_event("unroll", params, socket) do
-   id = String.to_integer(params["id"])
-   clientProgramme = socket.assigns.clientProgramme
-   case Programmes.update_programme_user(clientProgramme,%{is_active: false}) do
-    {:ok, _programme}->
-      programmeUser = nil
-      {:noreply, socket|> put_flash(:info, "Programme Unrolled Successfully")|> assign(:clientProgramme, programmeUser)}
-      _ -> {:noreply, socket|> put_flash(:error, "Unable to update the programme")}
+    id = String.to_integer(params["id"])
+    clientProgramme = socket.assigns.clientProgramme
 
-   end
+    result = Repo.transaction(fn ->
+      case Programmes.update_programme_user(clientProgramme, %{is_active: false}) do
+        {:ok, _programme} ->
+          # Create notification
+          {:ok, notification} = Notifications.create_notification(%{
+            actor_id: socket.assigns.current_user.id,
+            actor_type: "trainer",
+            recipient_id: socket.assigns.client_id,
+            recipient_type: "client",
+            type: "programme_unenrolled",
+            data: %{programme_id: clientProgramme.programme_id}
+          })
+          notification
 
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
 
+    case result do
+      {:ok, notification} ->
+        # Broadcast notification
+        Phoenix.PubSub.broadcast(
+          Crohnjobs.PubSub,
+          "notifications:client:#{socket.assigns.client_id}",
+          {:notification, notification}
+        )
+
+        {:noreply, socket |> put_flash(:info, "Programme Unrolled Successfully") |> assign(:clientProgramme, nil)}
+
+      {:error, _} ->
+        {:noreply, socket |> put_flash(:error, "Unable to update the programme")}
+    end
   end
 
 
   def handle_event("assignProgramme", params, socket) do
-   id = String.to_integer(params["id"])
+    id = String.to_integer(params["id"])
 
-   if socket.assigns.clientProgramme != nil &&  socket.assigns.clientProgramme.programme_id == id do
-    {:noreply, socket|> put_flash(:error, "Programme already has user")}
+    if socket.assigns.clientProgramme != nil && socket.assigns.clientProgramme.programme_id == id do
+      {:noreply, socket |> put_flash(:error, "Programme already has user")}
+    else
+      result = Repo.transaction(fn ->
+        case socket.assigns.clientProgramme do
+          nil ->
+            {:ok, programme_user} = Programmes.create_programme_user(%{
+              programme_id: id,
+              client_id: socket.assigns.client_id,
+              is_active: true
+            })
 
-   else
-     case socket.assigns.clientProgramme do
-    nil ->
-      {:ok, programme_user} = Programmes.create_programme_user(%{programme_id: id, client_id: socket.assigns.client_id, is_active: true})
+            # Create notification
+            {:ok, notification} = Notifications.create_notification(%{
+              actor_id: socket.assigns.current_user.id,
+              actor_type: "trainer",
+              recipient_id: socket.assigns.client_id,
+              recipient_type: "client",
+              type: "programme_assigned",
+              data: %{programme_id: id}
+            })
 
-      clientProgramme = programme_user|> Repo.preload(:programme)
-      {:noreply, socket|> put_flash(:info, "Programme Assigned")|> assign(:clientProgramme, clientProgramme)}
+            {programme_user |> Repo.preload(:programme), notification}
 
+          existing ->
+            Programmes.update_programme_user(existing, %{is_active: false})
 
-      existing->  Programmes.update_programme_user(existing, %{is_active: false})
+            {:ok, programme_user} = Programmes.create_programme_user(%{
+              programme_id: id,
+              client_id: socket.assigns.client_id,
+              is_active: true
+            })
 
+            # Create notification
+            {:ok, notification} = Notifications.create_notification(%{
+              actor_id: socket.assigns.current_user.id,
+              actor_type: "trainer",
+              recipient_id: socket.assigns.client_id,
+              recipient_type: "client",
+              type: "programme_updated",
+              data: %{programme_id: id, previous_programme_id: existing.programme_id}
+            })
 
-      {:ok, programme_user} = Programmes.create_programme_user(%{programme_id: id, client_id: socket.assigns.client_id, is_active: true})
-      updatedProgramme = programme_user|> Repo.preload(:programme)
-      {:noreply, socket|> put_flash(:info, "Programme Updated")|> assign(:clientProgramme, updatedProgramme)}
+            {programme_user |> Repo.preload(:programme), notification}
+        end
+      end)
 
+      case result do
+        {:ok, {updated_programme, notification}} ->
+          # Broadcast to PubSub
+          Phoenix.PubSub.broadcast(
+            Crohnjobs.PubSub,
+            "notifications:client:#{socket.assigns.client_id}",
+            {:notification, notification}
+          )
+
+          flash_msg = if socket.assigns.clientProgramme, do: "Programme Updated", else: "Programme Assigned"
+          {:noreply, socket |> put_flash(:info, flash_msg) |> assign(:clientProgramme, updated_programme)}
+
+        {:error, _reason} ->
+          {:noreply, socket |> put_flash(:error, "Failed to assign programme")}
+      end
     end
-   end
-
-
-
   end
 
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()

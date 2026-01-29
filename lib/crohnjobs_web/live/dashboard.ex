@@ -1,4 +1,5 @@
 defmodule CrohnjobsWeb.Dashboard do
+  alias Crohnjobs.Notifications.Notification
   alias CrohnjobsWeb.Clients
   alias Crohnjobs.Repo
   alias Crohnjobs.Clients.Client
@@ -7,6 +8,7 @@ defmodule CrohnjobsWeb.Dashboard do
   alias Crohnjobs.Trainers.Trainer
   alias Crohnjobs.Trainers
 
+  import Ecto.Query
 
 
 
@@ -20,23 +22,84 @@ defmodule CrohnjobsWeb.Dashboard do
   {:noreply, assign(socket, clients: Clients.list_clients)}
 
   end
+
+  def handle_event("mark_notification_read", %{"id" => notification_id}, socket) do
+    notification = Crohnjobs.Notifications.get_notification!(notification_id)
+
+    {:ok, _updated} = Crohnjobs.Notifications.update_notification(notification, %{
+      read_at: DateTime.utc_now()
+    })
+
+    # Update the activities list
+    activities =
+      Enum.map(socket.assigns.activities, fn n ->
+        if n.id == String.to_integer(notification_id) do
+          %{n | read_at: DateTime.utc_now()}
+        else
+          n
+        end
+      end)
+
+    {:noreply, assign(socket, activities: activities, notification_count: length(activities))}
+  end
+
+  def handle_event("mark_all_read", _params, socket) do
+    trainer = Trainers.get_trainer_byUserId(socket.assigns.current_user.id)
+
+    # Update all unread notifications for this trainer
+    from(n in Notification,
+      where: n.recipient_type == "trainer" and
+             n.recipient_id == ^trainer.id and
+             is_nil(n.read_at)
+    )
+    |> Repo.update_all(set: [read_at: DateTime.utc_now()])
+
+    # Update local state
+    activities =
+      Enum.map(socket.assigns.activities, fn n ->
+        %{n | read_at: DateTime.utc_now()}
+      end)
+
+    {:noreply, assign(socket, activities: activities, notification_count: length(activities))}
+  end
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
 
     case user.role do
       "trainer" ->
         trainer = Trainers.get_trainer_byUserId(user.id)
+        programmes = Repo.all(from p in Crohnjobs.Programmes.Programme, where: p.trainer_id == ^trainer.id)
+
+        if connected?(socket) do
+          Phoenix.PubSub.subscribe(
+            Crohnjobs.PubSub,
+            "notifications:trainer:#{trainer.id}"
+          )
+        end
+        notifications =
+          Repo.all(
+            from n in Notification,
+              where: n.recipient_type == "trainer" and n.recipient_id == ^trainer.id,
+              order_by: [desc: n.inserted_at],
+              limit: 10
+          )
+
+
 
         data =
           Repo.get(Trainer, trainer.id)
           |> Repo.preload([:programmes, clients: [:user]])
 
+
         {:ok,
          socket
          |> assign(:role, :trainer)
          |> assign(:name, user.name)
-         |>assign(:message, "Trainer Dashboard")
-         |> assign(:data, data)}
+         |> assign(:message, "Trainer Dashboard")
+         |> assign(:data, data)
+         |> assign(:programmes, programmes)
+         |> assign(:activities, notifications)
+         |> assign(:notification_count, length(notifications))}
 
 
       "client" ->
@@ -47,173 +110,140 @@ defmodule CrohnjobsWeb.Dashboard do
          |> assign(:role, :client)
          |> assign(:name, user.name)
          |> assign(:message, "Client Dashboard")
-         |> assign(:client, client)}
-         |>assign(:data, :"")
+         |> assign(:client, client)
+         |> assign(:data, :"")
+         |> assign(:activities, [])
+         |> assign(:notification_count, 0)}
 
       _ ->
         {:halt, redirect(socket, to: "/login")}
     end
   end
+
+  def handle_info({:notification, %Notification{} = notification}, socket) do
+    activities = [notification | socket.assigns.activities] |> Enum.take(10)
+
+    {:noreply,
+     socket
+     |> assign(:activities, activities)
+     |> assign(:notification_count, length(activities))}
+  end
+
+  def handle_info(_, socket), do: {:noreply, socket}
+
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
 
-  <div class="w-full min-h-screen bg-zinc-50">
+  <div class="w-full min-h-screen">
     <!-- Header -->
-    <div class="w-full bg-gradient-to-r from-blue-600 to-purple-700 text-white px-6 lg:px-10 py-8">
-      <h1 class="text-3xl font-bold tracking-tight"> </h1>
-      <p class="mt-2 text-blue-100 text-lg">
-        Welcome back, <span class="font-semibold"><%= @name %></span>! How is it going?
-      </p>
+    <div class="w-full px-6 lg:px-10 pt-10 pb-4">
+      <h1 class="text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">
+        Welcome back, <span class="text-emerald-700"><%= @name %></span>.
+      </h1>
+      <p class="mt-2 text-slate-600 text-base lg:text-lg">Here’s your trainer overview.</p>
     </div>
 
     <!-- Main Content -->
     <div class="w-full px-6 lg:px-10 py-8">
 
 
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white rounded-2xl p-6 shadow ring-1 ring-black/5 flex items-center gap-4">
-          <div class="p-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white flex items-center justify-center">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-            </svg>
+      <div class="mb-6 text-sm text-slate-600">
+        <span class="font-medium text-slate-800"><%= length(@data.clients) %></span> clients ·
+        <span class="font-medium text-slate-800"><%= length(@data.programmes) %></span> programmes
+      </div>
+
+      <div class="mb-8 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <.icon name="hero-bell-solid" class="h-5 w-5 text-emerald-600" />
+            <h2 class="text-base font-semibold text-slate-900">Latest Activities</h2>
           </div>
-          <div class="ml-4 flex-1">
-            <h3 class="text-sm font-medium text-zinc-500 uppercase tracking-wide">Total Clients</h3>
-            <p class="text-3xl font-bold text-zinc-900"><%= length(@data.clients) %></p>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-500"><%= length(@activities) %> recent</span>
+            <%= if Enum.any?(@activities, &is_nil(&1.read_at)) do %>
+              <button
+                phx-click="mark_all_read"
+                class="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+              >
+                Mark all read
+              </button>
+            <% end %>
+            <.link
+              navigate={~p"/trainer/notifications"}
+              class="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+            >
+              View all
+            </.link>
           </div>
         </div>
+        <%= if Enum.empty?(@activities) do %>
+          <div class="px-5 py-6 text-sm text-slate-500">No notifications yet.</div>
+        <% else %>
+          <div class="divide-y divide-slate-100">
+            <%= for notification <- @activities do %>
+              <div
+                phx-click="mark_notification_read"
+                phx-value-id={notification.id}
+                class={"px-5 py-4 flex items-start justify-between gap-4 cursor-pointer transition-colors #{if is_nil(notification.read_at), do: "bg-emerald-50 hover:bg-emerald-100", else: "hover:bg-slate-50"}"}
+              >
+                <div>
+                  <p class="text-sm font-medium text-slate-900">
+                    <%= notification_text(notification) %>
+                  </p>
+                  <p class="text-xs text-slate-500 mt-1">
+                    <%= notification_time(notification) %>
+                  </p>
+                </div>
+                <%= if is_nil(notification.read_at) do %>
+                  <span class="mt-1 h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
 
-        <div class="bg-white rounded-2xl p-6 shadow ring-1 ring-black/5 flex items-center gap-4">
-          <div class="p-3 rounded-lg bg-gradient-to-r from-green-400 to-emerald-500 text-white flex items-center justify-center">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h4l3 8 4-16 3 8h4"></path>
-            </svg>
-          </div>
-          <div class="ml-4 flex-1">
-            <h3 class="text-sm font-medium text-zinc-500 uppercase tracking-wide">Programmes</h3>
-            <p class="text-3xl font-bold text-zinc-900"><%= length(@data.programmes) %></p>
-          </div>
+      <div class="mb-8 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="text-base font-semibold text-slate-900">Programmes</h2>
+          <span class="text-xs text-slate-500"><%= length(@data.programmes) %> total</span>
         </div>
-
-
+        <%= if Enum.empty?(@data.programmes) do %>
+          <div class="px-5 py-6 text-sm text-slate-500">No programmes yet.</div>
+        <% else %>
+          <div class="divide-y divide-slate-100">
+            <%= for programme <- @data.programmes do %>
+              <.link navigate={~p"/trainer/programmes/#{programme.id}"} class="block px-5 py-4 hover:bg-slate-50 transition-colors">
+                <p class="text-sm font-medium text-slate-900"><%= programme.name %></p>
+                <%= if programme.description do %>
+                  <p class="text-xs text-slate-500 mt-1"><%= programme.description %></p>
+                <% end %>
+              </.link>
+            <% end %>
+          </div>
+        <% end %>
       </div>
 
 
-      <%= if length(@data.programmes) > 0 do %>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 class="text-lg font-semibold text-gray-900 flex items-center">
-              <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-              </svg>
-              Your Programmes
-            </h2>
-          </div>
-
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">View</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <%= for programme <-@data.programmes do %>
-                <tr class="hover:bg-gray-50 transition-colors duration-150">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                      <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                        <span class="text-sm font-medium text-white"><%= (programme.name) %></span>
-                      </div>
-                      <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900"><%= programme.name %></div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= programme.description %></td>
-                  <td>
-                    <.link navigate={~p"/trainer/programmes/#{programme.id}"}>
-                      <.button>View</.button>
-                    </.link>
-                  </td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
-      <% end %>
-
-      <!-- Clients Table -->
-      <%= if length(@data.clients) > 0 do %>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 class="text-lg font-semibold text-gray-900 flex items-center">
-              <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-              </svg>
-              Your Clients
-            </h2>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active</th>
-                  <th>View</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <%= for client <- @data.clients do %>
-                  <tr class="hover:bg-gray-50 transition-colors duration-150">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="flex items-center">
-                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                          <span class="text-sm font-medium text-white"><%= String.first(client.user.name || "?") %></span>
-                        </div>
-                        <div class="ml-4">
-                          <div class="text-sm font-medium text-gray-900">
-                          <img class="w-32 h-32 rounded-full object-cover border-4 border-emerald-100" src={client.profile_picture_url}/>
-                          <%= client.user.name %></div>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <%= if client.active do %>
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Active
-                        </span>
-                      <% else %>
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          Inactive
-                        </span>
-                      <% end %>
-                    </td>
-                    <td>
-                      <.link navigate={~p"/trainer/clients/#{client.id}"}>
-                        <.button>View</.button>
-                      </.link>
-                    </td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      <% else %>
-        <div class="text-center py-12">
-          <h3 class="mt-4 text-lg font-medium text-gray-900">No clients yet</h3>
-          <p class="mt-2 text-gray-500">Get started by adding your first client to begin training sessions.</p>
-        </div>
-      <% end %>
+      <div class="py-8 text-sm text-slate-500">
+        Your programmes and clients are managed from the left navigation.
+      </div>
 
     </div>
   </div>
   """
 end
+
+  defp notification_text(%Notification{data: %{"message" => message}}) when is_binary(message), do: message
+  defp notification_text(%Notification{data: %{"title" => title}}) when is_binary(title), do: title
+  defp notification_text(%Notification{type: type}) when is_binary(type), do: String.replace(type, "_", " ") |> String.capitalize()
+  defp notification_text(_), do: "New activity"
+
+  defp notification_time(%Notification{inserted_at: %DateTime{} = inserted_at}) do
+    Calendar.strftime(inserted_at, "%b %d, %Y at %I:%M %p")
+  end
+
+  defp notification_time(_), do: "Just now"
 
 end

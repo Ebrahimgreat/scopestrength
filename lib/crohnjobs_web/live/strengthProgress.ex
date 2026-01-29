@@ -24,16 +24,14 @@ defmodule CrohnjobsWeb.StrengthProgress do
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-slate-50">
-      <div class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
+    <div class="w-full min-h-screen">
+    <div class="w-full px-6 lg:px-10 pt-10 pb-4">
         <div class="max-w-6xl mx-auto px-6 py-8">
           <div class="flex items-start justify-between gap-6">
             <div>
-              <p class="text-sm uppercase tracking-[0.2em] text-emerald-100 mb-2">
-                Progress · Strength
-              </p>
-              <h1 class="text-3xl font-bold leading-tight">Strength Progress</h1>
-              <p class="mt-2 text-emerald-50">
+
+            <h1 class="text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">              Strength Progress</h1>
+            <p class="mt-2 text-slate-600 text-base lg:text-lg">
                 Track your strength gains and monitor exercise progress.
               </p>
             </div>

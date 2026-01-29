@@ -185,28 +185,26 @@ defmodule CrohnjobsWeb.Exercises do
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-slate-50">
-      <div class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
-        <div class="max-w-6xl mx-auto px-6 py-8">
+  <div class="w-full min-h-screen">
+  <div class="w-full px-6 lg:px-10 pt-10 pb-4">
+  <div class="max-w-6xl mx-auto px-6 py-8">
           <% custom_count = Enum.count(@allExercises, & &1.is_custom) %>
           <% library_count = length(@allExercises) - custom_count %>
           <div class="flex items-start justify-between gap-6">
             <div>
-              <p class="text-sm uppercase tracking-[0.2em] text-emerald-100 mb-2">
-                Trainers · Exercises
-              </p>
+
               <h1 class="text-3xl font-bold leading-tight">Exercise Library</h1>
-              <p class="mt-2 text-emerald-50">
+              <p class="mt-2 text-slate-600 text-base lg:text-lg">
                 Update, filter, and manage every movement in one place.
               </p>
               <div class="mt-4 flex flex-wrap gap-3 text-sm">
-                <span class="inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full border border-white/20">
+                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full border">
                   <span class="w-2 h-2 rounded-full bg-white"></span> Total {length(@allExercises)}
                 </span>
-                <span class="inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full border border-white/20">
+                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full border">
                   <span class="w-2 h-2 rounded-full bg-amber-300"></span> Custom {custom_count}
                 </span>
-                <span class="inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full border border-white/20">
+                <span class="inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full border">
                   <span class="w-2 h-2 rounded-full bg-emerald-300"></span> Library {library_count}
                 </span>
               </div>

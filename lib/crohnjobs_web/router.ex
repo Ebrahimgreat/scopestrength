@@ -38,6 +38,7 @@ defmodule CrohnjobsWeb.Router do
       layout: {CrohnjobsWeb.Layouts, :client} do
       live "/", ClientDashboard
       live "/chat", ClientChat
+      live "/notifications",Client.Notifications
 
       live "/workouts", Client.Workouts
       live "/workouts/:id",Client.WorkoutShow
@@ -66,6 +67,7 @@ defmodule CrohnjobsWeb.Router do
       live "/clients/:id/strengthProgress/:exercise_id", ExerciseProgress
       live "/exercises", Exercises
       live "exercises/contribution",ExerciseVolume
+      live "/notifications",Notifications
 
       live "/clients/:id/workouts/:workout_id", WorkoutShow
       live "/clients/:id/workouts/:workout_id/details", WorkoutDetail

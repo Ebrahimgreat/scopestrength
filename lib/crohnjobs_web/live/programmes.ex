@@ -55,11 +55,11 @@ end
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-zinc-50">
-    <div class="bg-gradient-to-r from-purple-600 to-blue-700 text-white">
+    <div class="w-full min-h-screen">
+    <div class="w-full px-6 lg:px-10 pt-10 pb-4">
         <div class="w-full px-6 lg:px-10 py-8">
-          <h1 class="text-3xl font-bold tracking-tight">Training Programmes</h1>
-          <p class="mt-2 text-purple-100 text-lg">
+          <h1 class="text-3xl font-bold tracking-tight text-slate-900">Training Programmes</h1>
+          <p class="mt-2 text-slate-600 text-base lg:text-lg">
             Manage your custom training programmes, <%= @name %>
           </p>
         </div>
