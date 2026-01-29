@@ -1,4 +1,5 @@
 defmodule CrohnjobsWeb.ClientDashboard do
+alias Crohnjobs.Notifications.Notification
 alias Crohnjobs.Programmes.ProgrammeUser
 alias Crohnjobs.Programmes
 alias Crohnjobs.Programmes.Programme
@@ -46,6 +47,46 @@ import Ecto.Query
     {:noreply, assign(socket, invite_code: code)}
   end
 
+  def handle_event("mark_notification_read", %{"id" => notification_id}, socket) do
+    notification = Notifications.get_notification!(notification_id)
+
+    {:ok, _updated} = Notifications.update_notification(notification, %{
+      read_at: DateTime.utc_now()
+    })
+
+    # Update the notifications list
+    notifications =
+      Enum.map(socket.assigns.notifications, fn n ->
+        if n.id == String.to_integer(notification_id) do
+          %{n | read_at: DateTime.utc_now()}
+        else
+          n
+        end
+      end)
+
+    {:noreply, assign(socket, notifications: notifications)}
+  end
+
+  def handle_event("mark_all_read", _params, socket) do
+    client = socket.assigns.client
+
+    # Update all unread notifications for this client
+    from(n in Notification,
+      where: n.recipient_type == "client" and
+             n.recipient_id == ^client.id and
+             is_nil(n.read_at)
+    )
+    |> Repo.update_all(set: [read_at: DateTime.utc_now()])
+
+    # Update local state
+    notifications =
+      Enum.map(socket.assigns.notifications, fn n ->
+        %{n | read_at: DateTime.utc_now()}
+      end)
+
+    {:noreply, assign(socket, notifications: notifications)}
+  end
+
   def handle_event("downloadProgramme", _, socket) do
     programme =
     Repo.get!(Programme, socket.assigns.current_programme.programme_id)
@@ -59,11 +100,32 @@ import Ecto.Query
     user = socket.assigns.current_user
     client = Repo.get_by(Client, %{user_id: user.id}) |> Repo.preload(trainer: :user)
 
-    currentProgramme = Repo.get_by(ProgrammeUser, %{client_id: client.id})
-    |> case do
-      nil -> nil
-      pu -> Repo.preload(pu, [programme: [programmeTemplates: [programmeDetails: :exercise]]])
+    currentProgramme =
+      from(pu in ProgrammeUser,
+        where: pu.client_id == ^client.id and pu.is_active == true,
+        order_by: [desc: pu.inserted_at],
+        limit: 1
+      )
+      |> Repo.one()
+      |> case do
+        nil -> nil
+        pu -> Repo.preload(pu, [programme: [programmeTemplates: [programmeDetails: :exercise]]])
+      end
+
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(
+        Crohnjobs.PubSub,
+        "notifications:client:#{client.id}"
+      )
     end
+
+    notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.recipient_type == "client" and n.recipient_id == ^client.id,
+          order_by: [desc: n.inserted_at],
+          limit: 10
+      )
 
     # Get recent workouts
     recent_workouts =
@@ -92,9 +154,22 @@ import Ecto.Query
       current_programme: currentProgramme,
       invite_code: "",
       recent_workouts: recent_workouts,
-      exercise_progress: exercise_progress
+      exercise_progress: exercise_progress,
+      notifications: notifications,
+      notification_count: length(notifications)
     )}
   end
+  def handle_info({:notification, %Notification{} = notification}, socket) do
+    notifications = [notification | socket.assigns.notifications] |> Enum.take(10)
+
+    {:noreply,
+     socket
+     |> assign(:notifications, notifications)
+     |> assign(:notification_count, length(notifications))}
+  end
+
+  def handle_info(_, socket), do: {:noreply, socket}
+
   def render(assigns) do
     ~H"""
     <div class="max-w-4xl mx-auto px-4 py-6 space-y-6">
@@ -141,6 +216,55 @@ import Ecto.Query
             </svg>
           </.link>
         </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <.icon name="hero-bell-solid" class="h-5 w-5 text-emerald-600" />
+            <h2 class="text-lg font-semibold text-gray-900">Latest Activities</h2>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-sm text-gray-500"><%= length(@notifications) %> recent</span>
+            <%= if Enum.any?(@notifications, &is_nil(&1.read_at)) do %>
+              <button
+                phx-click="mark_all_read"
+                class="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+              >
+                Mark all read
+              </button>
+            <% end %>
+            <.link
+              navigate={~p"/client/notifications"}
+              class="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+            >
+              View all
+            </.link>
+          </div>
+        </div>
+
+        <%= if Enum.empty?(@notifications) do %>
+          <div class="p-6 text-sm text-gray-500">No notifications yet.</div>
+        <% else %>
+          <div class="divide-y divide-gray-100">
+            <%= for notification <- @notifications do %>
+              <div class="px-5 py-4 flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-sm font-medium text-gray-900">
+                    <%= notification_text(notification) %>
+                  </p>
+                  <p class="text-xs text-gray-500 mt-1">
+                    <%= notification_time(notification) %>
+                  </p>
+                </div>
+                <%= if is_nil(notification.read_at) do %>
+                  <span class="mt-1 h-2 w-2 rounded-full bg-emerald-500"></span>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
       </div>
 
       <!-- Recent Workouts Section -->
@@ -346,4 +470,15 @@ import Ecto.Query
         "U"
     end
   end
+
+  defp notification_text(%Notification{data: %{"message" => message}}) when is_binary(message), do: message
+  defp notification_text(%Notification{data: %{"title" => title}}) when is_binary(title), do: title
+  defp notification_text(%Notification{type: type}) when is_binary(type), do: String.replace(type, "_", " ") |> String.capitalize()
+  defp notification_text(_), do: "New activity"
+
+  defp notification_time(%Notification{inserted_at: %DateTime{} = inserted_at}) do
+    Calendar.strftime(inserted_at, "%b %d, %Y at %I:%M %p")
+  end
+
+  defp notification_time(_), do: "Just now"
 end
