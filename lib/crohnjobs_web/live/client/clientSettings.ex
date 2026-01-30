@@ -2,15 +2,27 @@ defmodule CrohnjobsWeb.Client.ClientSettings do
   use CrohnjobsWeb, :live_view
   alias Crohnjobs.Clients
   alias Crohnjobs.Clients.Client
+  alias Crohnjobs.Account
   alias Crohnjobs.Repo
 
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
     client = Repo.get_by(Client, %{user_id: user.id})
+    client_form = client |> Clients.change_client() |> to_form(as: "client")
+    email_changeset = Account.change_user_email(user)
+    password_changeset = Account.change_user_password(user)
 
     {:ok,
      socket
      |> assign(:client, client)
+     |> assign(:client_form, client_form)
+     |> assign(:name, user.name)
+     |> assign(:current_password, nil)
+     |> assign(:email_form_current_password, nil)
+     |> assign(:current_email, user.email)
+     |> assign(:email_form, to_form(email_changeset))
+     |> assign(:password_form, to_form(password_changeset))
+     |> assign(:trigger_submit, false)
      |> assign(:uploaded_files, [])
      |> allow_upload(:profile_picture,
        accept: ~w(.jpg .jpeg .png .gif),
@@ -57,6 +69,105 @@ defmodule CrohnjobsWeb.Client.ClientSettings do
 
       [] ->
         {:noreply, socket |> put_flash(:error, "No file was uploaded")}
+    end
+  end
+
+  def handle_event("validate_client", %{"client" => client_params}, socket) do
+    changeset =
+      socket.assigns.client
+      |> Clients.change_client(client_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, :client_form, to_form(changeset, as: "client"))}
+  end
+
+  def handle_event("save_client", %{"client" => client_params}, socket) do
+    client = socket.assigns.client
+
+    case Clients.update_client(client, client_params) do
+      {:ok, updated_client} ->
+        {:noreply,
+         socket
+         |> assign(:client, updated_client)
+         |> assign(:client_form, Clients.change_client(updated_client) |> to_form(as: "client"))
+         |> put_flash(:info, "Client settings updated")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :client_form, to_form(changeset, as: "client"))}
+    end
+  end
+
+  def handle_event("validate_email", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
+
+    email_form =
+      socket.assigns.current_user
+      |> Account.change_user_email(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, email_form: email_form, email_form_current_password: password)}
+  end
+
+  def handle_event("update_name", %{"name" => name}, socket) do
+    user = socket.assigns.current_user
+
+    case Account.update_name(user, %{"name" => name}) do
+      {:ok, user} ->
+        {:noreply, socket |> put_flash(:info, "Name updated") |> assign(:name, user.name)}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :name_form, to_form(changeset))}
+    end
+  end
+
+  def handle_event("update_email", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
+    user = socket.assigns.current_user
+
+    case Account.apply_user_email(user, password, user_params) do
+      {:ok, applied_user} ->
+        Account.deliver_user_update_email_instructions(
+          applied_user,
+          user.email,
+          &url(~p"/users/settings/confirm_email/#{&1}")
+        )
+
+        info = "A link to confirm your email change has been sent to the new address."
+        {:noreply, socket |> put_flash(:info, info) |> assign(email_form_current_password: nil)}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :email_form, to_form(Map.put(changeset, :action, :insert)))}
+    end
+  end
+
+  def handle_event("validate_password", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
+
+    password_form =
+      socket.assigns.current_user
+      |> Account.change_user_password(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, password_form: password_form, current_password: password)}
+  end
+
+  def handle_event("update_password", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
+    user = socket.assigns.current_user
+
+    case Account.update_user_password(user, password, user_params) do
+      {:ok, user} ->
+        password_form =
+          user
+          |> Account.change_user_password(user_params)
+          |> to_form()
+
+        {:noreply, assign(socket, trigger_submit: true, password_form: password_form)}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, password_form: to_form(changeset))}
     end
   end
 
@@ -216,26 +327,132 @@ defmodule CrohnjobsWeb.Client.ClientSettings do
             <% end %>
           <% end %>
 
-          <%= if @client.age do %>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Age</label>
-              <p class="mt-1 text-gray-900"><%= @client.age %> years</p>
-            </div>
-          <% end %>
+          <form phx-change="validate_client" phx-submit="save_client" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <.input
+                field={@client_form[:age]}
+                type="number"
+                min="0"
+                step="1"
+                label="Age"
+                placeholder="e.g. 28"
+              />
 
-          <%= if @client.height do %>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Height</label>
-              <p class="mt-1 text-gray-900"><%= @client.height %> cm</p>
-            </div>
-          <% end %>
+              <.input
+                field={@client_form[:height]}
+                type="number"
+                min="0"
+                step="0.1"
+                label="Height (cm)"
+                placeholder="e.g. 180.5"
+              />
 
-          <%= if @client.sex do %>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Sex</label>
-              <p class="mt-1 text-gray-900"><%= @client.sex %></p>
+              <.input
+                field={@client_form[:sex]}
+                type="select"
+                label="Sex"
+                prompt="Select"
+                options={["male", "female", "other"]}
+              />
             </div>
-          <% end %>
+
+            <div>
+              <.button class="bg-emerald-600 hover:bg-emerald-700 text-white">
+                Save Changes
+              </.button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Login & Security -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-6">
+        <div class="px-6 py-4 border-b border-gray-100">
+          <h2 class="text-xl font-semibold text-gray-900">Login & Security</h2>
+        </div>
+
+        <div class="p-6 space-y-8">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">Name</h3>
+            <.form id="name_form" phx-submit="update_name" class="space-y-4">
+              <.input type="text" name="name" label="Name" value={@name} />
+              <.button class="bg-emerald-600 hover:bg-emerald-700 text-white">
+                Update Name
+              </.button>
+            </.form>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">Email</h3>
+            <.simple_form
+              for={@email_form}
+              id="email_form"
+              phx-submit="update_email"
+              phx-change="validate_email"
+            >
+              <.input field={@email_form[:email]} type="email" label="Email" required />
+              <.input
+                field={@email_form[:current_password]}
+                name="current_password"
+                id="current_password_for_email"
+                type="password"
+                label="Current password"
+                value={@email_form_current_password}
+                required
+              />
+              <:actions>
+                <.button phx-disable-with="Changing...">Change Email</.button>
+              </:actions>
+            </.simple_form>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">Password</h3>
+            <.simple_form
+              for={@password_form}
+              id="password_form"
+              action={~p"/users/log_in?_action=password_updated"}
+              method="post"
+              phx-change="validate_password"
+              phx-submit="update_password"
+              phx-trigger-action={@trigger_submit}
+            >
+              <input
+                name={@password_form[:email].name}
+                type="hidden"
+                id="hidden_user_email"
+                value={@current_email}
+              />
+              <.input field={@password_form[:password]} type="password" label="New password" required />
+              <.input
+                field={@password_form[:password_confirmation]}
+                type="password"
+                label="Confirm new password"
+              />
+              <.input
+                field={@password_form[:current_password]}
+                name="current_password"
+                type="password"
+                label="Current password"
+                id="current_password_for_password"
+                value={@current_password}
+                required
+              />
+              <:actions>
+                <.button phx-disable-with="Changing...">Change Password</.button>
+              </:actions>
+            </.simple_form>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">Reset Password</h3>
+            <p class="text-sm text-gray-600 mb-4">
+              Forgot your password? Send a reset link to your email.
+            </p>
+            <.link navigate={~p"/users/reset_password"} class="text-emerald-600 hover:text-emerald-700">
+              Send reset link
+            </.link>
+          </div>
         </div>
       </div>
     </div>
