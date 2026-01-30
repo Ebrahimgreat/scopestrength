@@ -2,15 +2,37 @@ defmodule CrohnjobsWeb.ClientNotes do
   import Ecto.Query
   alias Crohnjobs.ClientNote
   alias Crohnjobs.ClientNote.ClientNotes
+  alias Crohnjobs.Trainers
+  alias Crohnjobs.Clients
   alias Crohnjobs.Repo
     use CrohnjobsWeb, :live_view
 
     def mount(params, session, socket) do
+      user = socket.assigns.current_user
+      trainer = Trainers.get_trainer_byUserId(user.id)
       client_id = String.to_integer(params["id"])
-      clientNote= ClientNotes.changeset(%ClientNotes{}, %{})|>to_form()
-      notes = Repo.all(from c in ClientNotes, where: c.client_id == ^client_id)
-      {:ok, assign(socket, client_id: client_id, notes: notes, showModal: false, newForm: clientNote )}
 
+      case Repo.get(Clients.Client, client_id) do
+        nil ->
+          {:ok,
+           socket
+           |> put_flash(:error, "Client Not found")
+           |> push_navigate(to: "/trainer/clients")}
+
+        client ->
+          case client.trainer_id == trainer.id do
+            true ->
+              clientNote = ClientNotes.changeset(%ClientNotes{}, %{}) |> to_form()
+              notes = Repo.all(from c in ClientNotes, where: c.client_id == ^client_id)
+              {:ok, assign(socket, client_id: client_id, notes: notes, showModal: false, newForm: clientNote)}
+
+            false ->
+              {:ok,
+               socket
+               |> put_flash(:error, "Client Does not exist")
+               |> push_navigate(to: "/trainer/clients")}
+          end
+      end
     end
 
     def handle_event("openModal", _params, socket) do

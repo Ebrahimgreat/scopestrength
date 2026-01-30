@@ -30,7 +30,7 @@ defmodule CrohnjobsWeb.ExerciseVolume do
   def render(assigns) do
     ~H"""
 
-      <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.08),_transparent_60%)]"></div>
+
       <div class="relative px-6 py-7 sm:px-8">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>

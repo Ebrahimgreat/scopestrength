@@ -1,15 +1,27 @@
 defmodule CrohnjobsWeb.Workouts do
+alias Crohnjobs.Trainers
 alias Crohnjobs.Clients
 alias Crohnjobs.Repo
   use CrohnjobsWeb, :live_view
   import Ecto.Query
 
   def mount(params, session, socket) do
+    user = socket.assigns.current_user
+    trainer = Trainers.get_trainer_byUserId(user.id)
     client_id = String.to_integer(params["id"])
+    case Repo.get(Clients.Client,client_id) do
+      nil->
+        {:ok, socket|>put_flash(:error, "Client Not found")}
+    client->
+      case client.trainer_id == trainer.id do
+        true->
     client = Clients.get_client!(client_id)|>Repo.preload(:user)
     workouts = Repo.all(from w in Crohnjobs.Training.Workout, where: w.client_id == ^client_id)
     {:ok,assign(socket,workouts: workouts, client_id: client_id, client: client)}
-
+    false ->
+      {:ok, socket|>put_flash(:error, "Client Does not exist")}
+    end
+  end
 
   end
 

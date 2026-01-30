@@ -1,5 +1,7 @@
 defmodule CrohnjobsWeb.ExerciseProgress do
 alias Crohnjobs.Repo
+alias Crohnjobs.Trainers
+alias Crohnjobs.Clients
 alias Crohnjobs.Training.WorkoutDetails
 alias Crohnjobs.Training.Workout
 import Ecto.Query
@@ -10,26 +12,45 @@ import Ecto.Query
     exercise_id = String.to_integer(params["exercise_id"])
     client_id = String.to_integer(params["id"])
     user = socket.assigns.current_user
-    workout_details =
-      Repo.all(
-        from wd in WorkoutDetails,
-          join: w in Workout,
-          on: wd.workout_id == w.id,
-          where: w.client_id == ^client_id and wd.exercise_id == ^exercise_id,
-          order_by: [desc: wd.inserted_at],
-          preload: :exercise
-      )
-      {exercise_name, max_detail} =
-        if length(workout_details) > 0 do
-          max_detail = Enum.max_by(workout_details, &(&1.weight))
-          {hd(workout_details).exercise.name, max_detail}
-        else
-          {"", nil}
+    trainer = Trainers.get_trainer_byUserId(user.id)
+
+    case Repo.get(Clients.Client, client_id) do
+      nil ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Client Not found")
+         |> push_navigate(to: "/trainer/clients")}
+
+      client ->
+        case client.trainer_id == trainer.id do
+          true ->
+            workout_details =
+              Repo.all(
+                from wd in WorkoutDetails,
+                  join: w in Workout,
+                  on: wd.workout_id == w.id,
+                  where: w.client_id == ^client_id and wd.exercise_id == ^exercise_id,
+                  order_by: [desc: wd.inserted_at],
+                  preload: :exercise
+              )
+
+            {exercise_name, max_detail} =
+              if length(workout_details) > 0 do
+                max_detail = Enum.max_by(workout_details, &(&1.weight))
+                {hd(workout_details).exercise.name, max_detail}
+              else
+                {"", nil}
+              end
+
+            {:ok, assign(socket, workout_details: workout_details, max_detail: max_detail)}
+
+          false ->
+            {:ok,
+             socket
+             |> put_flash(:error, "Client Does not exist")
+             |> push_navigate(to: "/trainer/clients")}
         end
-
-{:ok,assign(socket,workout_details: workout_details, max_detail: max_detail)}
-
-
+    end
   end
   def render(assigns) do
     ~H"""
