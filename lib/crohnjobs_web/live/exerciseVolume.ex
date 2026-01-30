@@ -30,7 +30,6 @@ defmodule CrohnjobsWeb.ExerciseVolume do
   def render(assigns) do
     ~H"""
 
-
       <div class="relative px-6 py-7 sm:px-8">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>

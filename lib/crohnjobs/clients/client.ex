@@ -33,6 +33,9 @@ defmodule Crohnjobs.Clients.Client do
   def changeset(client, attrs) do
     client
     |> cast(attrs, [:age, :user_id, :height, :notes, :sex, :trainer_id, :active, :profile_picture_url])
+    |> validate_number(:age, greater_than_or_equal_to: 0)
+    |> validate_number(:height, greater_than: 0)
+    |> validate_inclusion(:sex, ["male", "female", "other"])
     |> validate_required([])
   end
 end
