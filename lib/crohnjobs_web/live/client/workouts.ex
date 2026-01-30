@@ -3,6 +3,7 @@ defmodule CrohnjobsWeb.Client.Workouts do
   alias Crohnjobs.Repo
   alias Crohnjobs.Clients.Client
   alias Crohnjobs.Training.Workout
+  alias Crohnjobs.Notifications
   import Ecto.Query
   use CrohnjobsWeb, :live_view
 
@@ -17,15 +18,52 @@ defmodule CrohnjobsWeb.Client.Workouts do
   def handle_event("createWorkout", _params, socket) do
     user = socket.assigns.current_user
     client = Repo.get_by(Client, user_id: user.id)
-    case Training.create_workout(%{client_id: client.id, name: "Untitled"}) do
-      {:ok,workout}->
-        workouts = socket.assigns.workouts++[workout]
-        {:noreply, assign(socket,workouts: workouts)}
-        _->{:noreply,socket|>put_flash(:error, "Unable To create workout")}
+    result =
+      Repo.transaction(fn ->
+        case Training.create_workout(%{
+               client_id: client.id,
+               name: "Untitled",
+               date: DateTime.utc_now()
+             }) do
+          {:ok, workout} ->
+            if client.trainer_id do
+              case Notifications.create_notification(%{
+                     actor_id: user.id,
+                     actor_type: "client",
+                     recipient_id: client.trainer_id,
+                     recipient_type: "trainer",
+                     type: "workout_created",
+                     data: %{workout_id: workout.id, client_id: client.id}
+                   }) do
+                {:ok, notification} -> {workout, notification}
+                {:error, changeset} -> Repo.rollback(changeset)
+              end
+            else
+              {workout, nil}
+            end
+
+          {:error, changeset} ->
+            Repo.rollback(changeset)
+        end
+      end)
+
+    case result do
+      {:ok, {workout, notification}} ->
+        workouts = socket.assigns.workouts ++ [workout]
+
+        if notification do
+          Phoenix.PubSub.broadcast(
+            Crohnjobs.PubSub,
+            "notifications:trainer:#{client.trainer_id}",
+            {:notification, notification}
+          )
+        end
+
+        {:noreply, assign(socket, workouts: workouts)}
+
+      {:error, _reason} ->
+        {:noreply, socket |> put_flash(:error, "Unable To create workout")}
     end
-
-
-
   end
   def handle_event("deleteWorkout", %{"id"=>id}, socket) do
     id= String.to_integer(id)

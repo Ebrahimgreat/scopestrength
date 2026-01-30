@@ -66,11 +66,10 @@ defmodule CrohnjobsWeb.Router do
       live "/clients/:id/strengthProgress", StrengthProgress
       live "/clients/:id/strengthProgress/:exercise_id", ExerciseProgress
       live "/exercises", Exercises
-      live "exercises/contribution",ExerciseVolume
+      live "/exercises/contribution",ExerciseVolume
       live "/notifications",Notifications
-
-      live "/clients/:id/workouts/:workout_id", WorkoutShow
-      live "/clients/:id/workouts/:workout_id/details", WorkoutDetail
+      live "/clients/:id/workouts",Workouts
+      live "/clients/:id/workouts/:workout_id", WorkoutDetail
       live "/client/:id/programme", ChangeProgramme
       live "/programmes", Programmes
       live "/programmes/:id", ProgrammeShow

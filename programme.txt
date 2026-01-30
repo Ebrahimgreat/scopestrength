@@ -1,5 +1,8 @@
 Programme Name: Untitled
 Programme Description: untitled
 
-Template : Untitled
+Template : haha
+  Exercise: Tricep Cable Kickback, Set: 1, Reps: 10
+  Exercise: Barbell Bent Over Row, Set: 5, Reps: 10
+  Exercise: Dumbbell Bench Press, Set: 3, Reps: 10
 

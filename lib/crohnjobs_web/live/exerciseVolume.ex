@@ -29,49 +29,80 @@ defmodule CrohnjobsWeb.ExerciseVolume do
 
   def render(assigns) do
     ~H"""
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <table class="w-full text-sm">
-        <thead class="bg-slate-50 border-b border-slate-200">
-          <tr>
-            <th class="text-left py-3 px-6 font-semibold text-slate-800">Exercise</th>
-            <th class="text-left py-3 px-6 font-semibold text-slate-800">Muscle</th>
-            <th class="text-left py-3 px-6 font-semibold text-slate-800">Role</th>
-            <th class="text-left py-3 px-6 font-semibold text-slate-800">Multiplier</th>
-            <th class="text-right py-3 px-6 font-semibold text-slate-800">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-200">
-          <%= for emc <- @exerciseMuscleContributions do %>
-            <tr class="hover:bg-slate-50 transition">
-              <td class=" px-4 py-2">{emc.exercise.name}</td>
-              <td class="px-4 py-2">{emc.muscle.name}</td>
 
-              <td class="px-4 py-2">{emc.role}</td>
-              <td class="px-4 py-2">{emc.multiplier}</td>
-              <td class="px-4 py-2 text-right">
-                <%= if emc.role != "primary" do %>
-                  <button
-                    type="button"
-                    phx-click="edit_multiplier"
-                    phx-value-id={emc.id}
-                    class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  >
-                    Edit
-                  </button>
-                <% else %>
-                  <span class="text-xs text-slate-400">Primary</span>
-                <% end %>
-              </td>
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.08),_transparent_60%)]"></div>
+      <div class="relative px-6 py-7 sm:px-8">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+              Training analytics
+            </p>
+            <h1 class="text-2xl font-semibold text-slate-900 sm:text-3xl">Exercise Volume</h1>
+            <p class="mt-1 max-w-2xl text-sm text-slate-600">
+              Review muscle contribution multipliers for each exercise.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-3 rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-3">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 mb-2">
+            Volume Calculation Guide
+          </p>
+          <div class="text-xs text-blue-800 space-y-1">
+            <p><span class="font-semibold">1.0 multiplier:</span> 1 set = 1 set of volume</p>
+            <p><span class="font-semibold">0.5 multiplier:</span> 1 sets = 0.5 set of volume</p>
+            <p class="pt-1 italic">Example: If you do 3 sets with 0.5 multiplier, the muscle gets 1.5 sets of effective volume.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative overflow-hidden border-t border-slate-200">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50/80 text-[0.7rem] uppercase tracking-[0.2em] text-slate-400">
+            <tr>
+              <th class="text-left py-3 px-6 font-semibold">Exercise</th>
+              <th class="text-left py-3 px-6 font-semibold">Muscle</th>
+              <th class="text-left py-3 px-6 font-semibold">Role</th>
+              <th class="text-left py-3 px-6 font-semibold">Multiplier</th>
+              <th class="text-right py-3 px-6 font-semibold">Actions</th>
             </tr>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <%= for emc <- @exerciseMuscleContributions do %>
+              <tr class="transition hover:bg-slate-50">
+                <td class="px-6 py-3 font-medium text-slate-900"><%= emc.exercise.name %></td>
+                <td class="px-6 py-3 text-slate-600"><%= emc.muscle.name %></td>
+                <td class="px-6 py-3">
+                  <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize">
+                    <%= emc.role %>
+                  </span>
+                </td>
+                <td class="px-6 py-3 text-slate-700"><%= emc.multiplier %></td>
+                <td class="px-6 py-3 text-right">
+                  <%= if emc.role != "primary" do %>
+                    <button
+                      type="button"
+                      phx-click="edit_multiplier"
+                      phx-value-id={emc.id}
+                      class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                    >
+                      Edit
+                    </button>
+                  <% else %>
+                    <span class="text-xs text-slate-400">Primary</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
 
     <%= if @show_edit_dialog do %>
-      <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div class="fixed inset-0 z-50 flex items-center justify-center px-4" phx-click="close_edit_dialog" phx-window-keydown="close_edit_dialog" phx-key="escape">
         <div class="absolute inset-0 bg-slate-900/60" aria-hidden="true"></div>
-        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" phx-click="stop_propagation">
           <div class="flex items-start justify-between gap-3">
             <div>
               <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Edit</p>
@@ -106,18 +137,18 @@ defmodule CrohnjobsWeb.ExerciseVolume do
               <div class="space-y-2">
                 <label class="block text-sm font-medium text-slate-700">Exercise</label>
                 <div class="text-sm text-slate-900 font-medium">
-                  {@editing_contribution.exercise.name}
+                  <%= @editing_contribution.exercise.name %>
                 </div>
               </div>
               <div class="space-y-2">
                 <label class="block text-sm font-medium text-slate-700">Muscle</label>
                 <div class="text-sm text-slate-900 font-medium">
-                  {@editing_contribution.muscle.name}
+                  <%= @editing_contribution.muscle.name %>
                 </div>
               </div>
               <div class="space-y-2">
                 <label class="block text-sm font-medium text-slate-700">Role</label>
-                <div class="text-sm text-slate-900 font-medium">{@editing_contribution.role}</div>
+                <div class="text-sm text-slate-900 font-medium"><%= @editing_contribution.role %></div>
               </div>
               <.input
                 type="number"
@@ -127,6 +158,17 @@ defmodule CrohnjobsWeb.ExerciseVolume do
                 placeholder="Enter multiplier value"
                 required
               />
+
+              <div class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                <p class="text-xs font-semibold text-blue-700 mb-1">Calculation Example:</p>
+                <p class="text-xs text-blue-800">
+                  With multiplier <span class="font-semibold"><%= @editing_contribution.multiplier %></span>:
+                  1 set = <%= @editing_contribution.multiplier %> set(s) of volume
+                </p>
+                <p class="text-xs text-blue-800 mt-1">
+                  3 sets = <%= Float.round(@editing_contribution.multiplier * 3, 2) %> set(s) of volume
+                </p>
+              </div>
 
               <div class="flex items-center justify-end gap-3 pt-2">
                 <button

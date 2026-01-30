@@ -190,14 +190,14 @@ end
               <div class="flex items-center justify-between text-[11px] text-slate-500">
                 <span>Direct</span>
                 <span class="inline-flex items-center justify-center px-2 py-0.5 bg-indigo-600 text-white text-xs font-semibold rounded-full">
-                  <%= round(volumes.direct) %>
+                  <%= Float.round(volumes.direct)%>
                 </span>
               </div>
 
               <div class="flex items-center justify-between text-[11px] text-slate-500">
                 <span>Effective</span>
                 <span class="inline-flex items-center justify-center px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">
-                  <%= round(volumes.effective) %>
+                  <%= Float.round(volumes.effective,1) %>
                 </span>
               </div>
             </div>

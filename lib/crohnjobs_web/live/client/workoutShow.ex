@@ -2,6 +2,7 @@ defmodule CrohnjobsWeb.Client.WorkoutShow do
 alias Crohnjobs.Programmes.ProgrammeUser
 alias GenLSP.Structures.ConfigurationItem
 alias Crohnjobs.Training
+alias Crohnjobs.Training.Workout
 alias Crohnjobs.Exercises.Exercise
 alias Crohnjobs.Exercises.ExerciseMuscleContribution
 alias CrohnjobsWeb.Exercises
@@ -157,6 +158,22 @@ alias CrohnjobsWeb.Exercises
     {:noreply, assign(socket, edit_mode: !socket.assigns.edit_mode)}
   end
 
+  def handle_event("update_workout", %{"workout" => params}, socket) do
+    attrs = normalize_workout_attrs(params)
+
+    case Training.update_workout(socket.assigns.workout, attrs) do
+      {:ok, updated} ->
+        {:noreply,
+         socket
+         |> assign(:workout, updated)
+         |> assign(:workout_form, Training.change_workout(updated) |> to_form())
+         |> put_flash(:info, "Workout updated")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :workout_form, to_form(changeset))}
+    end
+  end
+
   def handle_event("load_from_programme", %{"template-id" => template_id}, socket) do
     workout_id = socket.assigns.workout_id
 
@@ -251,12 +268,21 @@ alias CrohnjobsWeb.Exercises
                  |> redirect(to: "/client")}
 
               {workout_id_int, ""} ->
+                workout = Repo.get_by(Workout, id: workout_id_int, client_id: client.id)
+
+                if is_nil(workout) do
+                  {:ok,
+                   socket
+                   |> put_flash(:error, "Invalid Workout")
+                   |> redirect(to: "/client")}
+                else
+                workout_form = Training.change_workout(workout) |> to_form()
                 workouts =
                   Repo.all(
                     from w in WorkoutDetails,
                       where: w.workout_id == ^workout_id_int
                   )|>Repo.preload(:exercise)
-                  IO.inspect(workouts)
+
                 {grouped_workouts, muscle_group_frequencies} = build_workout_assigns(workouts)
 
                   programme =
@@ -264,7 +290,7 @@ alias CrohnjobsWeb.Exercises
                       client_id: client.id,
                       is_active: true
                     })|>Repo.preload(programme: [programmeTemplates: [programmeDetails: :exercise]])
-                    IO.inspect(programme)
+
                   newForm = WorkoutDetails.changeset(%WorkoutDetails{},%{})|>to_form()
 
                 {:ok,
@@ -272,6 +298,8 @@ alias CrohnjobsWeb.Exercises
                  |> assign(:client, client)
                  |>assign(:programme, programme)
                  |> assign(:workout_id, workout_id_int)
+                 |> assign(:workout, workout)
+                 |> assign(:workout_form, workout_form)
                  |> assign(editForm: nil)
                  |> assign(newForm: newForm)
                  |> assign(:workouts, grouped_workouts)
@@ -282,6 +310,7 @@ alias CrohnjobsWeb.Exercises
                  |> assign(muscle_group_frequencies: muscle_group_frequencies)
                  |> assign(edit_mode: false)
                  |> assign_new(:q, fn -> "" end)}
+                end
 
             end
         end
@@ -321,6 +350,33 @@ alias CrohnjobsWeb.Exercises
       </div>
 
       <%= if @edit_mode do %>
+        <div class="mb-8 bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">Update Workout</h2>
+          <.form for={@workout_form} phx-submit="update_workout" class="mt-4 space-y-4 max-w-xl">
+            <div>
+              <label class="block text-sm font-medium text-slate-700">Name</label>
+              <.input
+                field={@workout_form[:name]}
+                type="text"
+                class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
+                placeholder="Workout name"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700">Date</label>
+              <.input
+                field={@workout_form[:date]}
+                type="datetime-local"
+                class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
+              />
+              <p class="text-xs text-slate-500 mt-1">Stored in UTC.</p>
+            </div>
+            <.button class="px-4 py-2 text-sm">
+              Save
+            </.button>
+          </.form>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
             <%= if @programme && @programme.programme && length(@programme.programme.programmeTemplates) > 0 do %>
@@ -599,6 +655,22 @@ alias CrohnjobsWeb.Exercises
         {muscle, %{direct: direct_sets, effective: effective_sets}}
       end)
       |> Map.new()
+    end
+  end
+
+  defp normalize_workout_attrs(params) do
+    params
+    |> Map.take(["name", "date"])
+    |> Map.update("date", nil, &parse_datetime_local/1)
+  end
+
+  defp parse_datetime_local(nil), do: nil
+  defp parse_datetime_local(""), do: nil
+
+  defp parse_datetime_local(value) do
+    case NaiveDateTime.from_iso8601(value) do
+      {:ok, naive} -> DateTime.from_naive!(naive, "Etc/UTC")
+      _ -> value
     end
   end
 end
