@@ -3,22 +3,42 @@ defmodule CrohnjobsWeb.StrengthProgress do
 
   import Ecto.Query
   alias Crohnjobs.Exercises.Exercise
+  alias Crohnjobs.Trainers
+  alias Crohnjobs.Clients
   alias Crohnjobs.Repo
 
   def mount(params, _session, socket) do
     user = socket.assigns.current_user
+    trainer = Trainers.get_trainer_byUserId(user.id)
     id = String.to_integer(params["id"])
 
+    case Repo.get(Clients.Client, id) |> Repo.preload(:user) do
+      nil ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Client Not found")
+         |> push_navigate(to: "/trainer/clients")}
 
-    exercises =
-      Repo.all(
-        from e in Exercise,
-          where: e.is_custom == false or e.user_id == ^user.id,
-          order_by: [asc: e.name],
-          preload: [:muscle, :equipment]
-      )
+      client ->
+        case client.trainer_id == trainer.id do
+          true ->
+            exercises =
+              Repo.all(
+                from e in Exercise,
+                  where: e.is_custom == false or e.user_id == ^user.id,
+                  order_by: [asc: e.name],
+                  preload: [:muscle, :equipment]
+              )
 
-    {:ok, assign(socket, exercises: exercises, client_id: id)}
+            {:ok, assign(socket, exercises: exercises, client_id: id)}
+
+          false ->
+            {:ok,
+             socket
+             |> put_flash(:error, "Client Does not exist")
+             |> push_navigate(to: "/trainer/clients")}
+        end
+    end
   end
 
   def render(assigns) do

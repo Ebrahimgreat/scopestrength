@@ -4,6 +4,7 @@ defmodule CrohnjobsWeb.ChangeProgramme do
   alias Crohnjobs.Programmes
   alias Crohnjobs.Trainers
   alias Crohnjobs.Trainers.Trainer
+  alias Crohnjobs.Clients
   alias Crohnjobs.Repo
   alias Crohnjobs.Programmes.Programme
   alias Crohnjobs.Programmes.ProgrammeUser
@@ -17,20 +18,31 @@ defmodule CrohnjobsWeb.ChangeProgramme do
 
   def mount(params, session, socket) do
     user = socket.assigns.current_user
-    id = params["id"]
-    trainers = Trainers.get_trainer_byUserId(user.id)
-    clientProgramme = Repo.get_by(ProgrammeUser, client_id: id, is_active: true)|> Repo.preload(:programme)
-    case clientProgramme do
-      nil -> nil
-      pu -> pu
+    trainer = Trainers.get_trainer_byUserId(user.id)
+    client_id = String.to_integer(params["id"])
+
+    case Repo.get(Crohnjobs.Clients.Client, client_id) do
+      nil ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Client Not found")
+         |> push_navigate(to: "/trainer/clients")}
+
+      client ->
+        case client.trainer_id == trainer.id do
+          true ->
+            clientProgramme = Repo.get_by(ProgrammeUser, client_id: client_id, is_active: true) |> Repo.preload(:programme)
+            programmes = Repo.all(from(Programme, where: [trainer_id: ^trainer.id]))
+
+            {:ok, assign(socket, programmes: programmes, clientProgramme: clientProgramme, client_id: client_id)}
+
+          false ->
+            {:ok,
+             socket
+             |> put_flash(:error, "Client Does not exist")
+             |> push_navigate(to: "/trainer/clients")}
+        end
     end
-
-
-    programmes = Repo.all(from(Programme, where: [trainer_id: ^trainers.id]))
-
-
-    {:ok, assign(socket, programmes: programmes, clientProgramme: clientProgramme, client_id: id)}
-
   end
 
   def handle_event("unroll", params, socket) do
