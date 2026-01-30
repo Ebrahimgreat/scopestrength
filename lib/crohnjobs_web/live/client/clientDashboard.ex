@@ -126,6 +126,7 @@ import Ecto.Query
           order_by: [desc: n.inserted_at],
           limit: 10
       )
+      
 
     # Get recent workouts
     recent_workouts =

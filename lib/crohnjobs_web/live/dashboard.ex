@@ -83,6 +83,25 @@ defmodule CrohnjobsWeb.Dashboard do
               order_by: [desc: n.inserted_at],
               limit: 10
           )
+          #SO actor id is basically the user_id
+          client_ids= Enum.map(notifications, &(&1.actor_id))
+          clients_by_id= Repo.all(from c in Client, where: c.user_id in ^client_ids)|>Repo.preload(:user)|>Map.new(&{&1.user_id,&1})
+
+          notifications_with_client= Enum.map(notifications, fn n->
+            case n.actor_type do
+              "client" ->
+                client = clients_by_id[n.actor_id]
+                actor_name = if client && client.user, do: client.user.name, else: "Unknown Client"
+                Map.put(n, :actor_name, actor_name)
+
+              _ ->
+                Map.put(n, :actor_name, "System")
+            end
+          end)
+          IO.inspect(notifications_with_client)
+
+
+
 
 
 
@@ -98,8 +117,8 @@ defmodule CrohnjobsWeb.Dashboard do
          |> assign(:message, "Trainer Dashboard")
          |> assign(:data, data)
          |> assign(:programmes, programmes)
-         |> assign(:activities, notifications)
-         |> assign(:notification_count, length(notifications))}
+         |> assign(:activities, notifications_with_client)
+         |> assign(:notification_count, length(notifications_with_client))}
 
 
       "client" ->
@@ -182,6 +201,7 @@ defmodule CrohnjobsWeb.Dashboard do
         <% else %>
           <div class="divide-y divide-slate-100">
             <%= for notification <- @activities do %>
+
               <div
                 phx-click="mark_notification_read"
                 phx-value-id={notification.id}
@@ -189,7 +209,12 @@ defmodule CrohnjobsWeb.Dashboard do
               >
                 <div>
                   <p class="text-sm font-medium text-slate-900">
-                    <%= notification_text(notification) %>
+                    <span class="text-emerald-600"><%= notification.actor_name %></span>
+                    <%= if notification.data["message"] do %>
+                      <%= notification.data["message"] %>
+                    <% else %>
+                      <%= String.replace(notification.type, "_", " ") |> String.capitalize() %>
+                    <% end %>
                   </p>
                   <p class="text-xs text-slate-500 mt-1">
                     <%= notification_time(notification) %>
@@ -234,11 +259,6 @@ defmodule CrohnjobsWeb.Dashboard do
   </div>
   """
 end
-
-  defp notification_text(%Notification{data: %{"message" => message}}) when is_binary(message), do: message
-  defp notification_text(%Notification{data: %{"title" => title}}) when is_binary(title), do: title
-  defp notification_text(%Notification{type: type}) when is_binary(type), do: String.replace(type, "_", " ") |> String.capitalize()
-  defp notification_text(_), do: "New activity"
 
   defp notification_time(%Notification{inserted_at: %DateTime{} = inserted_at}) do
     Calendar.strftime(inserted_at, "%b %d, %Y at %I:%M %p")

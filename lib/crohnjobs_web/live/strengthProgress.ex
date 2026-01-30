@@ -10,7 +10,6 @@ defmodule CrohnjobsWeb.StrengthProgress do
     id = String.to_integer(params["id"])
 
 
-    # Get exercises where is_custom == false OR user_id matches current user
     exercises =
       Repo.all(
         from e in Exercise,

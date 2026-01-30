@@ -47,14 +47,14 @@ defmodule CrohnjobsWeb.Clients do
                 <th class="text-left px-6 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">
                   Status
                 </th>
-                <th class="text-right px-6 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">
-                  Actions
-                </th>
+
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200">
               <%= for client <- @clients do %>
-                <tr class="hover:bg-slate-50 transition-colors">
+
+                <tr   phx-click={JS.navigate(~p"/trainer/clients/#{client.id}")}
+                class="hover:bg-slate-50 transition-colors cursor-pointer">
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-3">
                       <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -74,18 +74,9 @@ defmodule CrohnjobsWeb.Clients do
                       Active
                     </span>
                   </td>
-                  <td class="px-6 py-4 text-right">
-                    <.link
-                      navigate={~p"/trainer/clients/#{client.id}"}
-                      class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 hover:text-slate-900"
-                    >
-                      View
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                      </svg>
-                    </.link>
-                  </td>
+
                 </tr>
+
               <% end %>
             </tbody>
           </table>
