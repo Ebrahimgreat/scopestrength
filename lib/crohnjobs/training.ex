@@ -103,6 +103,7 @@ defmodule Crohnjobs.Training do
   end
 
   alias Crohnjobs.Training.WorkoutDetails
+  alias Crohnjobs.Exercises.Exercise
 
   @doc """
   Returns the list of workout_details.
@@ -196,6 +197,61 @@ defmodule Crohnjobs.Training do
   """
   def change_workout_details(%WorkoutDetails{} = workout_details, attrs \\ %{}) do
     WorkoutDetails.changeset(workout_details, attrs)
+  end
+
+  @doc """
+  Returns a progress summary for a client_id.
+  """
+  def progress_summary(client_id) do
+    workouts_query =
+      from w in Workout,
+        where: w.client_id == ^client_id
+
+    total_workouts = Repo.aggregate(workouts_query, :count, :id)
+
+    last_workout =
+      Repo.one(
+        from w in workouts_query,
+          order_by: [desc: fragment("COALESCE(?, ?)", w.date, w.inserted_at)],
+          limit: 1
+      )
+
+    total_sets =
+      Repo.aggregate(
+        from(wd in WorkoutDetails,
+          join: w in Workout,
+          on: wd.workout_id == w.id,
+          where: w.client_id == ^client_id
+        ),
+        :count,
+        :id
+      )
+
+    pr =
+      Repo.one(
+        from wd in WorkoutDetails,
+          join: w in Workout,
+          on: wd.workout_id == w.id,
+          join: e in Exercise,
+          on: wd.exercise_id == e.id,
+          where: w.client_id == ^client_id and not is_nil(wd.weight),
+          order_by: [desc: wd.weight],
+          limit: 1,
+          select: %{
+            weight: wd.weight,
+            reps: wd.reps,
+            exercise_name: e.name,
+            date: wd.inserted_at
+          }
+      )
+
+    {:ok,
+     %{
+       total_workouts: total_workouts,
+       last_workout_at: last_workout && (last_workout.date || last_workout.inserted_at),
+       total_sets: total_sets,
+       pr: pr
+     }}
   end
 
   @doc """
