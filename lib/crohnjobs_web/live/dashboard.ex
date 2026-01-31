@@ -79,7 +79,7 @@ defmodule CrohnjobsWeb.Dashboard do
         notifications =
           Repo.all(
             from n in Notification,
-              where: n.recipient_type == "trainer" and n.recipient_id == ^trainer.id,
+              where: n.recipient_type == "trainer" and n.recipient_id == ^trainer.id and is_nil(n.read_at),
               order_by: [desc: n.inserted_at],
               limit: 10
           )

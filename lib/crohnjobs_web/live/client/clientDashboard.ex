@@ -69,16 +69,12 @@ import Ecto.Query
 
   def handle_event("mark_all_read", _params, socket) do
     client = socket.assigns.client
-
-    # Update all unread notifications for this client
     from(n in Notification,
       where: n.recipient_type == "client" and
              n.recipient_id == ^client.id and
              is_nil(n.read_at)
     )
     |> Repo.update_all(set: [read_at: DateTime.utc_now()])
-
-    # Update local state
     notifications =
       Enum.map(socket.assigns.notifications, fn n ->
         %{n | read_at: DateTime.utc_now()}
@@ -122,11 +118,11 @@ import Ecto.Query
     notifications =
       Repo.all(
         from n in Notification,
-          where: n.recipient_type == "client" and n.recipient_id == ^client.id,
+          where: n.recipient_type == "client" and n.recipient_id == ^client.id and is_nil(n.read_at),
           order_by: [desc: n.inserted_at],
           limit: 10
       )
-      
+
 
     # Get recent workouts
     recent_workouts =
