@@ -1,6 +1,8 @@
 defmodule CrohnjobsWeb.Chat do
   alias Crohnjobs.Chat.Message
+  alias Crohnjobs.Clients.Client
   alias Crohnjobs.Repo
+  alias Crohnjobs.Training
   import Ecto.Query
   use CrohnjobsWeb, :live_view
 
@@ -47,6 +49,8 @@ defmodule CrohnjobsWeb.Chat do
       {:error, _changeset} ->
         :ok
     end
+
+    maybe_send_progress_response(text, socket)
 
     {:noreply, assign(socket, text: "")}
   end
@@ -111,10 +115,10 @@ defmodule CrohnjobsWeb.Chat do
                     <div class="flex justify-start">
                       <div class="flex gap-3 max-w-md">
                         <div class="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-medium text-gray-600">
-                          <%= String.first(msg.user.name) %>
+                          <%= sender_initial(msg) %>
                         </div>
                         <div>
-                          <div class="text-xs text-gray-500 mb-1"><%= msg.user.name %></div>
+                          <div class="text-xs text-gray-500 mb-1"><%= sender_name(msg) %></div>
                           <div class="bg-white border border-gray-200 px-4 py-3 rounded-2xl rounded-bl-md shadow-sm">
                             <%= msg.text %>
                           </div>
@@ -150,5 +154,146 @@ defmodule CrohnjobsWeb.Chat do
       </div>
     </div>
     """
+  end
+
+  defp maybe_send_progress_response(text, socket) do
+    if progress_request?(text) do
+      case build_progress_response(socket) do
+        {:ok, response} -> send_bot_message(response, socket)
+        {:error, message} -> send_bot_message(message, socket)
+      end
+    end
+  end
+
+  defp progress_request?(text) when is_binary(text) do
+    text
+    |> String.downcase()
+    |> String.contains?("progress")
+  end
+
+  defp progress_request?(_), do: false
+
+  defp build_progress_response(socket) do
+    user = socket.assigns.user
+    room_id = socket.assigns.room_id
+
+    with {:ok, client} <- fetch_progress_client(user, room_id),
+         {:ok, summary} <- Training.progress_summary(client.id) do
+      {:ok, format_progress_text(client, summary)}
+    else
+      {:error, message} -> {:error, message}
+      _ -> {:error, "I couldn't load progress for this client."}
+    end
+  end
+
+  defp fetch_progress_client(user, room_id) do
+    case user.role do
+      "trainer" ->
+        case Integer.parse(room_id || "") do
+          {client_id, ""} ->
+            case Repo.get(Client, client_id) |> Repo.preload(:user) do
+              nil -> {:error, "I couldn't find that client."}
+              client -> {:ok, client}
+            end
+
+          _ ->
+            {:error, "I couldn't identify the client for this chat."}
+        end
+
+      _ ->
+        case Repo.get_by(Client, %{user_id: user.id}) |> Repo.preload(:user) do
+          nil -> {:error, "I couldn't find your client profile."}
+          client -> {:ok, client}
+        end
+    end
+  end
+
+  defp format_progress_text(client, summary) do
+    name =
+      case client.user do
+        nil -> "This client"
+        user -> user.name || "This client"
+      end
+
+    if summary.total_workouts == 0 do
+      "No workouts logged yet for #{name}."
+    else
+      last_workout =
+        case summary.last_workout_at do
+          nil -> "unknown"
+          datetime -> format_date(datetime)
+        end
+
+      base =
+        "#{name} progress: #{summary.total_workouts} workouts logged, #{summary.total_sets} total sets. Last workout: #{last_workout}."
+
+      pr_text =
+        case summary.pr do
+          nil ->
+            "No PRs recorded yet."
+
+          pr ->
+            reps = format_number(pr.reps)
+            weight = format_number(pr.weight)
+            date_text = format_date(pr.date)
+            "Top lift: #{pr.exercise_name} #{weight} kg x #{reps} (#{date_text})."
+        end
+
+      base <> " " <> pr_text
+    end
+  end
+
+  defp format_date(%DateTime{} = datetime) do
+    Calendar.strftime(datetime, "%d %b %Y")
+  end
+
+  defp format_date(%NaiveDateTime{} = datetime) do
+    Calendar.strftime(datetime, "%d %b %Y")
+  end
+
+  defp format_date(_), do: "unknown"
+
+  defp format_number(nil), do: "?"
+
+  defp format_number(value) when is_float(value) do
+    if value == Float.round(value, 0) do
+      value |> round() |> Integer.to_string()
+    else
+      :erlang.float_to_binary(value, decimals: 1)
+    end
+  end
+
+  defp format_number(value), do: to_string(value)
+
+  defp send_bot_message(text, socket) when is_binary(text) do
+    attrs = %{
+      text: text,
+      user_id: nil,
+      room_id: socket.assigns.room_id
+    }
+
+    case Crohnjobs.Chat.create_message(attrs) do
+      {:ok, message} ->
+        message = Repo.preload(message, :user)
+        Phoenix.PubSub.broadcast(
+          Crohnjobs.PubSub,
+          socket.assigns.topic,
+          {:new_message, message}
+        )
+
+      {:error, _changeset} ->
+        :ok
+    end
+  end
+
+  defp sender_name(%{user: nil}), do: "CoachBot"
+  defp sender_name(%{user: user}), do: user.name || "CoachBot"
+
+  defp sender_initial(%{user: nil}), do: "AI"
+  defp sender_initial(%{user: user}) do
+    user.name
+    |> then(&(&1 || "?"))
+    |> String.first()
+    |> String.upcase()
   end
 end

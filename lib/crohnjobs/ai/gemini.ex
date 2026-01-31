@@ -1,7 +1,4 @@
 defmodule Crohnjobs.AI.Gemini do
-  alias Crohnjobs.Repo
-  alias Crohnjobs.Exercises.Exercise
-  import Ecto.Query
 
   defp api_key do
     case System.get_env("GEMINI_API_KEY") do
@@ -38,8 +35,11 @@ defmodule Crohnjobs.AI.Gemini do
         {:error, "Gemini API key not configured. Please set GEMINI_API_KEY environment variable."}
 
       {:ok, key} ->
-        # Build conversation history
-        history = Enum.map(context, fn %{role: role, content: content} ->
+        # Separate system context from conversation history
+        {system_context, conversation_history} = extract_system_context(context)
+
+        # Build conversation history (excluding system messages)
+        history = Enum.map(conversation_history, fn %{role: role, content: content} ->
           %{
             role: if(role == :user, do: "user", else: "model"),
             parts: [%{text: content}]
@@ -49,18 +49,21 @@ defmodule Crohnjobs.AI.Gemini do
         # Add current message
         contents = history ++ [%{role: "user", parts: [%{text: message}]}]
 
+        # Use custom system prompt if provided, otherwise use default
+        system_instruction = system_context || system_prompt()
+
         body = %{
           contents: contents,
           systemInstruction: %{
-            parts: [%{text: system_prompt()}]
+            parts: [%{text: system_instruction}]
           }
         }
 
         headers = [{"content-type", "application/json"}]
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=#{key}"
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=#{key}"
 
         case HTTPoison.post(url, Jason.encode!(body), headers) do
-          {:ok, %{status: 200, body: response_body}} ->
+          {:ok, %{status_code: 200, body: response_body}} ->
             case Jason.decode(response_body) do
               {:ok, decoded} ->
                 extract_chat_response(decoded)
@@ -68,8 +71,16 @@ defmodule Crohnjobs.AI.Gemini do
                 {:error, "Failed to parse response"}
             end
 
-          {:ok, %{status: status, body: body}} ->
-            {:error, "API error (#{status}): #{body}"}
+          {:ok, %{status_code: 429, body: error_body}} ->
+            case Jason.decode(error_body) do
+              {:ok, %{"error" => %{"message" => message}}} ->
+                {:error, "Rate limit exceeded: #{message}"}
+              _ ->
+                {:error, "Rate limit exceeded. Please try again later."}
+            end
+
+          {:ok, %{status_code: status, body: error_body}} ->
+            {:error, "API error (#{status}): #{error_body}"}
 
           {:error, %HTTPoison.Error{reason: reason}} ->
             {:error, "Network error: #{inspect(reason)}"}
@@ -77,9 +88,17 @@ defmodule Crohnjobs.AI.Gemini do
     end
   end
 
+  defp extract_system_context(context) do
+    system_msg = Enum.find(context, fn msg -> msg.role == :system end)
+    conversation = Enum.reject(context, fn msg -> msg.role == :system end)
+
+    system_content = if system_msg, do: system_msg.content, else: nil
+    {system_content, conversation}
+  end
+
   defp system_prompt do
     """
-    You are a helpful fitness AI assistant for a workout tracking app called CrohnJobs.
+    You are a helpful fitness AI assistant for a workout tracking app called Scope Application.
 
     Your main capabilities:
     1. Help users track their workouts by parsing natural language
@@ -107,82 +126,6 @@ defmodule Crohnjobs.AI.Gemini do
   end
 
   defp extract_chat_response(_), do: {:error, "Invalid response format"}
-
-  def generate_workout(user_request) when is_binary(user_request) do
-    case api_key() do
-      {:error, reason} -> {:error, reason}
-      {:ok, key} ->
-        exercises = list_available_exercises()
-
-        body = %{
-          contents: [
-            %{
-              parts: [
-                %{text: build_generation_prompt(user_request, exercises)}
-              ]
-            }
-          ]
-        }
-
-        headers = [{"content-type", "application/json"}]
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=#{key}"
-
-        with {:ok, %{status: 200, body: response_body}} <-
-               HTTPoison.post(url, Jason.encode!(body), headers),
-             {:ok, decoded} <- Jason.decode(response_body),
-             {:ok, parsed} <- extract_json(decoded) do
-          {:ok, parsed}
-        else
-          error -> {:error, error}
-        end
-    end
-  end
-
-  defp list_available_exercises do
-    Repo.all(from e in Exercise, select: %{name: e.name, type: e.type, equipment: e.equipment})
-  end
-
-  defp build_generation_prompt(user_request, exercises) do
-    exercise_list = exercises
-    |> Enum.map(fn e -> "- #{e.name} (#{e.type}, #{e.equipment})" end)
-    |> Enum.join("\n")
-
-    """
-    You are a professional fitness coach creating personalized workouts.
-
-    AVAILABLE EXERCISES (you MUST only use exercises from this list):
-    #{exercise_list}
-
-    USER REQUEST:
-    #{user_request}
-
-    Rules:
-    - Output ONLY valid JSON
-    - No explanations or markdown
-    - Only use exercise names EXACTLY as listed above
-    - Create a balanced workout based on the user's request
-    - Include appropriate sets, reps, and weights for each exercise
-    - If user doesn't specify, create a 4-6 exercise workout
-
-    JSON format:
-    {
-      "workout_name": string,
-      "exercises": [
-        {
-          "name": string (must match exactly from list above),
-          "sets": [
-            {
-              "set": number,
-              "reps": number,
-              "weight": number | null
-            }
-          ]
-        }
-      ]
-    }
-    """
-  end
-
 
   defp extract_json(%{
     "candidates" => [
@@ -247,14 +190,28 @@ defp extract_json(_), do: {:error, :invalid_gemini_response}
         headers = [{"content-type", "application/json"}]
         url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=#{key}"
 
-        with {:ok, %{status: 200, body: response_body}} <-
-               HTTPoison.post(url, Jason.encode!(body), headers),
-             {:ok, decoded} <- Jason.decode(response_body),
-             {:ok, parsed} <- extract_json(decoded) do
-          {:ok, parsed}
-        else
-          error ->
-            {:error, error}
+        case HTTPoison.post(url, Jason.encode!(body), headers) do
+          {:ok, %{status_code: 200, body: response_body}} ->
+            case Jason.decode(response_body) do
+              {:ok, decoded} ->
+                extract_json(decoded)
+              {:error, _} ->
+                {:error, "Failed to parse response"}
+            end
+
+          {:ok, %{status_code: 429, body: error_body}} ->
+            case Jason.decode(error_body) do
+              {:ok, %{"error" => %{"message" => message}}} ->
+                {:error, "Rate limit exceeded: #{message}"}
+              _ ->
+                {:error, "Rate limit exceeded. Please try again later."}
+            end
+
+          {:ok, %{status_code: status, body: error_body}} ->
+            {:error, "API error (#{status}): #{error_body}"}
+
+          {:error, %HTTPoison.Error{reason: reason}} ->
+            {:error, "Network error: #{inspect(reason)}"}
         end
     end
   end
