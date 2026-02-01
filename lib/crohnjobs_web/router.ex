@@ -46,6 +46,7 @@ defmodule CrohnjobsWeb.Router do
       live "/strengthProgress/:exercise_id",Client.StrengthProgress
       live "/exercises", Exercises
       live "/settings", Client.ClientSettings
+      live "/progress-photos", Client.ProgressPhotos
     end
   end
 
@@ -66,6 +67,7 @@ defmodule CrohnjobsWeb.Router do
       live "/clients/:id/workouts", Workouts
       live "/clients/:id/strengthProgress", StrengthProgress
       live "/clients/:id/strengthProgress/:exercise_id", ExerciseProgress
+      live "/clients/:id/progress-photos", ClientProgressPhotos
       live "/exercises", Exercises
       live "/exercises/contribution",ExerciseVolume
       live "/notifications",Notifications

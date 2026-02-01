@@ -56,13 +56,19 @@ equipment =
 
 # ── Seed exercises ──────────────────────────────────────────────────
 exercises = [
+  # GLUTES
+  %{name: "Deadlift", muscle: "Glutes", equipment: "Barbell"},
+  %{name: "Conventional Deadlift", muscle: "Glutes", equipment: "Barbell"},
+  %{name: "Hip Thrust", muscle: "Glutes", equipment: "Barbell"},
+  %{name: "Cable Pull Through", muscle: "Glutes", equipment: "Cable"},
+
   # LATS
-  %{name: "Deadlift", muscle: "Lats", equipment: "Barbell"},
-  %{name: "Conventional Deadlift", muscle: "Lats", equipment: "Barbell"},
   %{name: "Wide Lat Pulldown", muscle: "Lats", equipment: "Cable"},
   %{name: "Lat Pulldown", muscle: "Lats", equipment: "Cable"},
   %{name: "Machine Pullover", muscle: "Lats", equipment: "Machine"},
   %{name: "Dumbbell Pullover", muscle: "Lats", equipment: "Dumbbell"},
+  %{name: "Pull Up", muscle: "Lats", equipment: "Bodyweight"},
+  %{name: "Chin Up", muscle: "Lats", equipment: "Bodyweight"},
 
   # UPPER BACK
   %{name: "Barbell Bent Over Row", muscle: "Upper Back", equipment: "Barbell"},
@@ -70,6 +76,15 @@ exercises = [
   %{name: "Cable Row", muscle: "Upper Back", equipment: "Cable"},
   %{name: "Wide Grip Cable Row", muscle: "Upper Back", equipment: "Cable"},
   %{name: "Seated Row", muscle: "Upper Back", equipment: "Machine"},
+
+  # QUADS
+  %{name: "Barbell Squat", muscle: "Quads", equipment: "Barbell"},
+  %{name: "Front Squat", muscle: "Quads", equipment: "Barbell"},
+  %{name: "Leg Press", muscle: "Quads", equipment: "Machine"},
+  %{name: "Hack Squat", muscle: "Quads", equipment: "Machine"},
+  %{name: "Leg Extension", muscle: "Quads", equipment: "Machine"},
+  %{name: "Bulgarian Split Squat", muscle: "Quads", equipment: "Dumbbell"},
+  %{name: "Lunges", muscle: "Quads", equipment: "Dumbbell"},
 
   # HAMSTRINGS
   %{name: "Romanian Deadlift", muscle: "Hamstrings", equipment: "Barbell"},
@@ -144,22 +159,261 @@ exercise_map =
   end)
 
 # ── Seed exercise muscle contributions ──────────────────────────────
+# Multiplier system:
+#   - Primary: 1.0 (target muscle)
+#   - Secondary: 0.5 (assists the movement)
+
 contributions = [
-  %{exercise: "Dumbbell Bench Press", muscle: "Chest", role: "primary", multiplier: 1.0},
-  %{exercise: "Dumbbell Bench Press", muscle: "Triceps", role: "secondary", multiplier: 0.3},
-  %{exercise: "Dumbbell Bench Press", muscle: "Front Delts", role: "secondary", multiplier: 0.2},
+  # ═══════════════════════════════════════════════════════════════════
+  # CHEST EXERCISES
+  # ═══════════════════════════════════════════════════════════════════
 
+  # Barbell Bench Press
   %{exercise: "Barbell Bench Press", muscle: "Chest", role: "primary", multiplier: 1.0},
-  %{exercise: "Barbell Bench Press", muscle: "Triceps", role: "secondary", multiplier: 0.25},
-  %{exercise: "Barbell Bench Press", muscle: "Front Delts", role: "secondary", multiplier: 0.2},
+  %{exercise: "Barbell Bench Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Barbell Bench Press", muscle: "Front Delts", role: "secondary", multiplier: 0.5},
 
-  %{exercise: "Barbell Bent Over Row", muscle: "Upper Back", role: "primary", multiplier: 1.0},
-  %{exercise: "Barbell Bent Over Row", muscle: "Biceps", role: "secondary", multiplier: 0.3},
+  # Incline Barbell Press
+  %{exercise: "Incline Barbell Press", muscle: "Chest", role: "primary", multiplier: 1.0},
+  %{exercise: "Incline Barbell Press", muscle: "Front Delts", role: "secondary", multiplier: 0.5},
+  %{exercise: "Incline Barbell Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
 
+  # Decline Barbell Press
+  %{exercise: "Decline Barbell Press", muscle: "Chest", role: "primary", multiplier: 1.0},
+  %{exercise: "Decline Barbell Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+
+  # Dumbbell Bench Press
+  %{exercise: "Dumbbell Bench Press", muscle: "Chest", role: "primary", multiplier: 1.0},
+  %{exercise: "Dumbbell Bench Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Dumbbell Bench Press", muscle: "Front Delts", role: "secondary", multiplier: 0.5},
+
+  # Incline Dumbbell Press
+  %{exercise: "Incline Dumbbell Press", muscle: "Chest", role: "primary", multiplier: 1.0},
+  %{exercise: "Incline Dumbbell Press", muscle: "Front Delts", role: "secondary", multiplier: 0.5},
+  %{exercise: "Incline Dumbbell Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+
+  # Decline Dumbbell Press
+  %{exercise: "Decline Dumbbell Press", muscle: "Chest", role: "primary", multiplier: 1.0},
+  %{exercise: "Decline Dumbbell Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+
+  # Dumbbell Fly (isolation - primary only)
+  %{exercise: "Dumbbell Fly", muscle: "Chest", role: "primary", multiplier: 1.0},
+
+  # Cable Chest Fly (isolation - primary only)
+  %{exercise: "Cable Chest Fly", muscle: "Chest", role: "primary", multiplier: 1.0},
+
+  # Machine Chest Press
+  %{exercise: "Machine Chest Press", muscle: "Chest", role: "primary", multiplier: 1.0},
+  %{exercise: "Machine Chest Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+
+  # Incline Machine Chest Press
+  %{exercise: "Incline Machine Chest Press", muscle: "Chest", role: "primary", multiplier: 1.0},
+  %{exercise: "Incline Machine Chest Press", muscle: "Front Delts", role: "secondary", multiplier: 0.5},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # GLUTES EXERCISES
+  # ═══════════════════════════════════════════════════════════════════
+
+  # Deadlift
+  %{exercise: "Deadlift", muscle: "Glutes", role: "primary", multiplier: 1.0},
+  %{exercise: "Deadlift", muscle: "Hamstrings", role: "secondary", multiplier: 0.5},
+  %{exercise: "Deadlift", muscle: "Lats", role: "secondary", multiplier: 0.5},
+
+  # Conventional Deadlift
+  %{exercise: "Conventional Deadlift", muscle: "Glutes", role: "primary", multiplier: 1.0},
+  %{exercise: "Conventional Deadlift", muscle: "Hamstrings", role: "secondary", multiplier: 0.5},
+  %{exercise: "Conventional Deadlift", muscle: "Lats", role: "secondary", multiplier: 0.5},
+
+  # Hip Thrust
+  %{exercise: "Hip Thrust", muscle: "Glutes", role: "primary", multiplier: 1.0},
+  %{exercise: "Hip Thrust", muscle: "Hamstrings", role: "secondary", multiplier: 0.5},
+
+  # Cable Pull Through
+  %{exercise: "Cable Pull Through", muscle: "Glutes", role: "primary", multiplier: 1.0},
+  %{exercise: "Cable Pull Through", muscle: "Hamstrings", role: "secondary", multiplier: 0.5},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # LATS EXERCISES
+  # ═══════════════════════════════════════════════════════════════════
+
+  # Wide Lat Pulldown
+  %{exercise: "Wide Lat Pulldown", muscle: "Lats", role: "primary", multiplier: 1.0},
+  %{exercise: "Wide Lat Pulldown", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+
+  # Lat Pulldown
   %{exercise: "Lat Pulldown", muscle: "Lats", role: "primary", multiplier: 1.0},
-  %{exercise: "Lat Pulldown", muscle: "Biceps", role: "secondary", multiplier: 0.25},
+  %{exercise: "Lat Pulldown", muscle: "Biceps", role: "secondary", multiplier: 0.5},
 
-  %{exercise: "Barbell Curl", muscle: "Biceps", role: "primary", multiplier: 1.0}
+  # Machine Pullover
+  %{exercise: "Machine Pullover", muscle: "Lats", role: "primary", multiplier: 1.0},
+
+  # Dumbbell Pullover
+  %{exercise: "Dumbbell Pullover", muscle: "Lats", role: "primary", multiplier: 1.0},
+
+  # Pull Up
+  %{exercise: "Pull Up", muscle: "Lats", role: "primary", multiplier: 1.0},
+  %{exercise: "Pull Up", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+
+  # Chin Up
+  %{exercise: "Chin Up", muscle: "Lats", role: "primary", multiplier: 1.0},
+  %{exercise: "Chin Up", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # UPPER BACK EXERCISES
+  # ═══════════════════════════════════════════════════════════════════
+
+  # Barbell Bent Over Row
+  %{exercise: "Barbell Bent Over Row", muscle: "Upper Back", role: "primary", multiplier: 1.0},
+  %{exercise: "Barbell Bent Over Row", muscle: "Lats", role: "secondary", multiplier: 0.5},
+  %{exercise: "Barbell Bent Over Row", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+
+  # Dumbbell Row (One Arm)
+  %{exercise: "Dumbbell Row (One Arm)", muscle: "Upper Back", role: "primary", multiplier: 1.0},
+  %{exercise: "Dumbbell Row (One Arm)", muscle: "Lats", role: "secondary", multiplier: 0.5},
+  %{exercise: "Dumbbell Row (One Arm)", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+
+  # Cable Row
+  %{exercise: "Cable Row", muscle: "Upper Back", role: "primary", multiplier: 1.0},
+  %{exercise: "Cable Row", muscle: "Lats", role: "secondary", multiplier: 0.5},
+  %{exercise: "Cable Row", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+
+  # Wide Grip Cable Row
+  %{exercise: "Wide Grip Cable Row", muscle: "Upper Back", role: "primary", multiplier: 1.0},
+  %{exercise: "Wide Grip Cable Row", muscle: "Rear Delts", role: "secondary", multiplier: 0.5},
+
+  # Seated Row
+  %{exercise: "Seated Row", muscle: "Upper Back", role: "primary", multiplier: 1.0},
+  %{exercise: "Seated Row", muscle: "Lats", role: "secondary", multiplier: 0.5},
+  %{exercise: "Seated Row", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # QUADS EXERCISES
+  # ═══════════════════════════════════════════════════════════════════
+
+  # Barbell Squat
+  %{exercise: "Barbell Squat", muscle: "Quads", role: "primary", multiplier: 1.0},
+  %{exercise: "Barbell Squat", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+
+  # Front Squat
+  %{exercise: "Front Squat", muscle: "Quads", role: "primary", multiplier: 1.0},
+
+  # Leg Press
+  %{exercise: "Leg Press", muscle: "Quads", role: "primary", multiplier: 1.0},
+  %{exercise: "Leg Press", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+
+  # Hack Squat
+  %{exercise: "Hack Squat", muscle: "Quads", role: "primary", multiplier: 1.0},
+  %{exercise: "Hack Squat", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+
+  # Leg Extension (isolation)
+  %{exercise: "Leg Extension", muscle: "Quads", role: "primary", multiplier: 1.0},
+
+  # Bulgarian Split Squat
+  %{exercise: "Bulgarian Split Squat", muscle: "Quads", role: "primary", multiplier: 1.0},
+  %{exercise: "Bulgarian Split Squat", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+
+  # Lunges
+  %{exercise: "Lunges", muscle: "Quads", role: "primary", multiplier: 1.0},
+  %{exercise: "Lunges", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # HAMSTRINGS EXERCISES
+  # ═══════════════════════════════════════════════════════════════════
+
+  # Romanian Deadlift
+  %{exercise: "Romanian Deadlift", muscle: "Hamstrings", role: "primary", multiplier: 1.0},
+  %{exercise: "Romanian Deadlift", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+
+  # Lying Leg Curl (isolation)
+  %{exercise: "Lying Leg Curl", muscle: "Hamstrings", role: "primary", multiplier: 1.0},
+
+  # Seated Leg Curl (isolation)
+  %{exercise: "Seated Leg Curl", muscle: "Hamstrings", role: "primary", multiplier: 1.0},
+
+  # Seated Machine Hinge
+  %{exercise: "Seated Machine Hinge", muscle: "Hamstrings", role: "primary", multiplier: 1.0},
+  %{exercise: "Seated Machine Hinge", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # FRONT DELTS EXERCISES
+  # ═══════════════════════════════════════════════════════════════════
+
+  # Overhead Press
+  %{exercise: "Overhead Press", muscle: "Front Delts", role: "primary", multiplier: 1.0},
+  %{exercise: "Overhead Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+
+  # Dumbbell Shoulder Press
+  %{exercise: "Dumbbell Shoulder Press", muscle: "Front Delts", role: "primary", multiplier: 1.0},
+  %{exercise: "Dumbbell Shoulder Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+
+  # Front Raise (isolation)
+  %{exercise: "Front Raise", muscle: "Front Delts", role: "primary", multiplier: 1.0},
+
+  # Arnold Press
+  %{exercise: "Arnold Press", muscle: "Front Delts", role: "primary", multiplier: 1.0},
+  %{exercise: "Arnold Press", muscle: "Side Delts", role: "secondary", multiplier: 0.5},
+  %{exercise: "Arnold Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # SIDE DELTS EXERCISES
+  # ═══════════════════════════════════════════════════════════════════
+
+  # Lateral Raise (isolation)
+  %{exercise: "Lateral Raise", muscle: "Side Delts", role: "primary", multiplier: 1.0},
+
+  # Cable Lateral Raise (isolation)
+  %{exercise: "Cable Lateral Raise", muscle: "Side Delts", role: "primary", multiplier: 1.0},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # REAR DELTS EXERCISES
+  # ═══════════════════════════════════════════════════════════════════
+
+  # Reverse Fly
+  %{exercise: "Reverse Fly", muscle: "Rear Delts", role: "primary", multiplier: 1.0},
+  %{exercise: "Reverse Fly", muscle: "Upper Back", role: "secondary", multiplier: 0.5},
+
+  # One Arm Reverse Fly
+  %{exercise: "One Arm Reverse Fly", muscle: "Rear Delts", role: "primary", multiplier: 1.0},
+  %{exercise: "One Arm Reverse Fly", muscle: "Upper Back", role: "secondary", multiplier: 0.5},
+
+  # Face Pull
+  %{exercise: "Face Pull", muscle: "Rear Delts", role: "primary", multiplier: 1.0},
+  %{exercise: "Face Pull", muscle: "Upper Back", role: "secondary", multiplier: 0.5},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # BICEPS EXERCISES (all isolation)
+  # ═══════════════════════════════════════════════════════════════════
+
+  %{exercise: "Barbell Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
+  %{exercise: "Preacher Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
+  %{exercise: "Hammer Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
+  %{exercise: "Incline Dumbbell Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
+  %{exercise: "Bayesian Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # TRICEPS EXERCISES (all isolation)
+  # ═══════════════════════════════════════════════════════════════════
+
+  %{exercise: "Tricep Pushdown", muscle: "Triceps", role: "primary", multiplier: 1.0},
+  %{exercise: "Tricep Cable Kickback", muscle: "Triceps", role: "primary", multiplier: 1.0},
+  %{exercise: "Skull Crusher", muscle: "Triceps", role: "primary", multiplier: 1.0},
+  %{exercise: "JM Press", muscle: "Triceps", role: "primary", multiplier: 1.0},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # CALVES EXERCISES (all isolation)
+  # ═══════════════════════════════════════════════════════════════════
+
+  %{exercise: "Standing Calf Raise", muscle: "Calves", role: "primary", multiplier: 1.0},
+  %{exercise: "Seated Calf Raise", muscle: "Calves", role: "primary", multiplier: 1.0},
+  %{exercise: "Leg Press Calf Raise", muscle: "Calves", role: "primary", multiplier: 1.0},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # ABS EXERCISES (all isolation)
+  # ═══════════════════════════════════════════════════════════════════
+
+  %{exercise: "Cable Crunch", muscle: "Abs", role: "primary", multiplier: 1.0},
+  %{exercise: "Plank", muscle: "Abs", role: "primary", multiplier: 1.0},
+  %{exercise: "Leg Raise", muscle: "Abs", role: "primary", multiplier: 1.0}
 ]
 
 Enum.each(contributions, fn attrs ->
