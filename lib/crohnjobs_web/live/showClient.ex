@@ -175,6 +175,20 @@ defmodule CrohnjobsWeb.ShowClient do
             </div>
           </div>
 
+          <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100">
+              <h2 class="text-base font-semibold text-slate-900">Progress Photos</h2>
+              <p class="text-xs text-slate-500 mt-1">View client's visual transformation</p>
+            </div>
+            <div class="p-5">
+              <.link navigate={~p"/trainer/clients/#{@client.id}/progress-photos"}>
+                <.button class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  View Progress Photos
+                </.button>
+              </.link>
+            </div>
+          </div>
+
           <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden lg:col-span-2">
             <div class="px-5 py-4 border-b border-slate-100">
               <h2 class="text-base font-semibold text-slate-900">Notes Management</h2>
