@@ -183,6 +183,11 @@ defmodule CrohnjobsWeb.Notifications do
 
   defp notification_text(%Notification{data: %{"message" => message}}) when is_binary(message), do: message
   defp notification_text(%Notification{data: %{"title" => title}}) when is_binary(title), do: title
+  defp notification_text(%Notification{type: "progress_photo_uploaded"}), do: "A client uploaded a new progress photo"
+  defp notification_text(%Notification{type: "workout_created"}), do: "A client created a new workout"
+  defp notification_text(%Notification{type: "programme_assigned"}), do: "Programme assigned to client"
+  defp notification_text(%Notification{type: "programme_updated"}), do: "Client programme has been updated"
+  defp notification_text(%Notification{type: "programme_unenrolled"}), do: "Client unenrolled from programme"
   defp notification_text(%Notification{type: type}) when is_binary(type), do: String.replace(type, "_", " ") |> String.capitalize()
   defp notification_text(_), do: "New activity"
 
@@ -207,6 +212,8 @@ defmodule CrohnjobsWeb.Notifications do
       "programme_updated" -> "hero-arrow-path"
       "programme_unenrolled" -> "hero-x-circle"
       "workout_logged" -> "hero-clipboard-document-check"
+      "workout_created" -> "hero-plus-circle"
+      "progress_photo_uploaded" -> "hero-camera"
       _ -> "hero-bell"
     end
   end
