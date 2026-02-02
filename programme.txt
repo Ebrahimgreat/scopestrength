@@ -1,8 +1,11 @@
-Programme Name: Untitled
-Programme Description: untitled
+Programme Name: Full Body 4 Days A week
+Programme Description: This routine is designed for strength and hypertophy
 
-Template : haha
-  Exercise: Tricep Cable Kickback, Set: 1, Reps: 10
-  Exercise: Barbell Bent Over Row, Set: 5, Reps: 10
-  Exercise: Dumbbell Bench Press, Set: 3, Reps: 10
+Template : Full Body (A)
+
+Template : Full Body(B)
+
+Template : Full Body(C)
+
+Template : Full Body(D)
 
