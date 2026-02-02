@@ -32,11 +32,21 @@ alias Crohnjobs.Repo
         <div class="max-w-6xl mx-auto px-6 py-8">
           <div class="flex items-start justify-between gap-6">
             <div>
-
-            <h1 class="text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">  Client Workouts</h1>
-            <p class="mt-2 text-slate-600 text-base lg:text-lg">
-                Monitor the workouts of  <b> {@client.user.name}</b>
-              </p>
+              <div class="flex items-center gap-4 mb-3">
+                <%= if @client.profile_picture_url do %>
+                  <img src={@client.profile_picture_url} alt={@client.user.name} class="w-16 h-16 rounded-full object-cover border-2 border-emerald-200 shadow-sm" />
+                <% else %>
+                  <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xl border-2 border-emerald-200 shadow-sm">
+                    <%= String.slice(@client.user.name, 0, 1) |> String.upcase() %>
+                  </div>
+                <% end %>
+                <div>
+                  <h1 class="text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">Client Workouts</h1>
+                  <p class="mt-1 text-slate-600 text-base lg:text-lg">
+                    Monitor the workouts of <b>{@client.user.name}</b>
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -64,8 +74,7 @@ alias Crohnjobs.Repo
                 </.link>
                 </td>
                 <td class="py-4 px-6">
-                {workout.date}
-                </td>
+                <%= format_datetime(workout.date) %>                </td>
                 </tr>
 
                 <%end%>
@@ -88,5 +97,9 @@ alias Crohnjobs.Repo
     """
 
   end
+  defp format_datetime(%DateTime{} = dt) do
+    Calendar.strftime(dt, "%b %d, %Y at %I:%M %p")
+  end
+  defp format_datetime(_), do: "-"
 
 end

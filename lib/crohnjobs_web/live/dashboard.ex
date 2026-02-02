@@ -63,7 +63,12 @@ defmodule CrohnjobsWeb.Dashboard do
     {:noreply, assign(socket, activities: activities, notification_count: length(activities))}
   end
   def mount(_params, _session, socket) do
+
+
+
     user = socket.assigns.current_user
+
+
 
     case user.role do
       "trainer" ->
@@ -99,6 +104,35 @@ defmodule CrohnjobsWeb.Dashboard do
             end
           end)
           IO.inspect(notifications_with_client)
+          start_of_week_date = Date.beginning_of_week(Date.utc_today(), :monday)
+          end_of_week_date   = Date.end_of_week(Date.utc_today(), :monday)
+
+          # Convert to DateTime in UTC
+          start_of_week = DateTime.new!(start_of_week_date, ~T[00:00:00], "Etc/UTC")
+          end_of_week   = DateTime.new!(end_of_week_date, ~T[23:59:59], "Etc/UTC")
+
+          total_workouts =
+            Repo.one(
+              from w in Crohnjobs.Training.Workout,
+                join: c in Client, on: w.client_id == c.id,
+                where: c.trainer_id == ^trainer.id and w.inserted_at >= ^start_of_week and w.inserted_at <= ^end_of_week,
+                select: count(w.id)
+            )
+
+            most_active_clients =
+              Repo.all(
+                from w in Crohnjobs.Training.Workout,
+                  join: c in Client, on: w.client_id == c.id,
+                  join: u in assoc(c, :user),
+                  where: c.trainer_id == ^trainer.id and w.inserted_at >= ^start_of_week and w.inserted_at <= ^end_of_week,
+                  group_by: [c.id, u.name],
+                  order_by: [desc: count(w.id)],
+
+                  select: %{client: c, name: u.name, workout_count: count(w.id)}
+              )
+
+              IO.inspect(most_active_clients)
+
 
 
 
@@ -109,12 +143,19 @@ defmodule CrohnjobsWeb.Dashboard do
           Repo.get(Trainer, trainer.id)
           |> Repo.preload([:programmes, clients: [:user]])
 
+         clients=data.clients
+         active_client_ids= Enum.map(most_active_clients, fn%{client: c}-> c.id end)
+         IO.inspect(active_client_ids)
+         inactive_clients= clients|>Enum.reject(fn c-> c.id in active_client_ids end )
+
 
         {:ok,
          socket
          |> assign(:role, :trainer)
          |> assign(:name, user.name)
          |> assign(:message, "Trainer Dashboard")
+         |> assign(:most_active_clients, most_active_clients)
+         |> assign(:inactive_clients, inactive_clients)
          |> assign(:data, data)
          |> assign(:programmes, programmes)
          |> assign(:activities, notifications_with_client)
@@ -169,7 +210,77 @@ defmodule CrohnjobsWeb.Dashboard do
 
       <div class="mb-6 text-sm text-slate-600">
         <span class="font-medium text-slate-800"><%= length(@data.clients) %></span> clients ·
-        <span class="font-medium text-slate-800"><%= length(@data.programmes) %></span> programmes
+        <span class="font-medium text-slate-800"><%= length(@data.programmes) %></span> programmes ·
+
+      </div>
+
+      <!-- Most Active Clients This Week -->
+      <div class="mb-8 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+          <.icon name="hero-trophy" class="w-5 h-5 text-amber-500" />
+          <h2 class="text-base font-semibold text-slate-900">Most Active This Week</h2>
+        </div>
+        <%= if Enum.empty?(@most_active_clients) do %>
+          <div class="px-5 py-6 text-sm text-slate-500">No workouts logged this week yet.</div>
+        <% else %>
+          <div class="divide-y divide-slate-100">
+            <%= for {client_data, index} <- Enum.with_index(@most_active_clients) do %>
+              <.link navigate={~p"/trainer/clients/#{client_data.client.id}"} class="flex items-center justify-between px-5 py-3 hover:bg-slate-50 transition-colors">
+                <div class="flex items-center gap-3">
+                  <span class={"w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold #{if index < 3, do: "bg-amber-100 text-amber-700", else: "bg-slate-100 text-slate-600"}"}><%= index + 1 %></span>
+                  <%= if client_data.client.profile_picture_url do %>
+                    <img src={client_data.client.profile_picture_url} alt={client_data.name} class="w-8 h-8 rounded-full object-cover border border-slate-200" />
+                  <% else %>
+                    <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-semibold text-xs border border-emerald-200">
+                      <%= String.slice(client_data.name, 0, 1) |> String.upcase() %>
+                    </div>
+                  <% end %>
+                  <span class="text-sm font-medium text-slate-900"><%= client_data.name %></span>
+                </div>
+                <span class="text-sm text-slate-500"><%= client_data.workout_count %> workouts</span>
+              </.link>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Needs Attention - Inactive Clients -->
+      <div class="mb-8 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+          <.icon name="hero-exclamation-triangle" class="w-5 h-5 text-orange-500" />
+          <h2 class="text-base font-semibold text-slate-900">Needs Attention</h2>
+        </div>
+        <%= if Enum.empty?(@inactive_clients) do %>
+          <div class="px-5 py-6 text-sm text-slate-500 flex items-center gap-2">
+            <.icon name="hero-check-circle" class="w-5 h-5 text-emerald-500" />
+            All clients are active this week!
+          </div>
+        <% else %>
+          <div class="divide-y divide-slate-100">
+            <%= for client <- Enum.take(@inactive_clients, 5) do %>
+              <.link navigate={~p"/trainer/clients/#{client.id}"} class="flex items-center justify-between px-5 py-3 hover:bg-slate-50 transition-colors">
+                <div class="flex items-center gap-3">
+                  <%= if client.profile_picture_url do %>
+                    <img src={client.profile_picture_url} alt={client.user.name} class="w-8 h-8 rounded-full object-cover border border-slate-200" />
+                  <% else %>
+                    <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 font-semibold text-xs border border-slate-200">
+                      <%= String.slice(client.user.name, 0, 1) |> String.upcase() %>
+                    </div>
+                  <% end %>
+                  <span class="text-sm font-medium text-slate-900"><%= client.user.name %></span>
+                </div>
+                <span class="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
+                  No workout this week
+                </span>
+              </.link>
+            <% end %>
+          </div>
+          <%= if length(@inactive_clients) > 5 do %>
+            <div class="px-5 py-2 bg-slate-50 text-xs text-slate-500">
+              + <%= length(@inactive_clients) - 5 %> more clients
+            </div>
+          <% end %>
+        <% end %>
       </div>
 
       <div class="mb-8 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">

@@ -57,9 +57,13 @@ defmodule CrohnjobsWeb.Clients do
                 class="hover:bg-slate-50 transition-colors cursor-pointer">
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-3">
-                      <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span class="text-white font-medium text-sm"><%= String.first(client.user.name || "?") |> String.upcase() %></span>
-                      </div>
+                      <%= if client.profile_picture_url do %>
+                        <img src={client.profile_picture_url} alt={client.user.name} class="w-10 h-10 rounded-full object-cover border-2 border-slate-200 flex-shrink-0" />
+                      <% else %>
+                        <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span class="text-white font-medium text-sm"><%= String.first(client.user.name || "?") |> String.upcase() %></span>
+                        </div>
+                      <% end %>
                       <div>
                         <div class="text-sm font-medium text-slate-900"><%= client.user.name %></div>
                       </div>
