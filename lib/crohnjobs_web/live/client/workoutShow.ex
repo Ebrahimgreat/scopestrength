@@ -452,54 +452,82 @@ alias CrohnjobsWeb.Exercises
                 <p class="text-gray-500">Add exercises from the library to start building your workout</p>
               </div>
             <% else %>
-              <%= for {_exercise_id, sets} <- @workouts do %>
-                <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 class="font-semibold text-lg text-gray-900 mb-3">
-                    <%= List.first(sets).data.exercise.name %>
-                  </h3>
-
-                  <%= for workout <- sets do %>
-                    <div class="p-4 bg-white rounded-lg border border-gray-200 mb-3 shadow-sm">
-                      <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm font-medium text-gray-700">Set <%= workout.data.set %></span>
-                        <.button
-                          phx-click="deleteExercise"
-                          data-confirm="Are you sure you want to remove this set?"
-                          phx-value-id={workout.data.id}
-                          class="text-red-600 hover:text-red-800 text-sm"
-                        >
-                          Remove
-                        </.button>
-                      </div>
-
-                      <.form phx-submit="updateExercise" for={workout} id={"workout-form-#{workout.data.id}"} class="space-y-3">
-                        <.input type="hidden" field={workout[:id]}/>
-
-                        <div class="grid grid-cols-2 gap-3">
-                          <.input
-                            label="Reps"
-                            field={workout[:reps]}
-                            id={"reps-#{workout.data.id}"}
-                            type="text"
-                            placeholder="e.g., 10"
-                          />
-                          <.input
-                            label="Weight (kg)"
-                            field={workout[:weight]}
-                            id={"weight-#{workout.data.id}"}
-                            type="text"
-                            placeholder="e.g., 60"
-                          />
-                        </div>
-
-                        <.button class="w-full bg-emerald-600 hover:bg-emerald-700">
-                          Update Set
-                        </.button>
-                      </.form>
+              <div class="space-y-4">
+                <%= for {exercise_id, sets} <- @workouts do %>
+                  <div class="border border-gray-200 rounded-lg overflow-hidden">
+                    <div class="bg-gray-50 px-4 py-3 flex items-center justify-between">
+                      <h3 class="font-semibold text-gray-900">
+                        <%= List.first(sets).data.exercise.name %>
+                      </h3>
+                      <span class="text-xs text-gray-500"><%= length(sets) %> sets</span>
                     </div>
-                  <% end %>
-                </div>
-              <% end %>
+
+                    <div class="divide-y divide-gray-100">
+                      <%= for workout <- sets do %>
+                        <.form phx-submit="updateExercise" for={workout} id={"workout-form-#{workout.data.id}"} class="px-4 py-3">
+                          <.input type="hidden" field={workout[:id]}/>
+                          <div class="flex items-center gap-3">
+                            <span class="text-xs font-medium text-gray-500 w-12">Set <%= workout.data.set %></span>
+                            <div class="flex-1 grid grid-cols-2 gap-2">
+                              <div class="flex items-center gap-1">
+                                <input
+                                  type="text"
+                                  name={"workout_details[reps]"}
+                                  value={workout.data.reps}
+                                  placeholder="Reps"
+                                  class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                                />
+                                <span class="text-xs text-gray-400">reps</span>
+                              </div>
+                              <div class="flex items-center gap-1">
+                                <input
+                                  type="text"
+                                  name={"workout_details[weight]"}
+                                  value={workout.data.weight}
+                                  placeholder="Weight"
+                                  class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                                />
+                                <span class="text-xs text-gray-400">kg</span>
+                              </div>
+                            </div>
+                            <button type="submit" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded" title="Save">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              phx-click="deleteExercise"
+                              data-confirm="Remove this set?"
+                              phx-value-id={workout.data.id}
+                              class="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                              title="Remove"
+                            >
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                              </svg>
+                            </button>
+                          </div>
+                        </.form>
+                      <% end %>
+                    </div>
+
+                    <div class="px-4 py-2 bg-gray-50 border-t border-gray-100">
+                      <button
+                        type="button"
+                        phx-click="addExercise"
+                        phx-value-id={exercise_id}
+                        class="w-full flex items-center justify-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium py-1"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Add Set
+                      </button>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
             <% end %>
           </div>
         </div>
