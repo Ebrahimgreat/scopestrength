@@ -17,29 +17,21 @@ alias Crohnjobs.Trainers
   end
   def render(assigns) do
     ~H"""
-    <div class="max-w-2xl mx-auto p-4">
-      <h1 class="text-xl font-semibold text-slate-900 mb-4">Messages</h1>
+    <div class="max-w-lg mx-auto px-4 pt-8">
+      <h1 class="text-xl font-semibold text-slate-900 mb-3">Messages</h1>
 
       <%= if length(@clients) == 0 do %>
-        <div class="text-center py-12 text-slate-500">
-          <p class="text-base font-medium text-slate-700">No clients yet</p>
-          <p class="mt-1 text-sm">Once you have clients, you can chat with them here.</p>
+        <div class="text-center py-16">
+          <p class="text-sm text-slate-500">No clients yet. Once you have clients, you can chat with them here.</p>
         </div>
       <% else %>
-        <div class="bg-white border border-slate-200 rounded-lg divide-y divide-slate-200">
+        <div class="divide-y divide-slate-100">
           <%= for client <- @clients do %>
-            <.link navigate={~p"/chat/#{client.id}"} class="block hover:bg-slate-50 transition-colors">
-              <div class="flex items-center px-4 py-3">
-                <div class="flex-shrink-0">
-                  <div class="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 font-semibold text-sm">
-                    <%= String.first(client.user.name || "?") |> String.upcase() %>
-                  </div>
-                </div>
-                <div class="ml-4 flex-1">
-                  <p class="text-sm font-medium text-slate-900"><%= client.user.name %></p>
-                  <p class="text-xs text-slate-500">Tap to chat</p>
-                </div>
+            <.link navigate={~p"/chat/#{client.id}"} class="flex items-center gap-3 py-3 hover:opacity-70 transition-opacity">
+              <div class="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-medium text-sm flex-shrink-0">
+                <%= String.first(client.user.name || "?") |> String.upcase() %>
               </div>
+              <span class="text-sm font-medium text-slate-900"><%= client.user.name %></span>
             </.link>
           <% end %>
         </div>

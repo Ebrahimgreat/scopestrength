@@ -53,6 +53,20 @@ end
 
 end
 
+  def handle_event("duplicateProgramme", %{"id" => id}, socket) do
+    id = String.to_integer(id)
+
+    case Programmes.clone_programme(id) do
+      {:ok, new_programme} ->
+        {:noreply,
+         update(socket, :programmes, fn programmes -> [new_programme | programmes] end)
+         |> put_flash(:info, "Programme duplicated")}
+
+      {:error, _} ->
+        {:noreply, socket |> put_flash(:error, "Failed to duplicate programme")}
+    end
+  end
+
   def render(assigns) do
     ~H"""
     <div class="w-full min-h-screen">
@@ -76,7 +90,7 @@ end
               <.button
                 type="button"
                 phx-click="addNewProgramme"
-                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 shadow-lg shadow-slate-900/20 hover:shadow-xl hover:shadow-slate-900/25 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition"
               >
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -133,22 +147,30 @@ end
                         </div>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-center">
-                        <.link
-                          navigate={~p"/trainer/programmes/#{programme.id}"}
-                          class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-                        >
-                          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                          </svg>
-                          View Templates
-                        </.link>
-                      </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-center">
-                      <.button phx-click="deleteProgramme" phx-value-id={programme.id}>
-                      Delete Programme
-                      </.button>
-
+                        <div class="flex items-center justify-center gap-2">
+                          <.link
+                            navigate={~p"/trainer/programmes/#{programme.id}"}
+                            class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 transition"
+                          >
+                            View
+                          </.link>
+                          <button
+                            type="button"
+                            phx-click="duplicateProgramme"
+                            phx-value-id={programme.id}
+                            class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 transition"
+                          >
+                            Duplicate
+                          </button>
+                          <button
+                            type="button"
+                            phx-click="deleteProgramme"
+                            phx-value-id={programme.id}
+                            class="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 shadow-sm hover:border-rose-300 hover:bg-rose-100 transition"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   <% end %>
@@ -167,7 +189,7 @@ end
                 <.button
                   type="button"
                   phx-click="addNewProgramme"
-                  class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                  class="inline-flex items-center gap-2 px-6 py-3 rounded-full text-base font-semibold text-white bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 shadow-lg shadow-slate-900/20 hover:shadow-xl hover:shadow-slate-900/25 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition"
                 >
                   <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>

@@ -3,6 +3,7 @@ defmodule CrohnjobsWeb.ShowClient do
   alias Crohnjobs.Clients.Client
   alias Crohnjobs.Repo
   alias Crohnjobs.Programmes.ProgrammeUser
+  import Ecto.Query
   use CrohnjobsWeb, :live_view
 
   def mount(params, _session, socket) do
@@ -22,7 +23,15 @@ defmodule CrohnjobsWeb.ShowClient do
               Repo.get_by(ProgrammeUser, client_id: client.id, is_active: true)
               |> Repo.preload(:programme)
 
-            {:ok, assign(socket, programmeUser: programmeUser, client: client)}
+            notifications =
+              Repo.all(
+                from n in Crohnjobs.Notifications.Notification,
+                where: n.actor_type == "client" and n.actor_id == ^client.user.id,
+                order_by: [desc: n.inserted_at],
+                limit: 10
+              )
+
+            {:ok, assign(socket, programmeUser: programmeUser, client: client, notifications: notifications)}
 
           false ->
             {:ok, socket |> put_flash(:error, "Client Does not Exist")}
@@ -58,11 +67,11 @@ defmodule CrohnjobsWeb.ShowClient do
           </.link>
         </div>
       </div>
-      
+
     <!-- Main Content -->
       <div class="w-full px-6 lg:px-10 py-8">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
+
     <!-- Client Information -->
           <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100">
@@ -100,7 +109,7 @@ defmodule CrohnjobsWeb.ShowClient do
               </div>
             </div>
           </div>
-          
+
     <!-- Programme Section -->
           <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100">
@@ -145,7 +154,37 @@ defmodule CrohnjobsWeb.ShowClient do
               </.link>
             </div>
           </div>
-          
+
+    <!-- Recent Activity -->
+          <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden lg:col-span-2">
+            <div class="px-5 py-4 border-b border-slate-100">
+              <h2 class="text-base font-semibold text-slate-900">Recent Activity</h2>
+              <p class="text-xs text-slate-500 mt-1">Latest actions from this client</p>
+            </div>
+            <div class="p-5">
+              <%= if length(@notifications) == 0 do %>
+                <div class="text-center py-4">
+                  <p class="text-sm text-slate-500">No activity yet</p>
+                </div>
+              <% else %>
+                <div class="divide-y divide-slate-100">
+                  <%= for n <- @notifications do %>
+                    <.link navigate={activity_link(n, @client.id)} class="flex items-center gap-3 py-3 hover:opacity-70 transition-opacity">
+                     
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-slate-900"><%=@client.user.name%> <%= activity_label(n) %></p>
+                        <p class="text-xs text-slate-400 mt-0.5"><%= format_activity_time(n.inserted_at) %></p>
+                      </div>
+                      <svg class="w-4 h-4 text-slate-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </.link>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
     <!-- Action Sections -->
           <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100">
@@ -206,5 +245,27 @@ defmodule CrohnjobsWeb.ShowClient do
       </div>
     </div>
     """
+  end
+
+  defp activity_label(%{type: "workout_created"}), do: "Logged a workout"
+  defp activity_label(%{type: "progress_photo_uploaded"}), do: "Uploaded a progress photo"
+  defp activity_label(%{type: type}), do: type
+
+  defp activity_link(%{type: "workout_created"}, client_id),
+    do: "/trainer/clients/#{client_id}/workouts"
+
+  defp activity_link(%{type: "progress_photo_uploaded"}, client_id),
+    do: "/trainer/clients/#{client_id}/progress-photos"
+
+  defp activity_link(_, client_id), do: "/trainer/clients/#{client_id}/workouts"
+
+  defp format_activity_time(datetime) do
+    today = DateTime.to_date(DateTime.utc_now())
+
+    if DateTime.to_date(datetime) == today do
+      Calendar.strftime(datetime, "Today, %H:%M")
+    else
+      Calendar.strftime(datetime, "%b %d, %H:%M")
+    end
   end
 end
