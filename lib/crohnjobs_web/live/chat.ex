@@ -2,7 +2,6 @@ defmodule CrohnjobsWeb.Chat do
   alias Crohnjobs.Chat.Message
   alias Crohnjobs.Clients.Client
   alias Crohnjobs.Repo
-  alias Crohnjobs.Training
   import Ecto.Query
   use CrohnjobsWeb, :live_view
 
@@ -13,8 +12,8 @@ defmodule CrohnjobsWeb.Chat do
     messages = Repo.all(from m in Message, where: m.room_id == ^room_id, preload: [:user])
     topic = "chat:#{room_id}"
 
-    # Determine back link based on user role
     back_path = if user.role == "trainer", do: "/trainer/chat", else: "/client/chat"
+    other_user = fetch_other_user(user, room_id)
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Crohnjobs.PubSub, topic)
@@ -27,6 +26,7 @@ defmodule CrohnjobsWeb.Chat do
      |> assign(:user, user)
      |> assign(:topic, topic)
      |> assign(:back_path, back_path)
+     |> assign(:other_user, other_user)
      |> assign(:text, "")}
   end
 
@@ -50,8 +50,6 @@ defmodule CrohnjobsWeb.Chat do
         :ok
     end
 
-    maybe_send_progress_response(text, socket)
-
     {:noreply, assign(socket, text: "")}
   end
 
@@ -64,174 +62,214 @@ defmodule CrohnjobsWeb.Chat do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-slate-50">
-      <div class="max-w-3xl mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-4">
+      <div class="max-w-5xl mx-auto px-4 py-6">
+        <div class="flex items-center mb-4">
           <.link navigate={@back_path} class="text-sm text-slate-600 hover:text-slate-900 transition">
             &larr; Back
           </.link>
-          <div class="text-sm text-slate-500"><%= @user.name %></div>
         </div>
 
-        <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-200">
-            <h1 class="text-base font-semibold text-slate-900">Chat</h1>
-          </div>
+        <div class="flex gap-4 items-start">
+          <%!-- Chat column --%>
+          <div class="flex-1 min-w-0">
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
 
-          <div class="h-[calc(100vh-220px)] overflow-y-auto p-4 bg-white" id="messages-container" phx-hook="ScrollBottom">
-            <%= if length(@messages) == 0 do %>
-              <div class="flex flex-col items-center justify-center h-full text-slate-400">
-                <p class="text-sm">No messages yet.</p>
-                <p class="text-sm">Start the conversation.</p>
-              </div>
-            <% else %>
-              <div class="space-y-3">
-                <%= for msg <- @messages do %>
-                  <%= if msg.user_id == @user.id do %>
-                    <div class="flex justify-end">
-                      <div class="max-w-md">
-                        <div class="text-xs text-slate-500 text-right mb-1">You</div>
-                        <div class="bg-slate-900 text-white px-3 py-2 rounded-lg">
-                          <%= msg.text %>
-                        </div>
-                      </div>
-                    </div>
+              <%!-- Header --%>
+              <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-3">
+                <%= if @other_user do %>
+                  <%= if @other_user.profile_picture_url do %>
+                    <img src={@other_user.profile_picture_url} class="w-9 h-9 rounded-full object-cover" />
                   <% else %>
-                    <div class="flex justify-start">
-                      <div class="flex gap-2 max-w-md">
-                        <div class="w-8 h-8 bg-slate-100 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-semibold text-slate-600">
-                          <%= sender_initial(msg) %>
-                        </div>
-                        <div>
-                          <div class="text-xs text-slate-500 mb-1"><%= sender_name(msg) %></div>
-                          <div class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-slate-900">
-                            <%= msg.text %>
-                          </div>
-                        </div>
-                      </div>
+                    <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-sm font-semibold text-slate-600">
+                      <%= String.first(@other_user.name || "?") |> String.upcase() %>
                     </div>
                   <% end %>
+                  <div>
+                    <p class="text-sm font-semibold text-slate-900"><%= @other_user.name %></p>
+                    <p class="text-xs text-slate-400"><%= String.capitalize(@other_user.role) %></p>
+                  </div>
+                <% else %>
+                  <p class="text-sm font-semibold text-slate-900">Chat</p>
                 <% end %>
               </div>
-            <% end %>
+
+              <%!-- Messages --%>
+              <div class="h-[calc(100vh-230px)] overflow-y-auto p-4 bg-slate-50" id="messages-container" phx-hook="ScrollBottom">
+                <%= if length(@messages) == 0 do %>
+                  <div class="flex flex-col items-center justify-center h-full">
+                    <div class="w-14 h-14 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-3">
+                      <svg class="w-6 h-6 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                      </svg>
+                    </div>
+                    <p class="text-sm font-medium text-slate-600">No messages yet</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Start the conversation</p>
+                  </div>
+                <% else %>
+                  <div class="space-y-3">
+                    <%= for msg <- @messages do %>
+                      <%= if msg.user_id == @user.id do %>
+                        <div class="flex flex-col items-end">
+                          <div class="max-w-[70%] bg-slate-900 text-white px-4 py-2.5 rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl rounded-br-sm">
+                            <p class="text-sm leading-relaxed"><%= msg.text %></p>
+                          </div>
+                          <span class="text-xs text-slate-400 mt-1"><%= format_time(msg.inserted_at) %></span>
+                        </div>
+                      <% else %>
+                        <div class="flex items-start gap-2">
+                          <div class="w-8 h-8 rounded-full bg-white border border-slate-200 flex-shrink-0 flex items-center justify-center text-xs font-semibold text-slate-600 mt-0.5">
+                            <%= sender_initial(msg) %>
+                          </div>
+                          <div class="max-w-[65%]">
+                            <div class="bg-white border border-slate-200 px-4 py-2.5 rounded-tl-2xl rounded-tr-2xl rounded-bl-sm rounded-br-2xl">
+                              <p class="text-sm text-slate-900 leading-relaxed"><%= msg.text %></p>
+                            </div>
+                            <span class="text-xs text-slate-400 mt-1 ml-1"><%= format_time(msg.inserted_at) %></span>
+                          </div>
+                        </div>
+                      <% end %>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+
+              <%!-- Input --%>
+              <div class="p-3 bg-white border-t border-slate-100">
+                <form phx-submit="send" class="flex items-center gap-2">
+                  <input
+                    type="text"
+                    name="text"
+                    value={@text}
+                    autocomplete="off"
+                    placeholder="Type a message…"
+                    class="flex-1 bg-slate-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 focus:bg-white transition"
+                  />
+                  <button type="submit" class="w-9 h-9 bg-slate-900 rounded-full flex items-center justify-center hover:bg-slate-700 transition flex-shrink-0">
+                    <svg class="w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                  </button>
+                </form>
+              </div>
+            </div>
           </div>
 
-          <div class="border-t border-slate-200 p-4 bg-white">
-            <form phx-submit="send" class="flex gap-2">
-              <input
-                type="text"
-                name="text"
-                value={@text}
-                autocomplete="off"
-                placeholder="Type a message"
-                class="flex-1 border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-300"
-              />
-              <button type="submit" class="bg-slate-900 text-white px-4 py-2 rounded-md hover:bg-slate-800 transition text-sm font-medium">
-                Send
-              </button>
-            </form>
-          </div>
+          <%!-- Right sidebar --%>
+          <%= if @other_user do %>
+            <div class="w-72 flex-shrink-0 hidden md:block">
+              <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 sticky top-6">
+                <div class="flex flex-col items-center mb-4">
+                  <%= if @other_user.profile_picture_url do %>
+                    <img src={@other_user.profile_picture_url} class="w-16 h-16 rounded-full object-cover mb-2" />
+                  <% else %>
+                    <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-xl font-semibold text-slate-600 mb-2">
+                      <%= String.first(@other_user.name || "?") |> String.upcase() %>
+                    </div>
+                  <% end %>
+                  <h2 class="text-sm font-semibold text-slate-900"><%= @other_user.name %></h2>
+                  <span class="text-xs text-slate-400"><%= String.capitalize(@other_user.role) %></span>
+                </div>
+
+                <div class="border-t border-slate-100 pt-3 space-y-2.5">
+                  <%= if @other_user.role == "client" do %>
+                    <%= if @other_user.age do %>
+                      <div class="flex justify-between items-center">
+                        <span class="text-xs text-slate-400">Age</span>
+                        <span class="text-xs font-semibold text-slate-900"><%= @other_user.age %></span>
+                      </div>
+                    <% end %>
+                    <%= if @other_user.height do %>
+                      <div class="flex justify-between items-center">
+                        <span class="text-xs text-slate-400">Height</span>
+                        <span class="text-xs font-semibold text-slate-900"><%= format_number(@other_user.height) %> cm</span>
+                      </div>
+                    <% end %>
+                    <%= if @other_user.sex do %>
+                      <div class="flex justify-between items-center">
+                        <span class="text-xs text-slate-400">Sex</span>
+                        <span class="text-xs font-semibold text-slate-900"><%= String.capitalize(@other_user.sex) %></span>
+                      </div>
+                    <% end %>
+                    <%= if @other_user.notes && @other_user.notes != "" do %>
+                      <div class="pt-2.5 border-t border-slate-100">
+                        <span class="text-xs text-slate-400">Notes</span>
+                        <p class="text-xs text-slate-600 mt-1 leading-relaxed"><%= @other_user.notes %></p>
+                      </div>
+                    <% end %>
+                  <% end %>
+
+                  <%= if @other_user.role == "trainer" do %>
+                    <%= if @other_user.specialization && @other_user.specialization != "" do %>
+                      <div class="flex justify-between items-center">
+                        <span class="text-xs text-slate-400">Specialization</span>
+                        <span class="text-xs font-semibold text-slate-900"><%= @other_user.specialization %></span>
+                      </div>
+                    <% end %>
+                    <%= if @other_user.bio && @other_user.bio != "" do %>
+                      <div class="pt-2.5 border-t border-slate-100">
+                        <span class="text-xs text-slate-400">About</span>
+                        <p class="text-xs text-slate-600 mt-1 leading-relaxed"><%= @other_user.bio %></p>
+                      </div>
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
         </div>
       </div>
     </div>
     """
   end
 
-  defp maybe_send_progress_response(text, socket) do
-    if progress_request?(text) do
-      case build_progress_response(socket) do
-        {:ok, response} -> send_bot_message(response, socket)
-        {:error, message} -> send_bot_message(message, socket)
-      end
-    end
-  end
-
-  defp progress_request?(text) when is_binary(text) do
-    text
-    |> String.downcase()
-    |> String.contains?("progress")
-  end
-
-  defp progress_request?(_), do: false
-
-  defp build_progress_response(socket) do
-    user = socket.assigns.user
-    room_id = socket.assigns.room_id
-
-    with {:ok, client} <- fetch_progress_client(user, room_id),
-         {:ok, summary} <- Training.progress_summary(client.id) do
-      {:ok, format_progress_text(client, summary)}
-    else
-      {:error, message} -> {:error, message}
-      _ -> {:error, "I couldn't load progress for this client."}
-    end
-  end
-
-  defp fetch_progress_client(user, room_id) do
+  defp fetch_other_user(user, room_id) do
     case user.role do
       "trainer" ->
         case Integer.parse(room_id || "") do
           {client_id, ""} ->
-            case Repo.get(Client, client_id) |> Repo.preload(:user) do
-              nil -> {:error, "I couldn't find that client."}
-              client -> {:ok, client}
+            client = Repo.get(Client, client_id)
+
+            if client do
+              client = Repo.preload(client, :user)
+
+              %{
+                name: client.user && client.user.name,
+                role: "client",
+                profile_picture_url: client.profile_picture_url,
+                age: client.age,
+                height: client.height,
+                sex: client.sex,
+                notes: client.notes
+              }
             end
 
-          _ ->
-            {:error, "I couldn't identify the client for this chat."}
+          _ -> nil
         end
 
       _ ->
-        case Repo.get_by(Client, %{user_id: user.id}) |> Repo.preload(:user) do
-          nil -> {:error, "I couldn't find your client profile."}
-          client -> {:ok, client}
+        client = Repo.get_by(Client, %{user_id: user.id})
+
+        if client do
+          client = Repo.preload(client, trainer: :user)
+
+          case client.trainer do
+            nil -> nil
+            trainer ->
+              %{
+                name: trainer.user && trainer.user.name,
+                role: "trainer",
+                profile_picture_url: nil,
+                bio: trainer.bio,
+                specialization: trainer.specialization
+              }
+          end
         end
     end
   end
 
-  defp format_progress_text(client, summary) do
-    name =
-      case client.user do
-        nil -> "This client"
-        user -> user.name || "This client"
-      end
-
-    if summary.total_workouts == 0 do
-      "No workouts logged yet for #{name}."
-    else
-      last_workout =
-        case summary.last_workout_at do
-          nil -> "unknown"
-          datetime -> format_date(datetime)
-        end
-
-      base =
-        "#{name} progress: #{summary.total_workouts} workouts logged, #{summary.total_sets} total sets. Last workout: #{last_workout}."
-
-      pr_text =
-        case summary.pr do
-          nil ->
-            "No PRs recorded yet."
-
-          pr ->
-            reps = format_number(pr.reps)
-            weight = format_number(pr.weight)
-            date_text = format_date(pr.date)
-            "Top lift: #{pr.exercise_name} #{weight} kg x #{reps} (#{date_text})."
-        end
-
-      base <> " " <> pr_text
-    end
-  end
-
-  defp format_date(%DateTime{} = datetime) do
-    Calendar.strftime(datetime, "%d %b %Y")
-  end
-
-  defp format_date(%NaiveDateTime{} = datetime) do
-    Calendar.strftime(datetime, "%d %b %Y")
-  end
-
-  defp format_date(_), do: "unknown"
+  defp format_time(nil), do: ""
+  defp format_time(datetime), do: Calendar.strftime(datetime, "%H:%M")
 
   defp format_number(nil), do: "?"
 
@@ -245,31 +283,7 @@ defmodule CrohnjobsWeb.Chat do
 
   defp format_number(value), do: to_string(value)
 
-  defp send_bot_message(text, socket) when is_binary(text) do
-    attrs = %{
-      text: text,
-      user_id: nil,
-      room_id: socket.assigns.room_id
-    }
-
-    case Crohnjobs.Chat.create_message(attrs) do
-      {:ok, message} ->
-        message = Repo.preload(message, :user)
-        Phoenix.PubSub.broadcast(
-          Crohnjobs.PubSub,
-          socket.assigns.topic,
-          {:new_message, message}
-        )
-
-      {:error, _changeset} ->
-        :ok
-    end
-  end
-
-  defp sender_name(%{user: nil}), do: "CoachBot"
-  defp sender_name(%{user: user}), do: user.name || "CoachBot"
-
-  defp sender_initial(%{user: nil}), do: "AI"
+  defp sender_initial(%{user: nil}), do: "?"
   defp sender_initial(%{user: user}) do
     user.name
     |> then(&(&1 || "?"))

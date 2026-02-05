@@ -6,14 +6,16 @@ defmodule CrohnjobsWeb.Exercises do
   alias Crohnjobs.Exercise, as: ExerciseContext
   alias Crohnjobs.Exercises
   alias Crohnjobs.Exercises.Exercise
+  alias Crohnjobs.Trainers
   alias Crohnjobs.Repo
 
   def handle_event("addExercise", params, socket) do
     user = socket.assigns.current_user
+    primary_muscle_id = socket.assigns.selected_primary_muscle_id
 
     attrs = %{
       name: params["exercise"]["name"],
-      muscle_id: params["exercise"]["muscle_id"],
+      muscle_id: primary_muscle_id,
       equipment_id: params["exercise"]["equipment_id"],
       is_custom: true,
       user_id: user.id
@@ -21,6 +23,26 @@ defmodule CrohnjobsWeb.Exercises do
 
     case ExerciseContext.create_exercise(attrs) do
       {:ok, exercise} ->
+        trainer = Trainers.get_trainer_byUserId(user.id)
+
+        Exercises.create_exercise_muscle_contribution(%{
+          exercise_id: exercise.id,
+          muscle_id: primary_muscle_id,
+          role: "primary",
+          multiplier: 1.0,
+          trainer_id: trainer.id
+        })
+
+        Enum.each(socket.assigns.secondary_muscles, fn muscle_id ->
+          Exercises.create_exercise_muscle_contribution(%{
+            exercise_id: exercise.id,
+            muscle_id: muscle_id,
+            role: "secondary",
+            multiplier: 0.5,
+            trainer_id: trainer.id
+          })
+        end)
+
         exercise = Repo.preload(exercise, [:muscle, :equipment])
         all_exercises = socket.assigns.allExercises ++ [exercise]
 
@@ -37,7 +59,9 @@ defmodule CrohnjobsWeb.Exercises do
            show_modal: false,
            allExercises: all_exercises,
            exercises: exercises,
-           newExerciseForm: Exercise.changeset(%Exercise{}, %{}) |> to_form()
+           newExerciseForm: Exercise.changeset(%Exercise{}, %{}) |> to_form(),
+           secondary_muscles: [],
+           selected_primary_muscle_id: nil
          )
          |> put_flash(:info, "New exercise created")}
 
@@ -75,22 +99,61 @@ defmodule CrohnjobsWeb.Exercises do
     show_modal = !socket.assigns.show_modal
     new_form = Exercise.changeset(%Exercise{}, %{}) |> to_form()
 
-    {:noreply, assign(socket, show_modal: show_modal, newExerciseForm: new_form)}
+    {:noreply, assign(socket,
+      show_modal: show_modal,
+      newExerciseForm: new_form,
+      secondary_muscles: [],
+      selected_primary_muscle_id: nil
+    )}
+  end
+
+  def handle_event("update_primary_muscle", %{"muscle_id" => id}, socket) do
+    id = if id == "", do: nil, else: String.to_integer(id)
+    secondary = Enum.reject(socket.assigns.secondary_muscles, &(&1 == id))
+    {:noreply, assign(socket, selected_primary_muscle_id: id, secondary_muscles: secondary)}
+  end
+
+  def handle_event("toggle_secondary_muscle", %{"id" => id}, socket) do
+    id = String.to_integer(id)
+    secondary =
+      if id in socket.assigns.secondary_muscles do
+        Enum.reject(socket.assigns.secondary_muscles, &(&1 == id))
+      else
+        socket.assigns.secondary_muscles ++ [id]
+      end
+    {:noreply, assign(socket, secondary_muscles: secondary)}
   end
 
   def handle_event("editExercise", %{"id" => id}, socket) do
-    exercise = ExerciseContext.get_exercise!(id)
+    exercise_id = String.to_integer(id)
+    exercise = ExerciseContext.get_exercise!(exercise_id)
     edit_exercise_form = ExerciseContext.change_exercise(exercise) |> to_form()
 
-    {:noreply, assign(socket, editExerciseForm: edit_exercise_form, show_edit_exercise: true)}
+    contributions =
+      Repo.all(
+        from ec in Crohnjobs.Exercises.ExerciseMuscleContribution,
+          where: ec.exercise_id == ^exercise_id
+      )
+
+    primary = Enum.find(contributions, &(&1.role == "primary"))
+    secondary_ids = contributions |> Enum.filter(&(&1.role == "secondary")) |> Enum.map(&(&1.muscle_id))
+
+    {:noreply, assign(socket,
+      editExerciseForm: edit_exercise_form,
+      show_edit_exercise: true,
+      selected_primary_muscle_id: primary && primary.muscle_id,
+      secondary_muscles: secondary_ids
+    )}
   end
 
   def handle_event("saveExercise", params, socket) do
     id = String.to_integer(params["exercise"]["id"])
+    user = socket.assigns.current_user
+    primary_muscle_id = socket.assigns.selected_primary_muscle_id
 
     attrs = %{
       name: params["exercise"]["name"],
-      muscle_id: params["exercise"]["muscle_id"],
+      muscle_id: primary_muscle_id,
       equipment_id: params["exercise"]["equipment_id"]
     }
 
@@ -98,6 +161,33 @@ defmodule CrohnjobsWeb.Exercises do
 
     case ExerciseContext.update_exercise(exercise, attrs) do
       {:ok, updated_exercise} ->
+        trainer = Trainers.get_trainer_byUserId(user.id)
+
+        Repo.delete_all(
+          from ec in Crohnjobs.Exercises.ExerciseMuscleContribution,
+            where: ec.exercise_id == ^updated_exercise.id
+        )
+
+        if primary_muscle_id do
+          Exercises.create_exercise_muscle_contribution(%{
+            exercise_id: updated_exercise.id,
+            muscle_id: primary_muscle_id,
+            role: "primary",
+            multiplier: 1.0,
+            trainer_id: trainer.id
+          })
+        end
+
+        Enum.each(socket.assigns.secondary_muscles, fn muscle_id ->
+          Exercises.create_exercise_muscle_contribution(%{
+            exercise_id: updated_exercise.id,
+            muscle_id: muscle_id,
+            role: "secondary",
+            multiplier: 0.5,
+            trainer_id: trainer.id
+          })
+        end)
+
         updated_exercise = Repo.preload(updated_exercise, [:muscle, :equipment])
 
         updated_all =
@@ -118,7 +208,9 @@ defmodule CrohnjobsWeb.Exercises do
          |> assign(
            exercises: updated_filtered,
            allExercises: updated_all,
-           show_edit_exercise: false
+           show_edit_exercise: false,
+           selected_primary_muscle_id: nil,
+           secondary_muscles: []
          )}
 
       _ ->
@@ -127,7 +219,11 @@ defmodule CrohnjobsWeb.Exercises do
   end
 
   def handle_event("closeEditExercise", _params, socket) do
-    {:noreply, assign(socket, show_edit_exercise: false)}
+    {:noreply, assign(socket,
+      show_edit_exercise: false,
+      selected_primary_muscle_id: nil,
+      secondary_muscles: []
+    )}
   end
 
   def handle_event("filterExercise", %{"name" => name}, socket) do
@@ -178,7 +274,9 @@ defmodule CrohnjobsWeb.Exercises do
        allExercises: exercises,
        exercises: exercises,
        muscles: muscles,
-       equipment_list: equipment_list
+       equipment_list: equipment_list,
+       selected_primary_muscle_id: nil,
+       secondary_muscles: []
      )}
   end
 
@@ -212,7 +310,7 @@ defmodule CrohnjobsWeb.Exercises do
             <div class="flex flex-col gap-3 items-end">
               <.button
                 phx-click="openModal"
-                class="bg-white text-emerald-700 hover:bg-emerald-50 px-5 py-2.5 rounded-lg font-medium shadow-sm"
+                class="bg-emerald-600 text-white hover:bg-emerald-700 px-5 py-2.5 rounded-lg font-medium transition"
               >
                 + Add exercise
               </.button>
@@ -261,7 +359,7 @@ defmodule CrohnjobsWeb.Exercises do
             <div class="flex flex-wrap gap-2">
               <.button
                 phx-click="resetFilters"
-                class="bg-slate-100 text-slate-700 hover:bg-slate-200 px-3 py-2 rounded-lg text-sm font-medium"
+                class="border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 px-3 py-2 rounded-lg text-sm font-medium transition"
               >
                 Reset filters
               </.button>
@@ -456,18 +554,49 @@ defmodule CrohnjobsWeb.Exercises do
                 placeholder="e.g. Single arm cable row"
               />
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <.input
-                  type="select"
-                  options={Enum.map(@muscles, &{&1.name, &1.id})}
-                  field={@newExerciseForm[:muscle_id]}
-                  label="Muscle group"
-                />
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Primary muscle</label>
+                  <select
+                    phx-change="update_primary_muscle"
+                    name="muscle_id"
+                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                  >
+                    <option value="">Select muscle</option>
+                    <%= for muscle <- @muscles do %>
+                      <option value={muscle.id} selected={@selected_primary_muscle_id == muscle.id}>{muscle.name}</option>
+                    <% end %>
+                  </select>
+                </div>
                 <.input
                   type="select"
                   options={Enum.map(@equipment_list, &{&1.name, &1.id})}
                   field={@newExerciseForm[:equipment_id]}
                   label="Equipment"
                 />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Secondary muscles</label>
+                <div class="flex flex-wrap gap-2">
+                  <%= for muscle <- @muscles do %>
+                    <%= unless muscle.id == @selected_primary_muscle_id do %>
+                      <button
+                        type="button"
+                        phx-click="toggle_secondary_muscle"
+                        phx-value-id={muscle.id}
+                        class={[
+                          "px-3 py-1.5 rounded-full text-xs font-semibold border transition",
+                          if(muscle.id in @secondary_muscles,
+                            do: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                            else: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                          )
+                        ]}
+                      >
+                        {muscle.name}
+                      </button>
+                    <% end %>
+                  <% end %>
+                </div>
               </div>
 
               <div class="flex items-center justify-end gap-3 pt-2">
@@ -521,18 +650,49 @@ defmodule CrohnjobsWeb.Exercises do
               <.input type="hidden" field={@editExerciseForm[:id]} />
               <.input type="text" required label="Exercise name" field={@editExerciseForm[:name]} />
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <.input
-                  type="select"
-                  options={Enum.map(@muscles, &{&1.name, &1.id})}
-                  field={@editExerciseForm[:muscle_id]}
-                  label="Muscle group"
-                />
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Primary muscle</label>
+                  <select
+                    phx-change="update_primary_muscle"
+                    name="muscle_id"
+                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                  >
+                    <option value="">Select muscle</option>
+                    <%= for muscle <- @muscles do %>
+                      <option value={muscle.id} selected={@selected_primary_muscle_id == muscle.id}>{muscle.name}</option>
+                    <% end %>
+                  </select>
+                </div>
                 <.input
                   type="select"
                   options={Enum.map(@equipment_list, &{&1.name, &1.id})}
                   field={@editExerciseForm[:equipment_id]}
                   label="Equipment"
                 />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Secondary muscles</label>
+                <div class="flex flex-wrap gap-2">
+                  <%= for muscle <- @muscles do %>
+                    <%= unless muscle.id == @selected_primary_muscle_id do %>
+                      <button
+                        type="button"
+                        phx-click="toggle_secondary_muscle"
+                        phx-value-id={muscle.id}
+                        class={[
+                          "px-3 py-1.5 rounded-full text-xs font-semibold border transition",
+                          if(muscle.id in @secondary_muscles,
+                            do: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                            else: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                          )
+                        ]}
+                      >
+                        {muscle.name}
+                      </button>
+                    <% end %>
+                  <% end %>
+                </div>
               </div>
 
               <div class="flex items-center justify-end gap-3 pt-2">
