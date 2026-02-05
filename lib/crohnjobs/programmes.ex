@@ -14,7 +14,40 @@ defmodule Crohnjobs.Programmes do
    Repo.preload(:programmeTemplates)
  end
 
+  def clone_programme(programme_id) do
+    programme =
+      Repo.get!(Programme, programme_id)
+      |> Repo.preload(programmeTemplates: :programmeDetails)
 
+    Repo.transaction(fn ->
+      {:ok, new_programme} =
+        create_programme(%{
+          name: "#{programme.name} (copy)",
+          description: programme.description,
+          trainer_id: programme.trainer_id
+        })
+
+      Enum.each(programme.programmeTemplates, fn template ->
+        {:ok, new_template} =
+          create_programme_template(%{
+            name: template.name,
+            programme_id: new_programme.id
+          })
+
+        Enum.each(template.programmeDetails, fn detail ->
+          create_programme_details(%{
+            set: detail.set,
+            reps: detail.reps,
+            rir: detail.rir,
+            exercise_id: detail.exercise_id,
+            programme_template_id: new_template.id
+          })
+        end)
+      end)
+
+      new_programme
+    end)
+  end
 
   @doc """
   Returns the list of programme.

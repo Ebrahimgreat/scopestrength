@@ -59,7 +59,7 @@ defmodule CrohnjobsWeb.Invites do
 
               <div>
                 <h1 class="text-3xl font-bold text-gray-900">Client Invites</h1>
-                <p class="text-gray-600 mt-1">Invite clients to connect with you</p>
+                <p class="text-gray-600 mt-1">Generate a code, share it with your client, and they can link to your account after signing up.</p>
               </div>
 
 
