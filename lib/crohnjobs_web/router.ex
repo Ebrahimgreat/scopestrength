@@ -65,7 +65,6 @@ defmodule CrohnjobsWeb.Router do
       live "/clients/:id", ShowClient
       live "/clients/:id/notes", ClientNotes
       live "/clients/:id/workouts", Workouts
-      live "/clients/:id/strengthProgress", StrengthProgress
       live "/clients/:id/strengthProgress/:exercise_id", ExerciseProgress
       live "/clients/:id/progress-photos", ClientProgressPhotos
       live "/exercises", Exercises
