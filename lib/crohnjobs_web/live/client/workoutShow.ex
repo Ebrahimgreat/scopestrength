@@ -18,12 +18,16 @@ alias CrohnjobsWeb.Exercises
     existing_sets = Map.get(socket.assigns.workouts, exercise_id, [])
     next_set = length(existing_sets) + 1
 
+    # Get side parameter if provided (for unilateral exercises)
+    side = Map.get(params, "side", "both")
+
     case Training.create_workout_details(%{
       workout_id: socket.assigns.workout_id,
       exercise_id: exercise_id,
       reps: 10,
       weight: 10,
-      set: next_set
+      set: next_set,
+      side: side
     }) do
       {:ok, workout_details} ->
         workout_details = Repo.preload(workout_details, :exercise)
@@ -426,14 +430,41 @@ alias CrohnjobsWeb.Exercises
 
             <div class="space-y-2 max-h-96 overflow-y-auto">
               <%= for exercise <- @exercises do %>
-                <button
-                  phx-click="addExercise"
-                  phx-value-id={exercise.id}
-                  class="w-full flex items-center justify-between bg-white hover:bg-emerald-50 px-4 py-3 rounded-lg border border-gray-200 hover:border-emerald-300 transition-all"
-                >
-                  <span class="font-medium text-gray-800"><%= exercise.name %></span>
-                  <span class="text-emerald-600 font-bold text-xl">+</span>
-                </button>
+                <%= if exercise.is_unilateral do %>
+                  <div class="bg-white px-4 py-3 rounded-lg border border-gray-200">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="font-medium text-gray-800"><%= exercise.name %></span>
+                      <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Unilateral</span>
+                    </div>
+                    <div class="flex gap-2">
+                      <button
+                        phx-click="addExercise"
+                        phx-value-id={exercise.id}
+                        phx-value-side="left"
+                        class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded text-sm font-medium transition-all"
+                      >
+                        + Left
+                      </button>
+                      <button
+                        phx-click="addExercise"
+                        phx-value-id={exercise.id}
+                        phx-value-side="right"
+                        class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded text-sm font-medium transition-all"
+                      >
+                        + Right
+                      </button>
+                    </div>
+                  </div>
+                <% else %>
+                  <button
+                    phx-click="addExercise"
+                    phx-value-id={exercise.id}
+                    class="w-full flex items-center justify-between bg-white hover:bg-emerald-50 px-4 py-3 rounded-lg border border-gray-200 hover:border-emerald-300 transition-all"
+                  >
+                    <span class="font-medium text-gray-800"><%= exercise.name %></span>
+                    <span class="text-emerald-600 font-bold text-xl">+</span>
+                  </button>
+                <% end %>
               <% end %>
             </div>
           </div>
@@ -464,66 +495,119 @@ alias CrohnjobsWeb.Exercises
 
                     <div class="divide-y divide-gray-100">
                       <%= for workout <- sets do %>
-                        <.form phx-submit="updateExercise" for={workout} id={"workout-form-#{workout.data.id}"} class="px-4 py-3">
-                          <.input type="hidden" field={workout[:id]}/>
-                          <div class="flex items-center gap-3">
-                            <span class="text-xs font-medium text-gray-500 w-12">Set <%= workout.data.set %></span>
-                            <div class="flex-1 grid grid-cols-2 gap-2">
-                              <div class="flex items-center gap-1">
-                                <input
-                                  type="text"
-                                  name={"workout_details[reps]"}
-                                  value={workout.data.reps}
-                                  placeholder="Reps"
-                                  class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
-                                />
-                                <span class="text-xs text-gray-400">reps</span>
+                        <.form
+                          phx-submit="updateExercise"
+                          for={workout}
+                          id={"workout-form-#{workout.data.id}"}
+                          class="px-4 py-3"
+                        >
+                          <.input type="hidden" field={workout[:id]} />
+                          <div class="grid grid-cols-1 sm:grid-cols-[auto,1fr,auto] items-center gap-3">
+                            <div class="flex items-center gap-2">
+                              <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50 text-emerald-700 font-semibold text-sm">
+                                <%= workout.data.set %>
+                              </span>
+                              <%= if workout.data.side != "both" do %>
+                                <span class="text-xs font-medium text-gray-500 capitalize">Set (<%= workout.data.side %>)</span>
+                              <% else %>
+                                <span class="text-xs font-medium text-gray-500">Set</span>
+                              <% end %>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                <p class="text-[11px] uppercase tracking-wide text-gray-400">Reps</p>
+                                <div class="flex items-center gap-2 mt-1">
+                                  <input
+                                    type="text"
+                                    name={"workout_details[reps]"}
+                                    value={workout.data.reps}
+                                    placeholder="0"
+                                    class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none"
+                                  />
+                                  <span class="text-xs text-gray-400">reps</span>
+                                </div>
                               </div>
-                              <div class="flex items-center gap-1">
-                                <input
-                                  type="text"
-                                  name={"workout_details[weight]"}
-                                  value={workout.data.weight}
-                                  placeholder="Weight"
-                                  class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
-                                />
-                                <span class="text-xs text-gray-400">kg</span>
+                              <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                <p class="text-[11px] uppercase tracking-wide text-gray-400">Weight</p>
+                                <div class="flex items-center gap-2 mt-1">
+                                  <input
+                                    type="text"
+                                    name={"workout_details[weight]"}
+                                    value={workout.data.weight}
+                                    placeholder="0"
+                                    class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none"
+                                  />
+                                  <span class="text-xs text-gray-400">kg</span>
+                                </div>
                               </div>
                             </div>
-                            <button type="submit" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded" title="Save">
-                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              phx-click="deleteExercise"
-                              data-confirm="Remove this set?"
-                              phx-value-id={workout.data.id}
-                              class="p-1.5 text-red-500 hover:bg-red-50 rounded"
-                              title="Remove"
-                            >
-                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                              </svg>
-                            </button>
+
+                            <div class="flex items-center gap-2 justify-end">
+                              <button type="submit" class="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg border border-emerald-100" title="Save">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                phx-click="deleteExercise"
+                                data-confirm="Remove this set?"
+                                phx-value-id={workout.data.id}
+                                class="p-2 text-red-500 hover:bg-red-50 rounded-lg border border-red-100"
+                                title="Remove"
+                              >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                         </.form>
                       <% end %>
                     </div>
 
                     <div class="px-4 py-2 bg-gray-50 border-t border-gray-100">
-                      <button
-                        type="button"
-                        phx-click="addExercise"
-                        phx-value-id={exercise_id}
-                        class="w-full flex items-center justify-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium py-1"
-                      >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                        Add Set
-                      </button>
+                      <%= if List.first(sets).data.exercise.is_unilateral do %>
+                        <div class="flex gap-2">
+                          <button
+                            type="button"
+                            phx-click="addExercise"
+                            phx-value-id={exercise_id}
+                            phx-value-side="left"
+                            class="flex-1 flex items-center justify-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium py-1"
+                          >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Add Left
+                          </button>
+                          <button
+                            type="button"
+                            phx-click="addExercise"
+                            phx-value-id={exercise_id}
+                            phx-value-side="right"
+                            class="flex-1 flex items-center justify-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium py-1"
+                          >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Add Right
+                          </button>
+                        </div>
+                      <% else %>
+                        <button
+                          type="button"
+                          phx-click="addExercise"
+                          phx-value-id={exercise_id}
+                          class="w-full flex items-center justify-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium py-1"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                          </svg>
+                          Add Set
+                        </button>
+                      <% end %>
                     </div>
                   </div>
                 <% end %>
@@ -596,8 +680,13 @@ alias CrohnjobsWeb.Exercises
                       <%= for workout <- sets do %>
                         <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
                           <div class="flex items-center space-x-4">
-                            <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                              <span class="font-bold text-emerald-700"><%= workout.data.set %></span>
+                            <div class="flex flex-col items-center">
+                              <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                                <span class="font-bold text-emerald-700"><%= workout.data.set %></span>
+                              </div>
+                              <%= if workout.data.side != "both" do %>
+                                <span class="text-[10px] text-gray-500 uppercase mt-1 capitalize"><%= workout.data.side %></span>
+                              <% end %>
                             </div>
                             <div class="flex items-center space-x-6">
                               <div>
@@ -648,6 +737,9 @@ alias CrohnjobsWeb.Exercises
     if Enum.empty?(exercise_ids) do
       %{}
     else
+      # Preload exercises to check is_unilateral
+      workouts = Repo.preload(workouts, :exercise)
+
       muscle_contributions =
         Repo.all(
           from c in ExerciseMuscleContribution,
@@ -659,14 +751,33 @@ alias CrohnjobsWeb.Exercises
         muscle_contributions
         |> Enum.group_by(& &1.exercise_id)
 
-      workouts
-      |> Enum.flat_map(fn detail ->
-        contributions = Map.get(contributions_by_exercise, detail.exercise_id, [])
-
-        Enum.map(contributions, fn c ->
-          {c.muscle.name, c.role, 1 * c.multiplier}
+      workouts_with_volume =
+        workouts
+        |> Enum.group_by(fn detail ->
+          {detail.exercise_id, detail.exercise.is_unilateral, detail.set}
         end)
-      end)
+        |> Enum.flat_map(fn {{exercise_id, is_unilateral, _set_num}, details} ->
+          if is_unilateral do
+            sides = details |> Enum.map(& &1.side) |> Enum.uniq()
+            set_count = if length(sides) >= 2, do: 1.0, else: 0.5
+
+            # Return just one contribution for the pair
+            contributions = Map.get(contributions_by_exercise, exercise_id, [])
+            Enum.map(contributions, fn c ->
+              {c.muscle.name, c.role, set_count * c.multiplier}
+            end)
+          else
+            # For bilateral: each row = 1 set (normal counting)
+            Enum.flat_map(details, fn detail ->
+              contributions = Map.get(contributions_by_exercise, exercise_id, [])
+              Enum.map(contributions, fn c ->
+                {c.muscle.name, c.role, 1 * c.multiplier}
+              end)
+            end)
+          end
+        end)
+
+      workouts_with_volume
       |> Enum.group_by(fn {muscle, _role, _volume} -> muscle end)
       |> Enum.map(fn {muscle, rows} ->
         direct_sets =

@@ -6,6 +6,7 @@ defmodule Crohnjobs.Training.WorkoutDetails do
     field :reps, :float
     field :weight, :float
     field :set, :integer
+    field :side, :string, default: "both"
     belongs_to :exercise, Crohnjobs.Exercises.Exercise
     belongs_to :workout, Crohnjobs.Training.Workout
     timestamps(type: :utc_datetime)
@@ -15,7 +16,8 @@ defmodule Crohnjobs.Training.WorkoutDetails do
   def changeset(workout_details, attrs) do
 
     workout_details
-    |> cast(attrs, [:reps, :weight, :set, :workout_id, :exercise_id])
+    |> cast(attrs, [:reps, :weight, :set, :side, :workout_id, :exercise_id])
     |> validate_required([])
+    |> validate_inclusion(:side, ["both", "left", "right"])
   end
 end

@@ -225,36 +225,43 @@ alias Crohnjobs.CustomExercises.CustomExercise
         Filter By Type
       </h3>
 
-      <p class="text-sm text-gray-600">Applied: <span class="font-semibold"><%= if @filter_by_type == "ALL", do: "All types", else: @filter_by_type %></span></p>
+      <p class="text-sm text-gray-700 mb-2 flex items-center gap-2">
+        Applied: <span class="inline-block bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded"><%= if @filter_by_type == "ALL", do: "All types", else: @filter_by_type %></span>
+        <%= if @filter_by_type != "ALL" do %>
+          <button phx-click="filterByType" phx-value-name="ALL" class="text-sm text-red-600 font-medium hover:underline">
+            Reset
+          </button>
+        <% end %>
+      </p>
       <div class="flex flex-wrap gap-2">
-        <.button
-        phx-click="filterByType"
-        phx-value-name="ALL"
+        <button
+          phx-click="filterByType"
+          phx-value-name="ALL"
           class={[
             "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
             if(@filter_by_type == "ALL",
               do: "bg-blue-600 text-white shadow-md",
-              else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+              else: "bg-white border border-gray-300 text-gray-800 hover:bg-gray-100 hover:shadow-sm"
             )
           ]}
         >
           All Types
-        </.button>
+        </button>
 
         <%= for muscle <- @muscles do %>
-          <.button
-          phx-click="filterByType"
-          phx-value-name={muscle.name}
+          <button
+            phx-click="filterByType"
+            phx-value-name={muscle.name}
             class={[
               "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
               if(@filter_by_type == muscle.name,
                 do: "bg-blue-600 text-white shadow-md",
-                else: "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-sm"
+                else: "bg-white border border-gray-300 text-gray-800 hover:bg-gray-100 hover:shadow-sm"
               )
             ]}
           >
             {muscle.name}
-          </.button>
+          </button>
         <% end %>
       </div>
     </div>
