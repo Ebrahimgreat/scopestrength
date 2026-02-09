@@ -24,12 +24,28 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 
 
+// AutoSave hook for workout changes
+let Hooks = {}
+Hooks.AutoSave = {
+  mounted() {
+    // Save on page navigation/beforeunload
+    this.handleBeforeUnload = () => {
+      this.pushEvent("auto_save_on_leave", {})
+    }
+    window.addEventListener("beforeunload", this.handleBeforeUnload)
+  },
+  destroyed() {
+    window.removeEventListener("beforeunload", this.handleBeforeUnload)
+  }
+}
+
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
 hooks: {
-  ...LiveCharts.Hooks
+  ...LiveCharts.Hooks,
+  ...Hooks
 }
 }
 )
