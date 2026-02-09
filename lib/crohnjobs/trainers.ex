@@ -107,13 +107,4 @@ defmodule Crohnjobs.Trainers do
     Trainer.changeset(trainer, attrs)
   end
 
-  def generate_unique_invite_code do
-    code = :crypto.strong_rand_bytes(6) |> Base.encode16(case: :lower)
-
-    if Repo.exists?(from t in Trainer, where: t.invite_code == ^code) do
-      generate_unique_invite_code()
-    else
-      code
-    end
-  end
 end
