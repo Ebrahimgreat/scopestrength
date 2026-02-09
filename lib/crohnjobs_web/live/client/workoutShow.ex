@@ -1,17 +1,33 @@
 defmodule CrohnjobsWeb.Client.WorkoutShow do
+alias Crohnjobs.Trainers
 alias Crohnjobs.Programmes.ProgrammeUser
 alias GenLSP.Structures.ConfigurationItem
 alias Crohnjobs.Training
 alias Crohnjobs.Training.Workout
 alias Crohnjobs.Exercises.Exercise
 alias Crohnjobs.Exercises.ExerciseMuscleContribution
-alias CrohnjobsWeb.Exercises
+alias Crohnjobs.Exercises
+alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
   use CrohnjobsWeb, :live_view
   alias Crohnjobs.Repo
   import Ecto.Query
   alias Crohnjobs.Clients.Client
   alias Crohnjobs.Training.WorkoutDetails
 
+
+  def handle_event("filterExercise", %{"name" => name}, socket) do
+    filter_applied = name
+
+    filtered =
+      apply_exercise_filters(socket.assigns.allExercises, filter_applied, socket.assigns.q)
+
+    {:noreply, assign(socket, exercises: filtered, filter_by_type: filter_applied)}
+  end
+
+  def handle_event("resetFilters", _params, socket) do
+    exercises = apply_exercise_filters(socket.assigns.allExercises, "ALL", "")
+    {:noreply, assign(socket, exercises: exercises, filter_by_type: "ALL", q: "")}
+  end
 
   def handle_event("addExercise", params, socket) do
     exercise_id = String.to_integer(params["id"])
@@ -242,11 +258,35 @@ alias CrohnjobsWeb.Exercises
 
   def mount(params, _session, socket) do
     user = socket.assigns.current_user
+    client = Repo.get_by(Crohnjobs.Clients.Client, %{user_id: user.id})
 
+    # Get trainer if available
+    trainer = case client.trainer_id do
+      nil -> nil
+      trainer_id -> Repo.get_by(Crohnjobs.Trainers.Trainer, %{id: trainer_id})
+    end
 
+    exercises = case trainer do
+      nil ->
+        # Only client's custom exercises and library exercises
+        Repo.all(
+          from e in Exercise,
+            where: e.is_custom == false or e.user_id == ^user.id,
+            order_by: [asc: e.name],
+            preload: [:muscle, :equipment]
+        )
+      trainer ->
+        # Include trainer's custom exercises as well
+        Repo.all(
+          from e in Exercise,
+            where: e.is_custom == false or e.user_id == ^user.id or e.user_id == ^trainer.user_id,
+            order_by: [asc: e.name],
+            preload: [:muscle, :equipment]
+        )
+    end
 
-    exercises = Repo.all(Exercise)
-
+    # Get muscles list for filtering
+    muscles = Exercises.list_mucles()
 
     case Repo.get_by(Client, user_id: user.id) do
       nil ->
@@ -310,6 +350,7 @@ alias CrohnjobsWeb.Exercises
                  |> assign(:showModal, false)
                  |> assign(exercises: exercises)
                  |> assign(allExercises: exercises)
+                 |> assign(muscles: muscles)
                  |> assign(filter_by_type: "ALL")
                  |> assign(muscle_group_frequencies: muscle_group_frequencies)
                  |> assign(edit_mode: false)
@@ -426,6 +467,46 @@ alias CrohnjobsWeb.Exercises
                 placeholder="Search exercises by name..."
                 class="w-full rounded-md"
               />
+            </div>
+
+            <div class="mb-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                phx-click="resetFilters"
+                class="px-2 py-1 text-xs font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                phx-click="filterExercise"
+                phx-value-name="ALL"
+                class={[
+                  "px-2 py-1 text-xs font-medium rounded-lg transition",
+                  if(@filter_by_type == "ALL",
+                    do: "bg-emerald-600 text-white",
+                    else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  )
+                ]}
+              >
+                All
+              </button>
+              <%= for muscle <- @muscles do %>
+                <button
+                  type="button"
+                  phx-click="filterExercise"
+                  phx-value-name={muscle.name}
+                  class={[
+                    "px-2 py-1 text-xs font-medium rounded-full border transition",
+                    if(@filter_by_type == muscle.name,
+                      do: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                      else: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                    )
+                  ]}
+                >
+                  {muscle.name}
+                </button>
+              <% end %>
             </div>
 
             <div class="space-y-2 max-h-96 overflow-y-auto">
@@ -811,5 +892,17 @@ alias CrohnjobsWeb.Exercises
       {:ok, naive} -> DateTime.from_naive!(naive, "Etc/UTC")
       _ -> value
     end
+  end
+
+  defp apply_exercise_filters(exercises, filter_applied, search) do
+    exercises
+    |> Enum.filter(fn ex ->
+      filter_applied == "ALL" or (ex.muscle && ex.muscle.name == filter_applied)
+    end)
+    |> Enum.filter(fn ex ->
+      search == "" ||
+        String.contains?(String.downcase(ex.name || ""), String.downcase(search))
+    end)
+    |> Enum.sort_by(fn ex -> String.downcase(ex.name || "") end)
   end
 end

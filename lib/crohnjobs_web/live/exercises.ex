@@ -12,11 +12,13 @@ defmodule CrohnjobsWeb.Exercises do
   def handle_event("addExercise", params, socket) do
     user = socket.assigns.current_user
     primary_muscle_id = socket.assigns.selected_primary_muscle_id
+    is_unilateral = params["exercise"]["is_unilateral"] == "true"
 
     attrs = %{
       name: params["exercise"]["name"],
       muscle_id: primary_muscle_id,
       equipment_id: params["exercise"]["equipment_id"],
+      is_unilateral: is_unilateral,
       is_custom: true,
       user_id: user.id
     }
@@ -147,14 +149,17 @@ defmodule CrohnjobsWeb.Exercises do
   end
 
   def handle_event("saveExercise", params, socket) do
+    IO.inspect(params)
     id = String.to_integer(params["exercise"]["id"])
     user = socket.assigns.current_user
     primary_muscle_id = socket.assigns.selected_primary_muscle_id
+    is_unilateral = params["exercise"]["is_unilateral"] == "true"
 
     attrs = %{
       name: params["exercise"]["name"],
       muscle_id: primary_muscle_id,
-      equipment_id: params["exercise"]["equipment_id"]
+      equipment_id: params["exercise"]["equipment_id"],
+      is_unilateral: is_unilateral
     }
 
     exercise = ExerciseContext.get_exercise!(id)
@@ -575,6 +580,19 @@ defmodule CrohnjobsWeb.Exercises do
                 />
               </div>
 
+              <div class="flex items-center gap-2 py-2">
+                <input
+                  type="checkbox"
+                  name="exercise[is_unilateral]"
+                  id="is_unilateral_new"
+                  value="true"
+                  class="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                />
+                <label for="is_unilateral_new" class="text-sm font-medium text-slate-700">
+                  Unilateral exercise (performed one side at a time)
+                </label>
+              </div>
+
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">Secondary muscles</label>
                 <div class="flex flex-wrap gap-2">
@@ -668,6 +686,14 @@ defmodule CrohnjobsWeb.Exercises do
                   options={Enum.map(@equipment_list, &{&1.name, &1.id})}
                   field={@editExerciseForm[:equipment_id]}
                   label="Equipment"
+                />
+              </div>
+
+              <div class="flex items-center gap-2 py-2">
+                <.input
+                  type="checkbox"
+                  field={@editExerciseForm[:is_unilateral]}
+                  label="Unilateral exercise (performed one side at a time)"
                 />
               </div>
 
