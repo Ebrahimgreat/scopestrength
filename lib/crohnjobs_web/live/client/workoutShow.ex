@@ -73,7 +73,6 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
 
   def handle_event("updateExercise", params, socket) do
     workout_detail_id = String.to_integer(params["workout_details"]["id"])
-    workoutFound = Training.get_workout_details!(workout_detail_id)
 
     reps =
       case Float.parse(params["workout_details"]["reps"] || "") do
@@ -87,28 +86,52 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
         :error -> nil
       end
 
-    case Training.update_workout_details(workoutFound, %{reps: reps, weight: weight}) do
-      {:ok, updated_detail} ->
-        updated_detail = Repo.preload(updated_detail, :exercise)
-        updated_workouts =
-          socket.assigns.workouts
-          |> Map.update!(updated_detail.exercise_id, fn sets ->
-            Enum.map(sets, fn workout_form ->
-              if workout_form.data.id == updated_detail.id do
-                updated_detail
-                |> Training.change_workout_details()
-                |> to_form()
-              else
-                workout_form
-              end
-            end)
-          end)
+    # Store pending changes instead of saving immediately
+    pending_changes = Map.put(
+      socket.assigns.pending_changes,
+      workout_detail_id,
+      %{reps: reps, weight: weight}
+    )
 
-        {:noreply, assign(socket, workouts: updated_workouts)}
+    # Update the form display
+    updated_workouts =
+      socket.assigns.workouts
+      |> Enum.map(fn {exercise_id, sets} ->
+        updated_sets = Enum.map(sets, fn workout_form ->
+          if workout_form.data.id == workout_detail_id do
+            updated_data = %{workout_form.data | reps: reps, weight: weight}
+            updated_data
+            |> Training.change_workout_details()
+            |> to_form()
+          else
+            workout_form
+          end
+        end)
+        {exercise_id, updated_sets}
+      end)
+      |> Map.new()
 
-      _ ->
-        {:noreply, socket |> put_flash(:error, "Error has occurred")}
+    {:noreply, assign(socket, workouts: updated_workouts, pending_changes: pending_changes, has_unsaved_changes: true)}
+  end
+
+  def handle_event("save_all_changes", _params, socket) do
+    case save_pending_changes(socket.assigns.pending_changes) do
+      :ok ->
+        {:noreply,
+         socket
+         |> assign(pending_changes: %{}, has_unsaved_changes: false)
+         |> put_flash(:info, "All changes saved successfully")}
+
+      {:error, _reason} ->
+        {:noreply, socket |> put_flash(:error, "Failed to save some changes")}
     end
+  end
+
+  def handle_event("auto_save_on_leave", _params, socket) do
+    if socket.assigns.has_unsaved_changes do
+      save_pending_changes(socket.assigns.pending_changes)
+    end
+    {:noreply, socket}
   end
 
 
@@ -175,6 +198,21 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
   end
 
   def handle_event("toggle_edit_mode", _params, socket) do
+    # If exiting edit mode and there are unsaved changes, save them
+    socket = if socket.assigns.edit_mode and socket.assigns.has_unsaved_changes do
+      case save_pending_changes(socket.assigns.pending_changes) do
+        :ok ->
+          socket
+          |> assign(pending_changes: %{}, has_unsaved_changes: false)
+          |> put_flash(:info, "Changes saved successfully")
+        {:error, _} ->
+          socket
+          |> put_flash(:error, "Failed to save some changes")
+      end
+    else
+      socket
+    end
+
     {:noreply, assign(socket, edit_mode: !socket.assigns.edit_mode)}
   end
 
@@ -354,6 +392,8 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                  |> assign(filter_by_type: "ALL")
                  |> assign(muscle_group_frequencies: muscle_group_frequencies)
                  |> assign(edit_mode: false)
+                 |> assign(pending_changes: %{})
+                 |> assign(has_unsaved_changes: false)
                  |> assign_new(:q, fn -> "" end)}
                 end
 
@@ -364,21 +404,41 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
 
   def render(assigns) do
     ~H"""
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" phx-hook="AutoSave" id="workout-container">
       <div class="mb-6">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
-            <.link navigate={~p"/client"} class="text-gray-500 hover:text-gray-700">
+            <.link navigate={~p"/client"} phx-click="auto_save_on_leave" class="text-gray-500 hover:text-gray-700">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
               </svg>
             </.link>
             <h1 class="text-3xl font-bold text-gray-900">Workout Details</h1>
+            <%= if @has_unsaved_changes do %>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                Unsaved changes
+              </span>
+            <% end %>
           </div>
-          <.button
-            phx-click="toggle_edit_mode"
-            class={"#{if @edit_mode, do: "bg-gray-600 hover:bg-gray-700", else: "bg-emerald-600 hover:bg-emerald-700"} text-white px-6 py-3 rounded-xl shadow-lg transition-all duration-200"}
-          >
+          <div class="flex items-center gap-3">
+            <%= if @has_unsaved_changes and @edit_mode do %>
+              <.button
+                phx-click="save_all_changes"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl shadow-lg transition-all duration-200"
+              >
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Save All Changes
+              </.button>
+            <% end %>
+            <.button
+              phx-click="toggle_edit_mode"
+              class={"#{if @edit_mode, do: "bg-gray-600 hover:bg-gray-700", else: "bg-emerald-600 hover:bg-emerald-700"} text-white px-6 py-3 rounded-xl shadow-lg transition-all duration-200"}
+            >
             <%= if @edit_mode do %>
               <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -393,6 +453,7 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
           </.button>
         </div>
       </div>
+    </div>
 
       <%= if @edit_mode do %>
         <div class="mb-8 bg-white rounded-xl shadow-lg p-6 border border-gray-200">
@@ -577,7 +638,7 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                     <div class="divide-y divide-gray-100">
                       <%= for workout <- sets do %>
                         <.form
-                          phx-submit="updateExercise"
+                          phx-change="updateExercise"
                           for={workout}
                           id={"workout-form-#{workout.data.id}"}
                           class="px-4 py-3"
@@ -600,10 +661,11 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                                 <p class="text-[11px] uppercase tracking-wide text-gray-400">Reps</p>
                                 <div class="flex items-center gap-2 mt-1">
                                   <input
-                                    type="text"
+                                    type="number"
                                     name={"workout_details[reps]"}
                                     value={workout.data.reps}
                                     placeholder="0"
+                                    phx-debounce="500"
                                     class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none"
                                   />
                                   <span class="text-xs text-gray-400">reps</span>
@@ -617,6 +679,7 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                                     name={"workout_details[weight]"}
                                     value={workout.data.weight}
                                     placeholder="0"
+                                    phx-debounce="500"
                                     class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none"
                                   />
                                   <span class="text-xs text-gray-400">kg</span>
@@ -625,11 +688,6 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                             </div>
 
                             <div class="flex items-center gap-2 justify-end">
-                              <button type="submit" class="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg border border-emerald-100" title="Save">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                              </button>
                               <button
                                 type="button"
                                 phx-click="deleteExercise"
@@ -904,5 +962,21 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
         String.contains?(String.downcase(ex.name || ""), String.downcase(search))
     end)
     |> Enum.sort_by(fn ex -> String.downcase(ex.name || "") end)
+  end
+
+  defp save_pending_changes(pending_changes) when map_size(pending_changes) == 0, do: :ok
+
+  defp save_pending_changes(pending_changes) do
+    results =
+      Enum.map(pending_changes, fn {workout_detail_id, changes} ->
+        workout_detail = Training.get_workout_details!(workout_detail_id)
+        Training.update_workout_details(workout_detail, changes)
+      end)
+
+    if Enum.all?(results, fn result -> match?({:ok, _}, result) end) do
+      :ok
+    else
+      {:error, :some_updates_failed}
+    end
   end
 end
