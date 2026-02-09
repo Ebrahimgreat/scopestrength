@@ -77,7 +77,7 @@ alias Crohnjobs.Clients
 
         changeset = Account.change_user_registration(user)
       case user.role do
-        "trainer" -> Trainers.create_trainer(%{user_id: user.id, invite_code: Trainers.generate_unique_invite_code()})
+        "trainer" -> Trainers.create_trainer(%{user_id: user.id})
         "client"-> Clients.create_client(%{user_id: user.id})
       end
 

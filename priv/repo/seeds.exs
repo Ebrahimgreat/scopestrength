@@ -72,7 +72,7 @@ exercises = [
 
   # UPPER BACK
   %{name: "Barbell Bent Over Row", muscle: "Upper Back", equipment: "Barbell"},
-  %{name: "Dumbbell Row (One Arm)", muscle: "Upper Back", equipment: "Dumbbell"},
+  %{name: "Dumbbell Row (One Arm)", muscle: "Upper Back", equipment: "Dumbbell", is_unilateral: true},
   %{name: "Cable Row", muscle: "Upper Back", equipment: "Cable"},
   %{name: "Wide Grip Cable Row", muscle: "Upper Back", equipment: "Cable"},
   %{name: "Seated Row", muscle: "Upper Back", equipment: "Machine"},
@@ -83,14 +83,20 @@ exercises = [
   %{name: "Leg Press", muscle: "Quads", equipment: "Machine"},
   %{name: "Hack Squat", muscle: "Quads", equipment: "Machine"},
   %{name: "Leg Extension", muscle: "Quads", equipment: "Machine"},
-  %{name: "Bulgarian Split Squat", muscle: "Quads", equipment: "Dumbbell"},
-  %{name: "Lunges", muscle: "Quads", equipment: "Dumbbell"},
+  %{name: "Bulgarian Split Squat", muscle: "Quads", equipment: "Dumbbell", is_unilateral: true},
+  %{name: "Lunges", muscle: "Quads", equipment: "Dumbbell", is_unilateral: true},
+  %{name: "Single Leg Extension", muscle: "Quads", equipment: "Machine", is_unilateral: true},
+  %{name: "Reverse Lunges", muscle: "Quads", equipment: "Dumbbell", is_unilateral: true},
+  %{name: "Sissy Squat", muscle: "Quads", equipment: "Bodyweight"},
 
   # HAMSTRINGS
   %{name: "Romanian Deadlift", muscle: "Hamstrings", equipment: "Barbell"},
   %{name: "Lying Leg Curl", muscle: "Hamstrings", equipment: "Machine"},
   %{name: "Seated Leg Curl", muscle: "Hamstrings", equipment: "Machine"},
   %{name: "Seated Machine Hinge", muscle: "Hamstrings", equipment: "Machine"},
+  %{name: "Good Mornings", muscle: "Hamstrings", equipment: "Barbell"},
+  %{name: "Single Leg Deadlift", muscle: "Hamstrings", equipment: "Dumbbell", is_unilateral: true},
+  %{name: "Back Extension", muscle: "Hamstrings", equipment: "Bodyweight"},
 
   # FRONT DELTS
   %{name: "Overhead Press", muscle: "Front Delts", equipment: "Barbell"},
@@ -104,7 +110,7 @@ exercises = [
 
   # REAR DELTS
   %{name: "Reverse Fly", muscle: "Rear Delts", equipment: "Dumbbell"},
-  %{name: "One Arm Reverse Fly", muscle: "Rear Delts", equipment: "Dumbbell"},
+  %{name: "One Arm Reverse Fly", muscle: "Rear Delts", equipment: "Dumbbell", is_unilateral: true},
   %{name: "Face Pull", muscle: "Rear Delts", equipment: "Cable"},
 
   # CHEST
@@ -125,12 +131,15 @@ exercises = [
   %{name: "Hammer Curl", muscle: "Biceps", equipment: "Dumbbell"},
   %{name: "Incline Dumbbell Curl", muscle: "Biceps", equipment: "Dumbbell"},
   %{name: "Bayesian Curl", muscle: "Biceps", equipment: "Cable"},
+  %{name: "Recline Preacher Curl", muscle: "Biceps", equipment: "Dumbbell"},
 
   # TRICEPS
   %{name: "Tricep Pushdown", muscle: "Triceps", equipment: "Cable"},
   %{name: "Tricep Cable Kickback", muscle: "Triceps", equipment: "Cable"},
   %{name: "Skull Crusher", muscle: "Triceps", equipment: "Barbell"},
   %{name: "JM Press", muscle: "Triceps", equipment: "Barbell"},
+  %{name: "Close Grip Bench Press", muscle: "Triceps", equipment: "Barbell"},
+  %{name: "Bodyweight Dips", muscle: "Triceps", equipment: "Bodyweight"},
 
   # CALVES
   %{name: "Standing Calf Raise", muscle: "Calves", equipment: "Machine"},
@@ -151,7 +160,8 @@ exercise_map =
       |> Exercise.changeset(%{
         name: attrs.name,
         muscle_id: muscles[attrs.muscle],
-        equipment_id: equipment[attrs.equipment]
+        equipment_id: equipment[attrs.equipment],
+        is_unilateral: Map.get(attrs, :is_unilateral, false)
       })
       |> Repo.insert!()
 
@@ -316,6 +326,16 @@ contributions = [
   %{exercise: "Lunges", muscle: "Quads", role: "primary", multiplier: 1.0},
   %{exercise: "Lunges", muscle: "Glutes", role: "secondary", multiplier: 0.5},
 
+  # Single Leg Extension (isolation)
+  %{exercise: "Single Leg Extension", muscle: "Quads", role: "primary", multiplier: 1.0},
+
+  # Reverse Lunges
+  %{exercise: "Reverse Lunges", muscle: "Quads", role: "primary", multiplier: 1.0},
+  %{exercise: "Reverse Lunges", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+
+  # Sissy Squat (isolation)
+  %{exercise: "Sissy Squat", muscle: "Quads", role: "primary", multiplier: 1.0},
+
   # ═══════════════════════════════════════════════════════════════════
   # HAMSTRINGS EXERCISES
   # ═══════════════════════════════════════════════════════════════════
@@ -333,6 +353,18 @@ contributions = [
   # Seated Machine Hinge
   %{exercise: "Seated Machine Hinge", muscle: "Hamstrings", role: "primary", multiplier: 1.0},
   %{exercise: "Seated Machine Hinge", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+
+  # Good Mornings
+  %{exercise: "Good Mornings", muscle: "Hamstrings", role: "primary", multiplier: 1.0},
+  %{exercise: "Good Mornings", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+
+  # Single Leg Deadlift
+  %{exercise: "Single Leg Deadlift", muscle: "Hamstrings", role: "primary", multiplier: 1.0},
+  %{exercise: "Single Leg Deadlift", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+
+  # Back Extension
+  %{exercise: "Back Extension", muscle: "Hamstrings", role: "primary", multiplier: 1.0},
+  %{exercise: "Back Extension", muscle: "Glutes", role: "secondary", multiplier: 0.5},
 
   # ═══════════════════════════════════════════════════════════════════
   # FRONT DELTS EXERCISES
@@ -389,6 +421,7 @@ contributions = [
   %{exercise: "Hammer Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
   %{exercise: "Incline Dumbbell Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
   %{exercise: "Bayesian Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
+  %{exercise: "Recline Preacher Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
 
   # ═══════════════════════════════════════════════════════════════════
   # TRICEPS EXERCISES (all isolation)
@@ -398,6 +431,14 @@ contributions = [
   %{exercise: "Tricep Cable Kickback", muscle: "Triceps", role: "primary", multiplier: 1.0},
   %{exercise: "Skull Crusher", muscle: "Triceps", role: "primary", multiplier: 1.0},
   %{exercise: "JM Press", muscle: "Triceps", role: "primary", multiplier: 1.0},
+
+  # Close Grip Bench Press
+  %{exercise: "Close Grip Bench Press", muscle: "Triceps", role: "primary", multiplier: 1.0},
+  %{exercise: "Close Grip Bench Press", muscle: "Chest", role: "secondary", multiplier: 0.5},
+
+  # Bodyweight Dips
+  %{exercise: "Bodyweight Dips", muscle: "Triceps", role: "primary", multiplier: 1.0},
+  %{exercise: "Bodyweight Dips", muscle: "Chest", role: "secondary", multiplier: 0.5},
 
   # ═══════════════════════════════════════════════════════════════════
   # CALVES EXERCISES (all isolation)
