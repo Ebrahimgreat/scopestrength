@@ -7,6 +7,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
   alias Crohnjobs.Programmes.ProgrammeDetails
   alias Crohnjobs.Repo
   alias Crohnjobs.Exercise
+  alias Crohnjobs.Exercises
   alias Crohnjobs.Programmes
   import Ecto.Query
 
@@ -39,22 +40,101 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
   def handle_event("createExercise", params, socket) do
     user = socket.assigns.current_user
-    trainer = Trainers.get_trainer_byUserId(user.id)
-    name = params["exercise"]["name"]
-    muscle_id = params["exercise"]["muscle_id"]
-    equipment_id = params["exercise"]["equipment_id"]
-    case Exercise.create_exercise(%{name: name, muscle_id: muscle_id, equipment_id: equipment_id, user_id: user.id, is_custom: true}) do
-      {:ok, exercise}->
+    primary_muscle_id = socket.assigns.selected_primary_muscle_id
+    is_unilateral = params["exercise"]["is_unilateral"] == "true"
+
+    attrs = %{
+      name: params["exercise"]["name"],
+      muscle_id: primary_muscle_id,
+      equipment_id: params["exercise"]["equipment_id"],
+      is_unilateral: is_unilateral,
+      is_custom: true,
+      user_id: user.id
+    }
+
+    case Exercise.create_exercise(attrs) do
+      {:ok, exercise} ->
+        trainer = Trainers.get_trainer_byUserId(user.id)
+
+        if primary_muscle_id do
+          Exercises.create_exercise_muscle_contribution(%{
+            exercise_id: exercise.id,
+            muscle_id: primary_muscle_id,
+            role: "primary",
+            multiplier: 1.0,
+            trainer_id: trainer.id
+          })
+        end
+
+        Enum.each(socket.assigns.secondary_muscles, fn muscle_id ->
+          Exercises.create_exercise_muscle_contribution(%{
+            exercise_id: exercise.id,
+            muscle_id: muscle_id,
+            role: "secondary",
+            multiplier: 0.5,
+            trainer_id: trainer.id
+          })
+        end)
+
         exercise = Repo.preload(exercise, [:muscle, :equipment])
-        exercises = socket.assigns.exercises ++ [exercise]
-      {:noreply,socket|> assign(show_modal: false, exercises: exercises)|> put_flash(:info, "exercise Created")}
-      _ -> {:noreply, socket|> put_flash(:error, "An error has occured")}
+        all_exercises = socket.assigns.allExercises ++ [exercise]
+
+        filtered_exercises =
+          case socket.assigns.filter_by_type do
+            "ALL" -> all_exercises
+            filter -> Enum.filter(all_exercises, &(&1.muscle && &1.muscle.name == filter))
+          end
+
+        {:noreply,
+         socket
+         |> assign(
+           show_modal: false,
+           allExercises: all_exercises,
+           exercises: filtered_exercises,
+           newExerciseForm: Crohnjobs.Exercises.Exercise.changeset(%Crohnjobs.Exercises.Exercise{}, %{}) |> to_form(),
+           secondary_muscles: [],
+           selected_primary_muscle_id: nil
+         )
+         |> put_flash(:info, "New exercise created")}
+
+      {:error, changeset} ->
+        require Logger
+        Logger.error("Failed to create exercise: #{inspect(changeset.errors)}")
+        {:noreply, socket |> put_flash(:error, "Failed to create exercise. Please check all required fields.")}
+
+      _ ->
+        {:noreply, socket |> put_flash(:error, "An error has occurred")}
     end
   end
+
+
+  def handle_event("update_primary_muscle", %{"muscle_id" => id}, socket) do
+    id = if id == "", do: nil, else: String.to_integer(id)
+    secondary = Enum.reject(socket.assigns.secondary_muscles, &(&1 == id))
+    {:noreply, assign(socket, selected_primary_muscle_id: id, secondary_muscles: secondary)}
+  end
+
+  def handle_event("toggle_secondary_muscle", %{"id" => id}, socket) do
+    id = String.to_integer(id)
+    secondary =
+      if id in socket.assigns.secondary_muscles do
+        Enum.reject(socket.assigns.secondary_muscles, &(&1 == id))
+      else
+        socket.assigns.secondary_muscles ++ [id]
+      end
+    {:noreply, assign(socket, secondary_muscles: secondary)}
+  end
+
   def handle_event("openModal", _, socket) do
     showModal = !socket.assigns.show_modal
-    {:noreply, assign(socket, show_modal: showModal)}
+    new_form = Crohnjobs.Exercises.Exercise.changeset(%Crohnjobs.Exercises.Exercise{}, %{}) |> to_form()
 
+    {:noreply, assign(socket,
+      show_modal: showModal,
+      newExerciseForm: new_form,
+      secondary_muscles: [],
+      selected_primary_muscle_id: nil
+    )}
   end
 
 
@@ -172,7 +252,8 @@ alias Crohnjobs.CustomExercises.CustomExercise
 
       socket =
       socket
-      |> assign(allExercises: exercises, filter_by_type: "ALL", newExerciseForm: newExerciseForm, show_modal: show_modal, template_id: template_id, programmeDetails: changesets, exercises: exercises, muscles: muscles, equipment_list: equipment_list)
+      |> assign(allExercises: exercises, filter_by_type: "ALL", newExerciseForm: newExerciseForm, show_modal: show_modal, template_id: template_id, programmeDetails: changesets, exercises: exercises, muscles: muscles,  selected_primary_muscle_id: nil,
+      secondary_muscles: [], equipment_list: equipment_list)
       |> assign_new(:q, fn -> "" end)
 
     {:ok, socket}
@@ -191,28 +272,118 @@ alias Crohnjobs.CustomExercises.CustomExercise
         </div>
 
         <%= if @show_modal do %>
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white p-6 rounded-lg w-96 relative">
-      <h2 class="text-lg font-semibold mb-4">New Exercise</h2>
-      <.form phx-submit="createExercise" for={@newExerciseForm}>
+        <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div class="absolute inset-0 bg-slate-900/60" aria-hidden="true"></div>
+          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Create</p>
+                <h2 class="text-xl font-semibold text-slate-900">New exercise</h2>
+                <p class="text-sm text-slate-500">Add a custom movement to your trainer library.</p>
+              </div>
+              <button
+                phx-click="openModal"
+                aria-label="Close"
+                class="text-slate-400 hover:text-slate-600"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
 
-      <p> Create a new Exercise</p>
-      <.input  type="text" required label="name" field={@newExerciseForm[:name]}/>
-      <.input type="select" options={Enum.map(@muscles, &{&1.name, &1.id})} field={@newExerciseForm[:muscle_id]} label="Muscle group"/>
-      <.input type="select" field={@newExerciseForm[:equipment_id]} options={Enum.map(@equipment_list, &{&1.name, &1.id})} label="Equipment"/>
-      <.button>
-      Submit
-      </.button>
+            <.form phx-submit="addExercise" for={@newExerciseForm} class="mt-5 space-y-4">
+              <.input
+                type="text"
+                required
+                label="Exercise name"
+                field={@newExerciseForm[:name]}
+                placeholder="e.g. Single arm cable row"
+              />
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Primary muscle</label>
+                  <select
+                    phx-change="update_primary_muscle"
+                    name="muscle_id"
+                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                  >
+                    <option value="">Select muscle</option>
+                    <%= for muscle <- @muscles do %>
+                      <option value={muscle.id} selected={@selected_primary_muscle_id == muscle.id}>{muscle.name}</option>
+                    <% end %>
+                  </select>
+                </div>
+                <.input
+                  type="select"
+                  options={Enum.map(@equipment_list, &{&1.name, &1.id})}
+                  field={@newExerciseForm[:equipment_id]}
+                  label="Equipment"
+                />
+              </div>
 
+              <div class="flex items-center gap-2 py-2">
+                <input
+                  type="checkbox"
+                  name="exercise[is_unilateral]"
+                  id="is_unilateral_new"
+                  value="true"
+                  class="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                />
+                <label for="is_unilateral_new" class="text-sm font-medium text-slate-700">
+                  Unilateral exercise (performed one side at a time)
+                </label>
+              </div>
 
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Secondary muscles</label>
+                <div class="flex flex-wrap gap-2">
+                  <%= for muscle <- @muscles do %>
+                    <%= unless muscle.id == @selected_primary_muscle_id do %>
+                      <button
+                        type="button"
+                        phx-click="toggle_secondary_muscle"
+                        phx-value-id={muscle.id}
+                        class={[
+                          "px-3 py-1.5 rounded-full text-xs font-semibold border transition",
+                          if(muscle.id in @secondary_muscles,
+                            do: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                            else: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                          )
+                        ]}
+                      >
+                        {muscle.name}
+                      </button>
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
 
-
-      </.form>
-      <button phx-click="openModal" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">Close</button>
-
-    </div>
-  </div>
-<% end %>
+              <div class="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  phx-click="openModal"
+                  class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
+                >
+                  Cancel
+                </button>
+                <.button class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg">
+                  Create exercise
+                </.button>
+              </div>
+            </.form>
+          </div>
+        </div>
+      <% end %>
 <button phx-click="openModal" class="bg-green-600 text-white px-4 py-2 rounded">Create Exercise</button>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
