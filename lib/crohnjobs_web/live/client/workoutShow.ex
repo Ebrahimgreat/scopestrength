@@ -306,7 +306,6 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
 
     exercises = case trainer do
       nil ->
-        # Only client's custom exercises and library exercises
         Repo.all(
           from e in Exercise,
             where: e.is_custom == false or e.user_id == ^user.id,
@@ -314,7 +313,6 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
             preload: [:muscle, :equipment]
         )
       trainer ->
-        # Include trainer's custom exercises as well
         Repo.all(
           from e in Exercise,
             where: e.is_custom == false or e.user_id == ^user.id or e.user_id == ^trainer.user_id,
@@ -876,7 +874,6 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
     if Enum.empty?(exercise_ids) do
       %{}
     else
-      # Preload exercises to check is_unilateral
       workouts = Repo.preload(workouts, :exercise)
 
       muscle_contributions =
@@ -900,7 +897,6 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
             sides = details |> Enum.map(& &1.side) |> Enum.uniq()
             set_count = if length(sides) >= 2, do: 1.0, else: 0.5
 
-            # Return just one contribution for the pair
             contributions = Map.get(contributions_by_exercise, exercise_id, [])
             Enum.map(contributions, fn c ->
               {c.muscle.name, c.role, set_count * c.multiplier}

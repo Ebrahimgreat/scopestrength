@@ -10,6 +10,9 @@
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
 alias Crohnjobs.Repo
+alias Crohnjobs.Account.User
+alias Crohnjobs.Trainers.Trainer
+alias Crohnjobs.Clients.Client
 alias Crohnjobs.Exercises.{Exercise, Muscles, Equipment}
 alias Crohnjobs.Exercises.ExerciseMuscleContribution
 
@@ -27,7 +30,9 @@ muscle_names = [
   "Abs",
   "Biceps",
   "Triceps",
-  "Calves"
+  "Calves",
+  "Hip Adductors",
+  "Hip Abductors"
 ]
 
 muscles =
@@ -45,6 +50,80 @@ equipment_names = [
   "Plate",
   "Bodyweight"
 ]
+
+
+# ── Seed Users, Trainers, and Clients ──────────────────────────────
+
+# Create a trainer user
+trainer_user =
+  %User{}
+  |> User.registration_changeset(%{
+    name: "Ebrahim Arshad",
+    email: "ebrahim@scopestrength.com",
+    password: "Abdevilliers15*",
+    role: "trainer"
+  })
+  |> Repo.insert!()
+
+# Create the trainer profile
+trainer =
+  %Trainer{}
+  |> Trainer.changeset(%{
+    user_id: trainer_user.id,
+    bio: "Experienced fitness trainer specializing in strength training",
+    specialization: "Strength & Conditioning"
+  })
+  |> Repo.insert!()
+
+# Create a client user
+client_user =
+  %User{}
+  |> User.registration_changeset(%{
+    name: "Ebrahim",
+    email: "ebbibest@gmail.com",
+    password: "Abdevilliers15*",
+    role: "client"
+  })
+  |> Repo.insert!()
+
+# Create the client profile
+client =
+  %Client{}
+  |> Client.changeset(%{
+    user_id: client_user.id,
+    trainer_id: trainer.id,
+    age: 30,
+    height: Decimal.new("175.5"),
+    sex: "male",
+    active: true,
+    notes: "New client, beginner level"
+  })
+  |> Repo.insert!()
+
+# Create another client user
+client_user_2 =
+  %User{}
+  |> User.registration_changeset(%{
+    name: "Jane Smith",
+    email: "jane@example.com",
+    password: "securepassword123",
+    role: "client"
+  })
+  |> Repo.insert!()
+
+# Create the second client profile
+client_2 =
+  %Client{}
+  |> Client.changeset(%{
+    user_id: client_user_2.id,
+    trainer_id: trainer.id,
+    age: 28,
+    height: Decimal.new("165.0"),
+    sex: "female",
+    active: true,
+    notes: "Intermediate level, focus on muscle building"
+  })
+  |> Repo.insert!()
 
 equipment =
   Enum.into(equipment_names, %{}, fn name ->
@@ -65,6 +144,7 @@ exercises = [
   # LATS
   %{name: "Wide Lat Pulldown", muscle: "Lats", equipment: "Cable"},
   %{name: "Lat Pulldown", muscle: "Lats", equipment: "Cable"},
+  %{name: "Lat Prayer", muscle: "Lats", equipment: "Cable"},
   %{name: "Machine Pullover", muscle: "Lats", equipment: "Machine"},
   %{name: "Dumbbell Pullover", muscle: "Lats", equipment: "Dumbbell"},
   %{name: "Pull Up", muscle: "Lats", equipment: "Bodyweight"},
@@ -107,6 +187,7 @@ exercises = [
   # SIDE DELTS
   %{name: "Lateral Raise", muscle: "Side Delts", equipment: "Dumbbell"},
   %{name: "Cable Lateral Raise", muscle: "Side Delts", equipment: "Cable"},
+  %{name: "Cable Laterals (One)", muscle: "Side Delts", equipment: "Cable", is_unilateral: true},
 
   # REAR DELTS
   %{name: "Reverse Fly", muscle: "Rear Delts", equipment: "Dumbbell"},
@@ -135,6 +216,7 @@ exercises = [
 
   # TRICEPS
   %{name: "Tricep Pushdown", muscle: "Triceps", equipment: "Cable"},
+  %{name: "Tricep Pushdown (One Arm)", muscle: "Triceps", equipment: "Cable", is_unilateral: true},
   %{name: "Tricep Cable Kickback", muscle: "Triceps", equipment: "Cable"},
   %{name: "Skull Crusher", muscle: "Triceps", equipment: "Barbell"},
   %{name: "JM Press", muscle: "Triceps", equipment: "Barbell"},
@@ -149,7 +231,15 @@ exercises = [
   # ABS
   %{name: "Cable Crunch", muscle: "Abs", equipment: "Cable"},
   %{name: "Plank", muscle: "Abs", equipment: "Bodyweight"},
-  %{name: "Leg Raise", muscle: "Abs", equipment: "Bodyweight"}
+  %{name: "Leg Raise", muscle: "Abs", equipment: "Bodyweight"},
+
+  # HIP ADDUCTORS
+  %{name: "Hip Adduction Machine", muscle: "Hip Adductors", equipment: "Machine"},
+  %{name: "Cable Hip Adduction", muscle: "Hip Adductors", equipment: "Cable", is_unilateral: true},
+
+  # HIP ABDUCTORS
+  %{name: "Hip Abduction Machine", muscle: "Hip Abductors", equipment: "Machine"},
+  %{name: "Cable Hip Abduction", muscle: "Hip Abductors", equipment: "Cable", is_unilateral: true}
 ]
 
 # Insert exercises and build exercise_map
@@ -267,6 +357,9 @@ contributions = [
   # Chin Up
   %{exercise: "Chin Up", muscle: "Lats", role: "primary", multiplier: 1.0},
   %{exercise: "Chin Up", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+
+  # Lat Prayer (isolation)
+  %{exercise: "Lat Prayer", muscle: "Lats", role: "primary", multiplier: 1.0},
 
   # ═══════════════════════════════════════════════════════════════════
   # UPPER BACK EXERCISES
@@ -396,6 +489,9 @@ contributions = [
   # Cable Lateral Raise (isolation)
   %{exercise: "Cable Lateral Raise", muscle: "Side Delts", role: "primary", multiplier: 1.0},
 
+  # Cable Laterals (One) (isolation)
+  %{exercise: "Cable Laterals (One)", muscle: "Side Delts", role: "primary", multiplier: 1.0},
+
   # ═══════════════════════════════════════════════════════════════════
   # REAR DELTS EXERCISES
   # ═══════════════════════════════════════════════════════════════════
@@ -428,6 +524,7 @@ contributions = [
   # ═══════════════════════════════════════════════════════════════════
 
   %{exercise: "Tricep Pushdown", muscle: "Triceps", role: "primary", multiplier: 1.0},
+  %{exercise: "Tricep Pushdown (One Arm)", muscle: "Triceps", role: "primary", multiplier: 1.0},
   %{exercise: "Tricep Cable Kickback", muscle: "Triceps", role: "primary", multiplier: 1.0},
   %{exercise: "Skull Crusher", muscle: "Triceps", role: "primary", multiplier: 1.0},
   %{exercise: "JM Press", muscle: "Triceps", role: "primary", multiplier: 1.0},
@@ -454,7 +551,21 @@ contributions = [
 
   %{exercise: "Cable Crunch", muscle: "Abs", role: "primary", multiplier: 1.0},
   %{exercise: "Plank", muscle: "Abs", role: "primary", multiplier: 1.0},
-  %{exercise: "Leg Raise", muscle: "Abs", role: "primary", multiplier: 1.0}
+  %{exercise: "Leg Raise", muscle: "Abs", role: "primary", multiplier: 1.0},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # HIP ADDUCTORS EXERCISES (all isolation)
+  # ═══════════════════════════════════════════════════════════════════
+
+  %{exercise: "Hip Adduction Machine", muscle: "Hip Adductors", role: "primary", multiplier: 1.0},
+  %{exercise: "Cable Hip Adduction", muscle: "Hip Adductors", role: "primary", multiplier: 1.0},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # HIP ABDUCTORS EXERCISES (all isolation)
+  # ═══════════════════════════════════════════════════════════════════
+
+  %{exercise: "Hip Abduction Machine", muscle: "Hip Abductors", role: "primary", multiplier: 1.0},
+  %{exercise: "Cable Hip Abduction", muscle: "Hip Abductors", role: "primary", multiplier: 1.0}
 ]
 
 Enum.each(contributions, fn attrs ->

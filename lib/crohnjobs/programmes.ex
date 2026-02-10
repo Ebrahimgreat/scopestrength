@@ -11,7 +11,64 @@ defmodule Crohnjobs.Programmes do
 
  def get_programme_with_template(id) do
    Programme|> Repo.get(id)|>
-   Repo.preload(:programmeTemplates)
+   Repo.preload(programmeTemplates: [programmeDetails: [exercise: :muscle]])
+ end
+
+ @doc """
+ Calculates total volume (direct and effective) across all templates in a programme.
+ Returns a map of muscle groups with their direct and effective sets.
+ """
+ def calculate_programme_volume(programme) do
+   alias Crohnjobs.Exercises.ExerciseMuscleContribution
+
+   # Get all exercise IDs across all templates
+   exercise_ids =
+     programme.programmeTemplates
+     |> Enum.flat_map(& &1.programmeDetails)
+     |> Enum.map(& &1.exercise_id)
+     |> Enum.uniq()
+
+   # Load muscle contributions for all exercises
+   muscle_contributions =
+     Repo.all(from c in ExerciseMuscleContribution, where: c.exercise_id in ^exercise_ids)
+     |> Repo.preload(:muscle)
+
+   # Group contributions by exercise_id for faster lookup
+   contributions_by_exercise = Enum.group_by(muscle_contributions, & &1.exercise_id)
+
+   # Expand all programme details across all templates into muscle contributions
+   expanded =
+     programme.programmeTemplates
+     |> Enum.flat_map(fn template ->
+       template.programmeDetails
+       |> Enum.flat_map(fn detail ->
+         sets = String.to_integer(detail.set)
+         contributions = Map.get(contributions_by_exercise, detail.exercise_id, [])
+
+         Enum.map(contributions, fn c ->
+           {c.muscle.name, c.role, sets * c.multiplier}
+         end)
+       end)
+     end)
+
+   # Group by muscle and calculate direct/effective volume
+   expanded
+   |> Enum.group_by(fn {muscle, _role, _volume} -> muscle end)
+   |> Enum.map(fn {muscle, rows} ->
+     direct_sets =
+       rows
+       |> Enum.filter(fn {_m, role, _v} -> role == "primary" end)
+       |> Enum.map(fn {_m, _r, v} -> v end)
+       |> Enum.sum()
+
+     effective_sets =
+       rows
+       |> Enum.map(fn {_m, _r, v} -> v end)
+       |> Enum.sum()
+
+     {muscle, %{direct: direct_sets, effective: effective_sets}}
+   end)
+   |> Map.new()
  end
 
   def clone_programme(programme_id) do
