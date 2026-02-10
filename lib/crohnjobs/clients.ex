@@ -21,6 +21,10 @@ defmodule Crohnjobs.Clients do
   Repo.all(from c in Client, preload: [ :trainer])
   end
 
+  def get_client_byUserId(user_id) do
+    Repo.get_by!(Client, user_id: user_id)
+  end
+
   @doc """
   Gets a single client.
 

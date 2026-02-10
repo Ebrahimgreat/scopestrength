@@ -93,6 +93,10 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Reps
                 </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+
+                </th>
+
 
               </tr>
             </thead>
@@ -110,6 +114,12 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <%= detail.reps %>
                   </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <%= if detail.side != "both " do %>
+                    <%=detail.side%>
+                    <%end%>
+                  </td>
+
 
                 </tr>
               <% end %>
