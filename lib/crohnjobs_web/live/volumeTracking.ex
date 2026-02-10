@@ -7,6 +7,7 @@ defmodule CrohnjobsWeb.VolumeTracking do
   alias Crohnjobs.Training.Workout
   alias Crohnjobs.Exercises.Exercise
   alias Crohnjobs.Exercises.Muscles
+  alias Crohnjobs.Exercises.ExerciseMuscleContribution
   import Ecto.Query
 
   def mount(params, _session, socket) do
@@ -73,7 +74,7 @@ defmodule CrohnjobsWeb.VolumeTracking do
           {DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC"), :week}
       end
 
-    # Query workout details with muscle group
+    # Query workout details
     workout_details =
       Repo.all(
         from wd in WorkoutDetails,
@@ -81,11 +82,8 @@ defmodule CrohnjobsWeb.VolumeTracking do
           on: wd.workout_id == w.id,
           join: e in Exercise,
           on: wd.exercise_id == e.id,
-          join: m in Muscles,
-          on: e.muscle_id == m.id,
           where: w.client_id == ^client_id and w.date >= ^start_datetime,
           select: %{
-            muscle_name: m.name,
             workout_id: w.id,
             exercise_id: e.id,
             is_unilateral: e.is_unilateral,
@@ -95,46 +93,109 @@ defmodule CrohnjobsWeb.VolumeTracking do
           }
       )
 
-    # Group by muscle and time period
+    # Get exercise IDs
+    exercise_ids = workout_details |> Enum.map(& &1.exercise_id) |> Enum.uniq()
+
+    # Get muscle contributions for these exercises
+    muscle_contributions =
+      if Enum.empty?(exercise_ids) do
+        []
+      else
+        Repo.all(
+          from c in ExerciseMuscleContribution,
+            join: m in Muscles,
+            on: c.muscle_id == m.id,
+            where: c.exercise_id in ^exercise_ids,
+            select: %{
+              exercise_id: c.exercise_id,
+              muscle_name: m.name,
+              role: c.role,
+              multiplier: c.multiplier
+            }
+        )
+      end
+
+    # Group contributions by exercise
+    contributions_by_exercise = Enum.group_by(muscle_contributions, & &1.exercise_id)
+
+    # Calculate sets with muscle contributions
     workout_details
     |> Enum.group_by(fn detail ->
+      {detail.workout_id, detail.exercise_id, detail.set}
+    end)
+    |> Enum.flat_map(fn {{_workout_id, exercise_id, _set_num}, details} ->
+      is_unilateral = List.first(details).is_unilateral
+
+      # For unilateral: if both sides done = 1 set, if only one side = 0.5 set
+      set_count = if is_unilateral do
+        sides = details |> Enum.map(& &1.side) |> Enum.uniq()
+        if length(sides) >= 2, do: 1.0, else: 0.5
+      else
+        1.0
+      end
+
+      # Get muscle contributions for this exercise
+      contributions = Map.get(contributions_by_exercise, exercise_id, [])
+
+      # Get date from first detail
+      date = List.first(details).date
+
+      # Return one entry per muscle that this exercise works
+      Enum.map(contributions, fn c ->
+        %{
+          muscle_name: c.muscle_name,
+          role: c.role,
+          multiplier: c.multiplier,
+          set_count: set_count,
+          date: date
+        }
+      end)
+    end)
+    |> Enum.group_by(fn entry ->
       # Convert DateTime to Date for grouping
-      workout_date = DateTime.to_date(detail.date)
+      workout_date = DateTime.to_date(entry.date)
 
       period_key =
         case grouped_by do
           :week ->
-            # Get ISO week number
             {workout_date.year, Date.beginning_of_week(workout_date)}
-
           :month ->
             {workout_date.year, workout_date.month}
         end
 
-      {detail.muscle_name, period_key}
+      {entry.muscle_name, period_key}
     end)
-    |> Enum.map(fn {{muscle_name, period_key}, details} ->
-      # Count unique sets, handling unilateral exercises
+    |> Enum.map(fn {{muscle_name, period_key}, entries} ->
+      # Calculate total sets (all sets regardless of role)
       total_sets =
-        details
-        |> Enum.group_by(fn detail ->
-          # For unilateral exercises, group by workout_id, exercise_id, and set number
-          # This way left + right of the same set = 1 set
-          if detail.is_unilateral do
-            {detail.workout_id, detail.exercise_id, detail.set}
-          else
-            # For bilateral exercises, each record is a unique set
-            {detail.workout_id, detail.exercise_id, detail.set, detail.side}
-          end
-        end)
-        |> map_size()
+        entries
+        |> Enum.map(& &1.set_count)
+        |> Enum.sum()
+        |> then(fn sum -> sum * 1.0 end)
+        |> Float.round(1)
+
+      # Calculate direct sets (primary role only)
+      direct_sets =
+        entries
+        |> Enum.filter(fn e -> e.role == "primary" end)
+        |> Enum.map(& &1.set_count * &1.multiplier)
+        |> Enum.sum()
+        |> then(fn sum -> sum * 1.0 end)
+        |> Float.round(1)
+
+      # Calculate effective sets (all roles with multipliers)
+      effective_sets =
+        entries
+        |> Enum.map(& &1.set_count * &1.multiplier)
+        |> Enum.sum()
+        |> then(fn sum -> sum * 1.0 end)
+        |> Float.round(1)
 
       period_label =
         case grouped_by do
           :week ->
             {_year, week_start} = period_key
             "Week of #{Calendar.strftime(week_start, "%b %d")}"
-
           :month ->
             {year, month} = period_key
             date = Date.new!(year, month, 1)
@@ -145,7 +206,9 @@ defmodule CrohnjobsWeb.VolumeTracking do
         muscle_name: muscle_name,
         period_label: period_label,
         period_key: period_key,
-        total_sets: total_sets
+        total_sets: total_sets,
+        direct_sets: direct_sets,
+        effective_sets: effective_sets
       }
     end)
     |> Enum.sort_by(& &1.period_key, :desc)
@@ -219,6 +282,12 @@ defmodule CrohnjobsWeb.VolumeTracking do
                         Total Sets
                       </th>
                       <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
+                        Direct Sets
+                      </th>
+                      <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
+                        Effective Sets
+                      </th>
+                      <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
                         Change
                       </th>
                     </tr>
@@ -245,6 +314,16 @@ defmodule CrohnjobsWeb.VolumeTracking do
                         </td>
                         <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-semibold text-gray-900 sm:px-6">
                           <%= period.total_sets %>
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm sm:px-6">
+                          <span class="inline-flex items-center justify-center px-2 py-0.5 bg-emerald-600 text-white text-xs font-semibold rounded-full">
+                            <%= period.direct_sets %>
+                          </span>
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm sm:px-6">
+                          <span class="inline-flex items-center justify-center px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
+                            <%= period.effective_sets %>
+                          </span>
                         </td>
                         <td class="whitespace-nowrap px-4 py-3 text-right text-sm sm:px-6">
                           <%= if change do %>
