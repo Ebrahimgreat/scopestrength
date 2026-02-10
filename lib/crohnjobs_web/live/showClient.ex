@@ -217,7 +217,7 @@ defmodule CrohnjobsWeb.ShowClient do
                         <p class="text-sm font-medium text-slate-900 group-hover:text-emerald-700">
                           {ex.name}
                         </p>
-                        <p class="text-xs text-slate-500">{ex.total_sets} sets logged</p>
+
                       </div>
                       <svg class="w-4 h-4 text-slate-300 group-hover:text-emerald-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="9 18 15 12 9 6"></polyline>
@@ -230,7 +230,7 @@ defmodule CrohnjobsWeb.ShowClient do
           </div>
 
           <!-- Quick Actions -->
-          <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8">
+          <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             <.link navigate={~p"/trainer/clients/#{@client.id}/workouts"} class="group bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-200 transition-all overflow-hidden">
               <div class="p-5 flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -280,6 +280,25 @@ defmodule CrohnjobsWeb.ShowClient do
                   <div>
                     <p class="text-sm font-semibold text-slate-900 group-hover:text-emerald-700">Notes</p>
                     <p class="text-xs text-slate-500">Client notes</p>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-300 group-hover:text-emerald-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </.link>
+
+            <.link navigate={~p"/trainer/clients/#{@client.id}/volumeTracking"} class="group bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-200 transition-all overflow-hidden">
+              <div class="p-5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-sm font-semibold text-slate-900 group-hover:text-emerald-700">Volume Tracking</p>
+                    <p class="text-xs text-slate-500">Training volume</p>
                   </div>
                 </div>
                 <svg class="w-4 h-4 text-slate-300 group-hover:text-emerald-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

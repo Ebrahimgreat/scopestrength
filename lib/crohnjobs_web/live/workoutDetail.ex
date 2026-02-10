@@ -133,6 +133,12 @@ defmodule CrohnjobsWeb.WorkoutDetail do
                             <div>
                               <p class="text-xs text-gray-500 uppercase tracking-wide">Reps</p>
                               <p class="text-lg font-semibold text-gray-900"><%= workout.data.reps %></p>
+                              <%=if workout.data.side != "both" do%>
+                              <p class="text-lg font-semibold text-gray-900"><%= workout.data.side %></p>
+                              <%end%>
+
+
+
                             </div>
                             <div>
                               <p class="text-xs text-gray-500 uppercase tracking-wide">Weight</p>
@@ -186,6 +192,8 @@ defmodule CrohnjobsWeb.WorkoutDetail do
     if Enum.empty?(exercise_ids) do
       %{}
     else
+      workouts = Repo.preload(workouts, :exercise)
+
       muscle_contributions =
         Repo.all(
           from c in ExerciseMuscleContribution,
@@ -197,14 +205,31 @@ defmodule CrohnjobsWeb.WorkoutDetail do
         muscle_contributions
         |> Enum.group_by(& &1.exercise_id)
 
-      workouts
-      |> Enum.flat_map(fn detail ->
-        contributions = Map.get(contributions_by_exercise, detail.exercise_id, [])
-
-        Enum.map(contributions, fn c ->
-          {c.muscle.name, c.role, 1 * c.multiplier}
+      workouts_with_volume =
+        workouts
+        |> Enum.group_by(fn detail ->
+          {detail.exercise_id, detail.exercise.is_unilateral, detail.set}
         end)
-      end)
+        |> Enum.flat_map(fn {{exercise_id, is_unilateral, _set_num}, details} ->
+          if is_unilateral do
+            sides = details |> Enum.map(& &1.side) |> Enum.uniq()
+            set_count = if length(sides) >= 2, do: 1.0, else: 0.5
+
+            contributions = Map.get(contributions_by_exercise, exercise_id, [])
+            Enum.map(contributions, fn c ->
+              {c.muscle.name, c.role, set_count * c.multiplier}
+            end)
+          else
+            Enum.flat_map(details, fn detail ->
+              contributions = Map.get(contributions_by_exercise, exercise_id, [])
+              Enum.map(contributions, fn c ->
+                {c.muscle.name, c.role, 1 * c.multiplier}
+              end)
+            end)
+          end
+        end)
+
+      workouts_with_volume
       |> Enum.group_by(fn {muscle, _role, _volume} -> muscle end)
       |> Enum.map(fn {muscle, rows} ->
         direct_sets =
@@ -223,4 +248,5 @@ defmodule CrohnjobsWeb.WorkoutDetail do
       |> Map.new()
     end
   end
+
 end
