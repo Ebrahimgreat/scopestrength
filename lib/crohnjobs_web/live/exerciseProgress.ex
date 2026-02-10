@@ -70,15 +70,12 @@ import Ecto.Query
         <!-- Max Weight Stats Card -->
         <div class="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg shadow-lg p-6 text-white">
           <h2 class="text-lg font-semibold mb-4">Personal Record</h2>
-          <div class="grid grid-cols-3 gap-4">
+          <div class="grid grid-cols-2 gap-4">
             <div class="bg-white bg-opacity-20 rounded-lg p-4">
               <p class="text-sm opacity-90">Max Weight</p>
               <p class="text-3xl font-bold"><%= @max_detail.weight %> kg</p>
             </div>
-            <div class="bg-white bg-opacity-20 rounded-lg p-4">
-              <p class="text-sm opacity-90">Reps at Max</p>
-              <p class="text-3xl font-bold"><%= @max_detail.reps %></p>
-            </div>
+
             <div class="bg-white bg-opacity-20 rounded-lg p-4">
               <p class="text-sm opacity-90">Date Achieved</p>
               <p class="text-lg font-bold">

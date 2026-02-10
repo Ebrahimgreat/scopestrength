@@ -27,4 +27,19 @@ defmodule Crohnjobs.TrainingFixtures do
 
     workout_details
   end
+
+  @doc """
+  Generate a set_type.
+  """
+  def set_type_fixture(attrs \\ %{}) do
+    {:ok, set_type} =
+      attrs
+      |> Enum.into(%{
+        description: "some description",
+        name: "some name"
+      })
+      |> Crohnjobs.Training.create_set_type()
+
+    set_type
+  end
 end
