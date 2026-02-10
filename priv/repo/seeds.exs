@@ -586,3 +586,24 @@ Enum.each(contributions, fn attrs ->
     })
   )
 end)
+
+# ── Seed set types ──────────────────────────────────────────────────
+alias Crohnjobs.Training.SetType
+
+set_types = [
+  %{name: "Standard", description: "Regular set with prescribed reps and weight"},
+  %{name: "AMRAP", description: "As Many Reps As Possible - push to maximum reps"},
+  %{name: "Drop Set", description: "Reduce weight and continue after failure"},
+  %{name: "Rest Pause", description: "Brief rest periods within a single set"},
+  %{name: "Cluster Set", description: "Short rest between mini-sets"},
+  %{name: "Myo-reps", description: "Activation set followed by low-rep sets"},
+  %{name: "To Failure", description: "Continue until unable to complete another rep"},
+  %{name: "Tempo", description: "Controlled tempo, specified in notes"},
+  %{name: "Superset", description: "Paired with another exercise, minimal rest"}
+]
+
+Enum.each(set_types, fn attrs ->
+  %SetType{}
+  |> SetType.changeset(attrs)
+  |> Repo.insert!()
+end)

@@ -31,6 +31,7 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
 
   def handle_event("addExercise", params, socket) do
     exercise_id = String.to_integer(params["id"])
+    IO.inspect(exercise_id)
     existing_sets = Map.get(socket.assigns.workouts, exercise_id, [])
     next_set = length(existing_sets) + 1
 
@@ -46,7 +47,7 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
       side: side
     }) do
       {:ok, workout_details} ->
-        workout_details = Repo.preload(workout_details, :exercise)
+        workout_details = Repo.preload(workout_details, [:exercise, :set_type])
 
         new_form =
           workout_details
@@ -86,11 +87,20 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
         :error -> nil
       end
 
+    set_type_id =
+      case params["workout_details"]["set_type_id"] do
+        nil -> nil
+        "" -> nil
+        id -> String.to_integer(id)
+      end
+
+    notes = params["workout_details"]["notes"]
+
     # Store pending changes instead of saving immediately
     pending_changes = Map.put(
       socket.assigns.pending_changes,
       workout_detail_id,
-      %{reps: reps, weight: weight}
+      %{reps: reps, weight: weight, set_type_id: set_type_id, notes: notes}
     )
 
     # Update the form display
@@ -99,7 +109,7 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
       |> Enum.map(fn {exercise_id, sets} ->
         updated_sets = Enum.map(sets, fn workout_form ->
           if workout_form.data.id == workout_detail_id do
-            updated_data = %{workout_form.data | reps: reps, weight: weight}
+            updated_data = %{workout_form.data | reps: reps, weight: weight, set_type_id: set_type_id, notes: notes}
             updated_data
             |> Training.change_workout_details()
             |> to_form()
@@ -165,7 +175,7 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                 |> Enum.map(fn {workout_form, new_set_number} ->
                   if workout_form.data.set != new_set_number do
                     {:ok, updated} = Training.update_workout_details(workout_form.data, %{set: new_set_number})
-                    updated |> Repo.preload(:exercise) |> Training.change_workout_details() |> to_form()
+                    updated |> Repo.preload([:exercise, :set_type]) |> Training.change_workout_details() |> to_form()
                   else
                     workout_form
                   end
@@ -174,9 +184,13 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
               |> Enum.reject(fn {_exercise_id, sets} -> Enum.empty?(sets) end)
               |> Map.new()
 
+            # Remove deleted workout_detail from pending changes
+            updated_pending_changes = Map.delete(socket.assigns.pending_changes, id)
+
             {:noreply,
              socket
              |> assign(workouts: updated_workouts)
+             |> assign(pending_changes: updated_pending_changes)
              |> put_flash(:info, "Exercise removed successfully")}
 
           {:error, _changeset} ->
@@ -276,7 +290,7 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
               from w in WorkoutDetails,
                 where: w.workout_id == ^workout_id
             )
-            |> Repo.preload(:exercise)
+            |> Repo.preload([:exercise, :set_type])
 
           {grouped_workouts, muscle_group_frequencies} = build_workout_assigns(workouts)
 
@@ -323,6 +337,7 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
 
     # Get muscles list for filtering
     muscles = Exercises.list_mucles()
+    set_types= Repo.all(Crohnjobs.Training.SetType)
 
     case Repo.get_by(Client, user_id: user.id) do
       nil ->
@@ -361,7 +376,9 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                   Repo.all(
                     from w in WorkoutDetails,
                       where: w.workout_id == ^workout_id_int
-                  )|>Repo.preload(:exercise)
+                  )|>Repo.preload([:exercise, :set_type])
+
+                  IO.inspect(workouts)
 
                 {grouped_workouts, muscle_group_frequencies} = build_workout_assigns(workouts)
 
@@ -387,6 +404,7 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                  |> assign(exercises: exercises)
                  |> assign(allExercises: exercises)
                  |> assign(muscles: muscles)
+                 |> assign(setTypes: set_types)
                  |> assign(filter_by_type: "ALL")
                  |> assign(muscle_group_frequencies: muscle_group_frequencies)
                  |> assign(edit_mode: false)
@@ -642,8 +660,8 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                           class="px-4 py-3"
                         >
                           <.input type="hidden" field={workout[:id]} />
-                          <div class="grid grid-cols-1 sm:grid-cols-[auto,1fr,auto] items-center gap-3">
-                            <div class="flex items-center gap-2">
+                          <div class="grid grid-cols-1 lg:grid-cols-[auto,1fr,auto] items-start gap-3">
+                            <div class="flex items-center gap-2 lg:pt-2">
                               <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50 text-emerald-700 font-semibold text-sm">
                                 <%= workout.data.set %>
                               </span>
@@ -654,38 +672,68 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                               <% end %>
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
-                                <p class="text-[11px] uppercase tracking-wide text-gray-400">Reps</p>
-                                <div class="flex items-center gap-2 mt-1">
-                                  <input
-                                    type="number"
-                                    name={"workout_details[reps]"}
-                                    value={workout.data.reps}
-                                    placeholder="0"
-                                    phx-debounce="500"
-                                    class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none"
-                                  />
-                                  <span class="text-xs text-gray-400">reps</span>
+                            <div class="space-y-3">
+                              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                  <p class="text-[11px] uppercase tracking-wide text-gray-400">Reps</p>
+                                  <div class="flex items-center gap-2 mt-1">
+                                    <input
+                                      type="number"
+                                      name={"workout_details[reps]"}
+                                      value={workout.data.reps}
+                                      placeholder="0"
+                                      phx-debounce="500"
+                                      class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none"
+                                    />
+                                    <span class="text-xs text-gray-400">reps</span>
+                                  </div>
+                                </div>
+                                <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                  <p class="text-[11px] uppercase tracking-wide text-gray-400">Weight</p>
+                                  <div class="flex items-center gap-2 mt-1">
+                                    <input
+                                      type="text"
+                                      name={"workout_details[weight]"}
+                                      value={workout.data.weight}
+                                      placeholder="0"
+                                      phx-debounce="500"
+                                      class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none"
+                                    />
+                                    <span class="text-xs text-gray-400">kg</span>
+                                  </div>
                                 </div>
                               </div>
-                              <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
-                                <p class="text-[11px] uppercase tracking-wide text-gray-400">Weight</p>
-                                <div class="flex items-center gap-2 mt-1">
+
+                              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                  <p class="text-[11px] uppercase tracking-wide text-gray-400">Type</p>
+                                  <select
+                                    name={"workout_details[set_type_id]"}
+                                    phx-debounce="500"
+                                    class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none mt-1"
+                                  >
+                                    <%= for type <- @setTypes do %>
+                                      <option value={type.id} selected={workout.data.set_type_id == type.id}>
+                                        <%= type.name %>
+                                      </option>
+                                    <% end %>
+                                  </select>
+                                </div>
+                                <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                  <p class="text-[11px] uppercase tracking-wide text-gray-400">Notes</p>
                                   <input
                                     type="text"
-                                    name={"workout_details[weight]"}
-                                    value={workout.data.weight}
-                                    placeholder="0"
+                                    name={"workout_details[notes]"}
+                                    value={workout.data.notes}
+                                    placeholder="Optional notes"
                                     phx-debounce="500"
-                                    class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none"
+                                    class="w-full bg-transparent text-sm text-gray-900 focus:outline-none mt-1"
                                   />
-                                  <span class="text-xs text-gray-400">kg</span>
                                 </div>
                               </div>
                             </div>
 
-                            <div class="flex items-center gap-2 justify-end">
+                            <div class="flex items-center gap-2 justify-end lg:pt-2">
                               <button
                                 type="button"
                                 phx-click="deleteExercise"
@@ -815,30 +863,53 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                     <!-- Sets Display -->
                     <div class="space-y-2">
                       <%= for workout <- sets do %>
-                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                          <div class="flex items-center space-x-4">
-                            <div class="flex flex-col items-center">
-                              <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                                <span class="font-bold text-emerald-700"><%= workout.data.set %></span>
+                        <div class="bg-white rounded-lg border border-gray-200 p-3">
+                          <div class="flex items-start justify-between">
+                            <div class="flex items-start gap-4">
+                              <!-- Set Number -->
+                              <div class="flex flex-col items-center">
+                                <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                                  <span class="font-bold text-emerald-700"><%= workout.data.set %></span>
+                                </div>
+                                <%= if workout.data.side != "both" do %>
+                                  <span class="text-[10px] text-gray-500 uppercase mt-1 capitalize"><%= workout.data.side %></span>
+                                <% end %>
                               </div>
-                              <%= if workout.data.side != "both" do %>
-                                <span class="text-[10px] text-gray-500 uppercase mt-1 capitalize"><%= workout.data.side %></span>
-                              <% end %>
+
+                              <!-- Stats -->
+                              <div class="flex-1">
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-2">
+                                  <div>
+                                    <p class="text-xs text-gray-500 uppercase tracking-wide">Reps</p>
+                                    <p class="text-lg font-semibold text-gray-900"><%= workout.data.reps %></p>
+                                  </div>
+                                  <div>
+                                    <p class="text-xs text-gray-500 uppercase tracking-wide">Weight</p>
+                                    <p class="text-lg font-semibold text-gray-900"><%= workout.data.weight %> kg</p>
+                                  </div>
+                                    <div>
+                                      <p class="text-xs text-gray-500 uppercase tracking-wide">Type</p>
+                                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                        <%= workout.data.set_type.name %>
+                                      </span>
+                                    </div>
+
+                                </div>
+
+                                <!-- Notes on separate line if exists -->
+                                <%= if workout.data.notes && workout.data.notes != "" do %>
+                                  <div class="mt-2 pt-2 border-t border-gray-100">
+                                    <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Notes</p>
+                                    <p class="text-sm text-gray-700 italic"><%= workout.data.notes %></p>
+                                  </div>
+                                <% end %>
+                              </div>
                             </div>
-                            <div class="flex items-center space-x-6">
-                              <div>
-                                <p class="text-xs text-gray-500 uppercase tracking-wide">Reps</p>
-                                <p class="text-lg font-semibold text-gray-900"><%= workout.data.reps %></p>
-                              </div>
-                              <div>
-                                <p class="text-xs text-gray-500 uppercase tracking-wide">Weight</p>
-                                <p class="text-lg font-semibold text-gray-900"><%= workout.data.weight %> kg</p>
-                              </div>
-                            </div>
+
+                            <svg class="w-5 h-5 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
                           </div>
-                          <svg class="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                          </svg>
                         </div>
                       <% end %>
                     </div>
@@ -965,8 +1036,13 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
   defp save_pending_changes(pending_changes) do
     results =
       Enum.map(pending_changes, fn {workout_detail_id, changes} ->
-        workout_detail = Training.get_workout_details!(workout_detail_id)
-        Training.update_workout_details(workout_detail, changes)
+        case Repo.get(WorkoutDetails, workout_detail_id) do
+          nil ->
+            # Workout detail was deleted, skip silently
+            {:ok, :skipped}
+          workout_detail ->
+            Training.update_workout_details(workout_detail, changes)
+        end
       end)
 
     if Enum.all?(results, fn result -> match?({:ok, _}, result) end) do

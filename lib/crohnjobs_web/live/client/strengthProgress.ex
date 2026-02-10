@@ -115,8 +115,7 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
                     <%= detail.reps %>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <%= if detail.side != "both " do %>
-                    <%=detail.side%>
+                    <%= if detail.side != "both" do %>
                     <%end%>
                   </td>
 
