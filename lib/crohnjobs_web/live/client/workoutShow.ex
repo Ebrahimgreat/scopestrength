@@ -268,17 +268,52 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
           template.programmeDetails
           |> Enum.uniq_by(& &1.exercise_id)
           |> Enum.each(fn detail ->
-            attrs = %{
-              workout_id: workout_id,
-              exercise_id: detail.exercise_id,
-              set: 1,
-              reps: 10,
-              weight: nil
-            }
+            # Check if exercise is unilateral
+            if detail.exercise.is_unilateral do
+              # Create left side set
+              left_attrs = %{
+                workout_id: workout_id,
+                exercise_id: detail.exercise_id,
+                set: 1,
+                side: "left",
+                reps: 10,
+                weight: nil
+              }
 
-            case Training.create_workout_details(attrs) do
-              {:ok, _} -> :ok
-              {:error, changeset} -> Repo.rollback(changeset)
+              # Create right side set
+              right_attrs = %{
+                workout_id: workout_id,
+                exercise_id: detail.exercise_id,
+                set: 1,
+                side: "right",
+                reps: 10,
+                weight: nil
+              }
+
+              case Training.create_workout_details(left_attrs) do
+                {:ok, _} ->
+                  case Training.create_workout_details(right_attrs) do
+                    {:ok, _} -> :ok
+                    {:error, changeset} -> Repo.rollback(changeset)
+                  end
+
+                {:error, changeset} ->
+                  Repo.rollback(changeset)
+              end
+            else
+              # Create normal bilateral set
+              attrs = %{
+                workout_id: workout_id,
+                exercise_id: detail.exercise_id,
+                set: 1,
+                reps: 10,
+                weight: nil
+              }
+
+              case Training.create_workout_details(attrs) do
+                {:ok, _} -> :ok
+                {:error, changeset} -> Repo.rollback(changeset)
+              end
             end
           end)
         end)
@@ -288,7 +323,8 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
           workouts =
             Repo.all(
               from w in WorkoutDetails,
-                where: w.workout_id == ^workout_id
+                where: w.workout_id == ^workout_id,
+                order_by: [asc: w.set]
             )
             |> Repo.preload([:exercise, :set_type])
 
@@ -375,7 +411,8 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                 workouts =
                   Repo.all(
                     from w in WorkoutDetails,
-                      where: w.workout_id == ^workout_id_int
+                      where: w.workout_id == ^workout_id_int,
+                      order_by: [asc: w.set]
                   )|>Repo.preload([:exercise, :set_type])
 
                   IO.inspect(workouts)
@@ -662,28 +699,38 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                           <.input type="hidden" field={workout[:id]} />
                           <div class="grid grid-cols-1 lg:grid-cols-[auto,1fr,auto] items-start gap-3">
                             <div class="flex items-center gap-2 lg:pt-2">
-                              <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50 text-emerald-700 font-semibold text-sm">
-                                <%= workout.data.set %>
-                              </span>
                               <%= if workout.data.side != "both" do %>
-                                <span class="text-xs font-medium text-gray-500 capitalize">Set (<%= workout.data.side %>)</span>
+                                <span class="text-sm font-semibold text-gray-700">Set <%= workout.data.set %> (<span class="capitalize"><%= workout.data.side %></span>)</span>
                               <% else %>
-                                <span class="text-xs font-medium text-gray-500">Set</span>
+                                <span class="text-sm font-semibold text-gray-700">Set <%= workout.data.set %></span>
                               <% end %>
                             </div>
 
                             <div class="space-y-3">
                               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
-                                  <p class="text-[11px] uppercase tracking-wide text-gray-400">Reps</p>
+                                <% is_amrap = workout.data.set_type && workout.data.set_type.name == "AMRAP" %>
+                                <div class={[
+                                  "rounded-lg border px-3 py-2",
+                                  if(is_amrap, do: "border-gray-300 bg-gray-50", else: "border-gray-200 bg-white")
+                                ]}>
+                                  <p class="text-[11px] uppercase tracking-wide text-gray-400">
+                                    Reps
+                                    <%= if is_amrap do %>
+                                      <span class="text-[10px] text-emerald-600 ml-1">(Max)</span>
+                                    <% end %>
+                                  </p>
                                   <div class="flex items-center gap-2 mt-1">
                                     <input
                                       type="number"
                                       name={"workout_details[reps]"}
                                       value={workout.data.reps}
-                                      placeholder="0"
+                                      placeholder={if is_amrap, do: "Max reps", else: "0"}
                                       phx-debounce="500"
-                                      class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none"
+                                      disabled={is_amrap}
+                                      class={[
+                                        "w-full bg-transparent text-sm font-semibold focus:outline-none",
+                                        if(is_amrap, do: "text-gray-400 cursor-not-allowed", else: "text-gray-900")
+                                      ]}
                                     />
                                     <span class="text-xs text-gray-400">reps</span>
                                   </div>
@@ -867,12 +914,12 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                           <div class="flex items-start justify-between">
                             <div class="flex items-start gap-4">
                               <!-- Set Number -->
-                              <div class="flex flex-col items-center">
-                                <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                                  <span class="font-bold text-emerald-700"><%= workout.data.set %></span>
-                                </div>
+                              <div class="flex flex-col">
                                 <%= if workout.data.side != "both" do %>
-                                  <span class="text-[10px] text-gray-500 uppercase mt-1 capitalize"><%= workout.data.side %></span>
+                                  <span class="text-sm font-bold text-gray-900">Set <%= workout.data.set %></span>
+                                  <span class="text-xs text-gray-500 capitalize"><%= workout.data.side %></span>
+                                <% else %>
+                                  <span class="text-sm font-bold text-gray-900">Set <%= workout.data.set %></span>
                                 <% end %>
                               </div>
 
