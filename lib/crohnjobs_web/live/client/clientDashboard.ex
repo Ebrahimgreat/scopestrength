@@ -337,7 +337,6 @@ import Ecto.Query
                 class="p-4 bg-gray-50 hover:bg-emerald-50 rounded-xl border border-gray-200 hover:border-emerald-300 transition-all"
               >
                 <p class="font-medium text-gray-900 text-sm truncate"><%= exercise.name %></p>
-                <p class="text-xs text-gray-500 mt-1"><%= exercise.total_sets %> total sets</p>
               </.link>
             <% end %>
           </div>

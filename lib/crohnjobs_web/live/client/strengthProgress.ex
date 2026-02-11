@@ -18,7 +18,8 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
           on: wd.workout_id == w.id,
           where: w.client_id == ^client.id and wd.exercise_id == ^exercise_id,
           order_by: [desc: wd.inserted_at],
-          preload: :exercise
+          preload: :exercise,
+          preload: :workout
       )
 
     {exercise_name, max_detail} =
@@ -29,11 +30,18 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
         {"", nil}
       end
 
+    grouped_workout =
+      Enum.group_by(workout_details, & &1.workout.date)
+      |> Enum.map(fn {date, sets} ->
+        %{date: date, sets: sets}
+      end)
+
     {:ok,
      assign(socket,
        workout_details: workout_details,
        exercise_name: exercise_name,
-       max_detail: max_detail
+       max_detail: max_detail,
+       grouped_workouts: grouped_workout
      )}
   end
 
@@ -57,19 +65,15 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
         <!-- Max Weight Stats Card -->
         <div class="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg shadow-lg p-6 text-white">
           <h2 class="text-lg font-semibold mb-4">Personal Record</h2>
-          <div class="grid grid-cols-3 gap-4">
+          <div class="grid grid-cols-2 gap-4">
             <div class="bg-white bg-opacity-20 rounded-lg p-4">
               <p class="text-sm opacity-90">Max Weight</p>
               <p class="text-3xl font-bold"><%= @max_detail.weight %> kg</p>
             </div>
             <div class="bg-white bg-opacity-20 rounded-lg p-4">
-              <p class="text-sm opacity-90">Reps at Max</p>
-              <p class="text-3xl font-bold"><%= @max_detail.reps %></p>
-            </div>
-            <div class="bg-white bg-opacity-20 rounded-lg p-4">
               <p class="text-sm opacity-90">Date Achieved</p>
               <p class="text-lg font-bold">
-                <%= Calendar.strftime(@max_detail.inserted_at, "%d %b %Y") %>
+                <%= Calendar.strftime(@max_detail.workout.date, "%d %b %Y") %>
               </p>
             </div>
           </div>
@@ -77,49 +81,45 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
       <% end %>
 
       <%= if length(@workout_details) > 0 do %>
+        <% max_sets = Enum.max_by(@grouped_workouts, fn g -> length(g.sets) end) |> then(& &1.sets) |> length() %>
+
         <div class="bg-white shadow rounded-lg overflow-hidden">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50">
                   Date
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Weight (kg)
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sets
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Reps
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-
-                </th>
-
-
+                <%= for set_num <- 1..max_sets do %>
+                  <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Set <%= set_num %>
+                  </th>
+                <% end %>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <%= for detail <- @workout_details do %>
-                <tr>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <%= Calendar.strftime(detail.inserted_at, "%d %b %Y") %>                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <%= detail.weight %>
+              <%= for detail <- @grouped_workouts do %>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white">
+                    <%= Calendar.strftime(detail.date, "%d %b %Y") %>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <%= detail.set %>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <%= detail.reps %>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <%= if detail.side != "both" do %>
-                    <%end%>
-                  </td>
-
-
+                  <%= for set_num <- 1..max_sets do %>
+                    <td class="px-4 py-4 text-center text-sm text-gray-900">
+                      <%= case Enum.find(detail.sets, &(&1.set == set_num)) do %>
+                        <% nil -> %>
+                          <span class="text-gray-300">—</span>
+                        <% set_detail -> %>
+                          <div class="font-semibold">
+                            <%= set_detail.weight %>×<%= set_detail.reps %>
+                          </div>
+                          <%= if set_detail.side != "both" do %>
+                            <div class="text-xs text-gray-500 capitalize">
+                              <%= set_detail.side %>
+                            </div>
+                          <% end %>
+                      <% end %>
+                    </td>
+                  <% end %>
                 </tr>
               <% end %>
             </tbody>

@@ -20,9 +20,10 @@ defmodule CrohnjobsWeb.WorkoutDetail do
       workouts =
         Repo.all(
           from w in WorkoutDetails,
-            where: w.workout_id == ^workout_id
+            where: w.workout_id == ^workout_id,
+            order_by: [asc: w.set]
         )
-        |> Repo.preload(:exercise)
+        |> Repo.preload([:exercise, :set_type])
 
       {grouped_workouts, muscle_group_frequencies} = build_workout_assigns(workouts)
 
@@ -126,16 +127,18 @@ defmodule CrohnjobsWeb.WorkoutDetail do
                     <%= for workout <- sets do %>
                       <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
                         <div class="flex items-center space-x-4">
-                          <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                            <span class="font-bold text-emerald-700"><%= workout.data.set %></span>
+                          <div class="flex flex-col">
+                            <%= if workout.data.side != "both" do %>
+                              <span class="text-sm font-bold text-gray-900">Set <%= workout.data.set %></span>
+                              <span class="text-xs text-gray-500 capitalize"><%= workout.data.side %></span>
+                            <% else %>
+                              <span class="text-sm font-bold text-gray-900">Set <%= workout.data.set %></span>
+                            <% end %>
                           </div>
                           <div class="flex items-center space-x-6">
                             <div>
                               <p class="text-xs text-gray-500 uppercase tracking-wide">Reps</p>
                               <p class="text-lg font-semibold text-gray-900"><%= workout.data.reps %></p>
-                              <%=if workout.data.side != "both" do%>
-                              <p class="text-lg font-semibold text-gray-900"><%= workout.data.side %></p>
-                              <%end%>
 
 
 
