@@ -17,6 +17,29 @@ defmodule Crohnjobs.Invites do
   end
 
   @doc """
+  Checks if an invite code is valid without redeeming it.
+  Returns {:ok, trainer_id, trainer_name} if valid, {:error, reason} otherwise.
+  """
+  def check_invite(code, client_email) do
+    email = String.downcase(client_email)
+
+    case Repo.get_by(Invite, code: code) |> Repo.preload(trainer: :user) do
+      nil ->
+        {:error, :invalid_code}
+
+      %Invite{used: true} ->
+        {:error, :already_used}
+
+      %Invite{email: invite_email} when invite_email != email ->
+        {:error, :email_mismatch}
+
+      %Invite{trainer: trainer} = _invite ->
+        trainer_name = trainer.user.name || trainer.user.email
+        {:ok, trainer.id, trainer_name}
+    end
+  end
+
+  @doc """
   Validates and redeems an invite code for a client.
   Returns {:ok, trainer_id} if valid, {:error, reason} otherwise.
   """
