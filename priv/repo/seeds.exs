@@ -203,6 +203,8 @@ exercises = [
   %{name: "Decline Dumbbell Press", muscle: "Chest", equipment: "Dumbbell"},
   %{name: "Dumbbell Fly", muscle: "Chest", equipment: "Dumbbell"},
   %{name: "Cable Chest Fly", muscle: "Chest", equipment: "Cable"},
+  %{name: "Cable Chest Fly(High To Low)", muscle: "Chest", equipment: "Cable"},
+  %{name: "Cable Chest Fly(Low To High)", muscle: "Chest", equipment: "Cable"},
   %{name: "Machine Chest Press", muscle: "Chest", equipment: "Machine"},
   %{name: "Incline Machine Chest Press", muscle: "Chest", equipment: "Machine"},
 
@@ -213,6 +215,7 @@ exercises = [
   %{name: "Incline Dumbbell Curl", muscle: "Biceps", equipment: "Dumbbell"},
   %{name: "Bayesian Curl", muscle: "Biceps", equipment: "Cable"},
   %{name: "Recline Preacher Curl", muscle: "Biceps", equipment: "Dumbbell"},
+  %{name: "Recline Preacher Curl(One Arm)", muscle: "Biceps", equipment: "Dumbbell", is_uni_lateral: true},
 
   # TRICEPS
   %{name: "Tricep Pushdown", muscle: "Triceps", equipment: "Cable"},
@@ -299,8 +302,10 @@ contributions = [
   # Dumbbell Fly (isolation - primary only)
   %{exercise: "Dumbbell Fly", muscle: "Chest", role: "primary", multiplier: 1.0},
 
-  # Cable Chest Fly (isolation - primary only)
+  # Cable Chest Fly Exercises (isolation - primary only)
   %{exercise: "Cable Chest Fly", muscle: "Chest", role: "primary", multiplier: 1.0},
+  %{exercise: "Cable Chest Fly(High To Low)", muscle: "Chest", role: "primary", multiplier: 1.0},
+  %{exercise: "Cable Chest Fly(Low To High)", muscle: "Chest", role: "primary", multiplier: 1.0},
 
   # Machine Chest Press
   %{exercise: "Machine Chest Press", muscle: "Chest", role: "primary", multiplier: 1.0},
@@ -518,6 +523,7 @@ contributions = [
   %{exercise: "Incline Dumbbell Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
   %{exercise: "Bayesian Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
   %{exercise: "Recline Preacher Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
+  %{exercise: "Recline Preacher Curl(One Arm)", muscle: "Biceps", role: "primary", multiplier: 1.0},
 
   # ═══════════════════════════════════════════════════════════════════
   # TRICEPS EXERCISES (all isolation)
