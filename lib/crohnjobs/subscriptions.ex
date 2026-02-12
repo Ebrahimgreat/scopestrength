@@ -20,6 +20,22 @@ defmodule Crohnjobs.Subscriptions do
   def list_subscriptions do
     Repo.all(Subscription)
   end
+  ##Trial remaining
+
+  def trial_remaining(%Subscription{trial_end: trial_end})
+   when not is_nil(trial_end) do
+     seconds = DateTime.diff(trial_end, DateTime.utc_now(), :second)
+     max(div(seconds,86_400),0)
+   end
+
+   def in_trial?(%Subscription{trial_end: trial_end})
+   when not is_nil(trial_end) do
+ DateTime.compare(trial_end, DateTime.utc_now()) == :gt
+end
+  ## Lets get a subscription by user_id
+  def list_subscription_by_user_id(user) do
+  Repo.get_by(Subscription, user_id: user.id)
+  end
 
   @doc """
   Gets a single subscription.

@@ -33,7 +33,8 @@ defmodule CrohnjobsWeb.Router do
     live_session :client_session,
       on_mount: [
         {CrohnjobsWeb.UserAuth, :ensure_authenticated},
-        {CrohnjobsWeb.RequireRole, "client"}
+        {CrohnjobsWeb.RequireRole, "client"},
+        CrohnjobsWeb.RequireSubscription  # Checks trainer's subscription
       ],
       layout: {CrohnjobsWeb.Layouts, :client} do
       live "/", ClientDashboard
@@ -57,7 +58,8 @@ defmodule CrohnjobsWeb.Router do
     live_session :trainer_session,
       on_mount: [
         {CrohnjobsWeb.UserAuth, :ensure_authenticated},
-        {CrohnjobsWeb.RequireRole, "trainer"}
+        {CrohnjobsWeb.RequireRole, "trainer"},
+        CrohnjobsWeb.RequireSubscription  # Checks own subscription
       ],
       layout: {CrohnjobsWeb.Layouts, :trainer} do
       live "/chat", TrainerChat
@@ -116,6 +118,8 @@ defmodule CrohnjobsWeb.Router do
     live_session :authenticated,
       on_mount: [{CrohnjobsWeb.UserAuth, :ensure_authenticated}] do
       live "/chat/:room", Chat
+      live "/upgrade", UpgradeLive
+      live "/trainer-subscription-expired", Client.TrainerSubscriptionExpired
 
       get "/download/workout", DownloadController, :workout
     end
