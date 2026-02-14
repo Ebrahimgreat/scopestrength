@@ -3,7 +3,7 @@ services:
     name: crohnjobs-web
     runtime: elixir
     buildCommand: ./build.sh
-    preDeployCommand: _build/prod/rel/crohnjobs/bin/crohnjobs eval "Crohnjobs.Release.migrate"
+    preDeployCommand: echo "Skipping pre-deploy migrations (will run on first startup)"
     startCommand: _build/prod/rel/crohnjobs/bin/server
     envVars:
       - key: DATABASE_URL
