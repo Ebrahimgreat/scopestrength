@@ -13,7 +13,7 @@ services:
       - key: SECRET_KEY_BASE
         generateValue: true
       - key: ECTO_IPV6
-        value: "true"
+        value: "false"
       - key: ERL_AFLAGS
         value: "-proto_dist inet6_tcp"
       - key: GEMINI_API_KEY
