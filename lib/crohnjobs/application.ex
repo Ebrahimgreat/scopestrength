@@ -7,6 +7,15 @@ defmodule Crohnjobs.Application do
 
   @impl true
   def start(_type, _args) do
+    # Run migrations automatically in production
+    if Application.get_env(:crohnjobs, :env) == :prod do
+      try do
+        Crohnjobs.Release.migrate()
+      rescue
+        _ -> :ok
+      end
+    end
+
     children = [
       CrohnjobsWeb.Telemetry,
       Crohnjobs.Repo,
