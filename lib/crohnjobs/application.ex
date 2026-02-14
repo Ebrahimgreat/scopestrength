@@ -20,7 +20,6 @@ defmodule Crohnjobs.Application do
       CrohnjobsWeb.Telemetry,
       Crohnjobs.Repo,
       {Oban, Application.fetch_env!(:crohnjobs, Oban)},
-            {DNSCluster, query: Application.get_env(:crohnjobs, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Crohnjobs.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: Crohnjobs.Finch},
