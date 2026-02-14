@@ -5,14 +5,6 @@ defmodule CrohnjobsWeb.Router do
   import CrohnjobsWeb.UserAuth
   import Oban.Web.Router
 
-  pipeline :require_trainer do
-    plug CrohnjobsWeb.RequireRole, "trainer"
-  end
-
-  pipeline :require_client do
-    plug CrohnjobsWeb.Plugs.RequireRole, "client"
-  end
-
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
