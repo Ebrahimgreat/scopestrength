@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: crohnjobs-web
+    runtime: elixir
+    buildCommand: ./build.sh
+    preDeployCommand: _build/prod/rel/crohnjobs/bin/crohnjobs eval "Crohnjobs.Release.migrate"
+    startCommand: _build/prod/rel/crohnjobs/bin/server
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crohnjobs-db
+          property: connectionString
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      - key: ECTO_IPV6
+        value: "true"
+      - key: ERL_AFLAGS
+        value: "-proto_dist inet6_tcp"
+      - key: GEMINI_API_KEY
+        sync: false
+
+databases:
+  - name: crohnjobs-db
+    databaseName: crohnjobs

@@ -34,6 +34,11 @@ if System.get_env("PHX_SERVER") do
 end
 
 if config_env() == :prod do
+  host =
+    System.get_env("PHX_HOST") ||
+      System.get_env("RENDER_EXTERNAL_HOSTNAME") ||
+      "localhost"
+
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """
@@ -66,7 +71,8 @@ if config_env() == :prod do
   config :crohnjobs, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :crohnjobs, CrohnjobsWeb.Endpoint,
-    url: [host: "workoutbuilder-1.onrender.com", port: 443, scheme: "https"],
+    url: [host: host, port: 443, scheme: "https"],
+    force_ssl: [rewrite_on: [:x_forwarded_proto]],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
