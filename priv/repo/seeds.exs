@@ -15,6 +15,7 @@ alias Crohnjobs.Trainers.Trainer
 alias Crohnjobs.Clients.Client
 alias Crohnjobs.Exercises.{Exercise, Muscles, Equipment}
 alias Crohnjobs.Exercises.ExerciseMuscleContribution
+alias Crohnjobs.Subscriptions.Subscription
 
 # ── Seed muscle groups ──────────────────────────────────────────────
 muscle_names = [
@@ -74,6 +75,20 @@ trainer =
     specialization: "Strength & Conditioning"
   })
   |> Repo.insert!()
+
+# Create subscription for ebrahim@scopestrength.com with 14-day trial
+now = DateTime.utc_now() |> DateTime.truncate(:second)
+trial_end = DateTime.add(now, 14 * 86_400, :second)
+
+%Subscription{}
+|> Subscription.changeset(%{
+  plan: "trial",
+  name: "Free Trial",
+  trial_start: now,
+  trial_end: trial_end,
+  user_id: trainer_user.id
+})
+|> Repo.insert!()
 
 # Create a client user
 client_user =
