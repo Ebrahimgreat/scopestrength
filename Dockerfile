@@ -1,10 +1,6 @@
 # Build stage
-ARG ELIXIR_VERSION=1.17.3
-ARG OTP_VERSION=27.1.2
-ARG DEBIAN_VERSION=bullseye-20240904-slim
-
-ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
-ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
+ARG BUILDER_IMAGE="hexpm/elixir:1.17-erlang-26.2.5-debian-bookworm-20251208-slim"
+ARG RUNNER_IMAGE="debian:bookworm-20251208-slim"
 
 FROM ${BUILDER_IMAGE} as builder
 
