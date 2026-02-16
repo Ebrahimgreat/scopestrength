@@ -38,23 +38,46 @@ git push origin main
 
 ---
 
-### Step 3: Deploy Using render.yaml
-**Render will automatically create BOTH services from your `render.yaml`:**
+### Step 3: Deploy Services (FREE - No Credit Card Needed)
 
-1. **PostgreSQL Database** (`crohnjobs-db`)
-   - Free tier: 90 days free, then $7/month (or stays free if you verify with credit card)
-   - Database expires after 90 days on free tier without card
+⚠️ **SKIP BLUEPRINT** if it asks for payment - do it manually instead!
 
-2. **Web Service** (`crohnjobs-web`)
-   - Free tier: 750 hours/month (enough for one app running 24/7)
-   - Spins down after 15 minutes of inactivity
-   - Cold start takes ~30 seconds
+#### Option A: Manual Setup (Recommended for Free Tier)
 
-**How to deploy:**
+**3.1 Create PostgreSQL Database FIRST:**
+1. Render Dashboard → Click **"New +"** → **"PostgreSQL"**
+2. Fill in:
+   - **Name**: `crohnjobs-db`
+   - **Database**: `crohnjobs`
+   - **User**: (auto-filled)
+   - **Region**: Choose closest to you
+   - **Plan**: Select **"Free"** (NOT Starter!)
+3. Click **"Create Database"**
+4. Wait 2-3 minutes for it to provision
+5. **Copy the "Internal Database URL"** (you'll need this next)
+
+**3.2 Create Web Service:**
+1. Click **"New +"** → **"Web Service"**
+2. Connect your GitHub repository
+3. Fill in:
+   - **Name**: `crohnjobs-web`
+   - **Region**: Same as database
+   - **Branch**: `main`
+   - **Runtime**: **Elixir**
+   - **Build Command**: `./build.sh`
+   - **Start Command**: `_build/prod/rel/crohnjobs/bin/server`
+   - **Plan**: Select **"Free"** (NOT Starter!)
+4. Click **"Advanced"** → Add environment variables (see Step 4)
+5. Click **"Create Web Service"**
+
+#### Option B: Using Blueprint (May Ask for Card Verification)
 1. In Render Dashboard, click **"New +"** → **"Blueprint"**
 2. Select your GitHub repository
 3. Render will detect `render.yaml` automatically
-4. Click **"Apply"** to create all services
+4. **Make sure both services show "Free" tier**
+5. Click **"Apply"** to create all services
+
+If Blueprint asks for payment, use **Option A** instead!
 
 ---
 
