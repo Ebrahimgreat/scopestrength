@@ -8,12 +8,13 @@ defmodule Crohnjobs.Application do
   @impl true
   def start(_type, _args) do
     # Run migrations automatically in production
-    if Application.get_env(:crohnjobs, :env) == :prod do
-      try do
-        Crohnjobs.Release.migrate()
-      rescue
-        _ -> :ok
-      end
+    try do
+      Crohnjobs.Release.migrate()
+    rescue
+      e ->
+        require Logger
+        Logger.error("Auto-migration failed: #{inspect(e)}")
+        :ok
     end
 
     children = [
