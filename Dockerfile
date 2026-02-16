@@ -34,6 +34,9 @@ COPY assets assets
 # Compile assets
 RUN mix assets.deploy
 
+# Copy runtime config (needed by the release to read DATABASE_URL etc.)
+COPY config/runtime.exs config/
+
 # Compile the release
 RUN mix compile
 
