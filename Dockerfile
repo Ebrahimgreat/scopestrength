@@ -67,4 +67,4 @@ COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/crohnjobs ./
 
 USER nobody
 
-CMD ["/bin/sh", "-c", "/app/bin/server"]
+CMD ["/app/bin/server"]
