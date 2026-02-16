@@ -33,7 +33,27 @@ defmodule Crohnjobs.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Crohnjobs.Supervisor]
-    Supervisor.start_link(children, opts)
+    {:ok, pid} = Supervisor.start_link(children, opts)
+
+    # Auto-seed if database is empty (only runs once)
+    try do
+      if Crohnjobs.Repo.aggregate(Crohnjobs.Account.User, :count) == 0 do
+        require Logger
+        Logger.info("Database is empty, running seeds...")
+        seed_file = Application.app_dir(:crohnjobs, "priv/repo/seeds.exs")
+
+        if File.exists?(seed_file) do
+          Code.eval_file(seed_file)
+          Logger.info("Seeds completed successfully!")
+        end
+      end
+    rescue
+      e ->
+        require Logger
+        Logger.error("Auto-seed failed: #{inspect(e)}")
+    end
+
+    {:ok, pid}
   end
 
   # Tell Phoenix to update the endpoint configuration
