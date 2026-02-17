@@ -71,8 +71,8 @@ end
   def render(assigns) do
     ~H"""
     <div class="w-full min-h-screen">
-    <div class="w-full px-6 lg:px-10 pt-10 pb-4">
-        <div class="w-full px-6 lg:px-10 py-8">
+    <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-4">
+        <div class="w-full px-0 sm:px-2 lg:px-4 py-8">
           <h1 class="text-3xl font-bold tracking-tight text-slate-900">Training Programmes</h1>
           <p class="mt-2 text-slate-600 text-base lg:text-lg">
             Manage your custom training programmes, <%= @name %>
@@ -80,7 +80,7 @@ end
         </div>
       </div>
 
-          <div class="w-full px-6 lg:px-10 py-4">
+          <div class="w-full px-0 sm:px-2 lg:px-4 py-4">
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold text-gray-900 flex items-center">
                 <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -32,7 +32,7 @@ defmodule CrohnjobsWeb.ClientProgressPhotos do
   def render(assigns) do
     ~H"""
     <div class="w-full min-h-screen">
-      <div class="w-full px-6 lg:px-10 pt-10 pb-4">
+      <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-4">
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">
@@ -52,7 +52,7 @@ defmodule CrohnjobsWeb.ClientProgressPhotos do
         </div>
       </div>
 
-      <div class="w-full px-6 lg:px-10 py-6">
+      <div class="w-full px-0 sm:px-2 lg:px-4 py-6">
         <%= if length(@photos) == 0 do %>
           <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
             <svg class="mx-auto h-16 w-16 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

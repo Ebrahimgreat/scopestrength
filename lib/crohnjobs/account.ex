@@ -37,7 +37,7 @@ defmodule Crohnjobs.Account do
 
     random = :crypto.strong_rand_bytes(5) |> Base.encode32(case: :lower, padding: false)
     email = "demo_#{random}@scopestrength.com"
-    password = :crypto.strong_rand_bytes(12) |> Base.encode64()
+    password = "Demodemo1234"
 
     Repo.transaction(fn ->
       # 1. Create trainer user
