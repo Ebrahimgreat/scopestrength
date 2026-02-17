@@ -87,14 +87,11 @@ defmodule CrohnjobsWeb.Client.Workouts do
     <div class="min-h-screen">
       <!-- Header Section -->
       <div class="">
-        <div class="w-full px-6 lg:px-10 py-8">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-
-              <div>
-                <h1 class="text-3xl font-bold text-gray-900">My Workouts</h1>
-                <p class="text-gray-600 mt-1">Track your training progress</p>
-              </div>
+        <div class="w-full px-0 sm:px-2 lg:px-4 py-8">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">My Workouts</h1>
+              <p class="text-gray-600 mt-1">Track your training progress</p>
             </div>
             <.button phx-click="createWorkout">
             Create Workout
@@ -104,7 +101,7 @@ defmodule CrohnjobsWeb.Client.Workouts do
       </div>
 
     <!-- Stats Section -->
-      <div class="w-full px-6 lg:px-10 py-8">
+      <div class="w-full px-0 sm:px-2 lg:px-4 py-8">
         <div class="mb-8">
           <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300 max-w-sm">
             <div class="flex items-center justify-between">
