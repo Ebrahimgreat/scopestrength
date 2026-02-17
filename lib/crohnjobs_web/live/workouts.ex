@@ -28,8 +28,8 @@ alias Crohnjobs.Repo
   def render(assigns) do
     ~H"""
    <div class="w-full min-h-screen">
-    <div class="w-full px-6 lg:px-10 pt-10 pb-4">
-        <div class="max-w-6xl mx-auto px-6 py-8">
+    <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-4">
+        <div class="max-w-6xl mx-auto py-8">
           <div class="flex items-start justify-between gap-6">
             <div>
               <div class="flex items-center gap-4 mb-3">
@@ -52,7 +52,7 @@ alias Crohnjobs.Repo
         </div>
       </div>
 
-      <div class="max-w-6xl mx-auto px-6 py-8 space-y-6">
+      <div class="max-w-6xl mx-auto py-8 space-y-6">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <%= if length(@workouts) > 0 do %>
             <div class="overflow-x-auto">
