@@ -34,17 +34,17 @@ defmodule CrohnjobsWeb.Clients do
           <p class="text-sm text-slate-500">Add your first client to get started</p>
         </div>
       <% else %>
-        <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
-          <table class="w-full">
+        <div class="bg-white border border-slate-200 rounded-lg overflow-hidden overflow-x-auto">
+          <table class="w-full min-w-[500px]">
             <thead class="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th class="text-left px-6 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">
+                <th class="text-left px-4 sm:px-6 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">
                   Client
                 </th>
-                <th class="text-left px-6 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">
+                <th class="text-left px-4 sm:px-6 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider hidden sm:table-cell">
                   Email
                 </th>
-                <th class="text-left px-6 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">
+                <th class="text-left px-4 sm:px-6 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">
                   Status
                 </th>
 
@@ -55,7 +55,7 @@ defmodule CrohnjobsWeb.Clients do
 
                 <tr   phx-click={JS.navigate(~p"/trainer/clients/#{client.id}")}
                 class="hover:bg-slate-50 transition-colors cursor-pointer">
-                  <td class="px-6 py-4">
+                  <td class="px-4 sm:px-6 py-4">
                     <div class="flex items-center gap-3">
                       <%= if client.profile_picture_url do %>
                         <img src={client.profile_picture_url} alt={client.user.name} class="w-10 h-10 rounded-full object-cover border-2 border-slate-200 flex-shrink-0" />
@@ -66,13 +66,14 @@ defmodule CrohnjobsWeb.Clients do
                       <% end %>
                       <div>
                         <div class="text-sm font-medium text-slate-900"><%= client.user.name %></div>
+                        <div class="text-xs text-slate-500 sm:hidden"><%= client.user.email %></div>
                       </div>
                     </div>
                   </td>
-                  <td class="px-6 py-4">
+                  <td class="px-4 sm:px-6 py-4 hidden sm:table-cell">
                     <div class="text-sm text-slate-600"><%= client.user.email %></div>
                   </td>
-                  <td class="px-6 py-4">
+                  <td class="px-4 sm:px-6 py-4">
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
                       <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                       Active

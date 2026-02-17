@@ -289,8 +289,8 @@ defmodule CrohnjobsWeb.Exercises do
   def render(assigns) do
     ~H"""
   <div class="w-full min-h-screen">
-  <div class="w-full px-6 lg:px-10 pt-10 pb-4">
-  <div class="max-w-6xl mx-auto px-6 py-8">
+  <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-4">
+  <div class="max-w-6xl mx-auto py-8">
           <% custom_count = Enum.count(@allExercises, & &1.is_custom) %>
           <% library_count = length(@allExercises) - custom_count %>
           <div class="flex items-start justify-between gap-6">
@@ -324,7 +324,7 @@ defmodule CrohnjobsWeb.Exercises do
         </div>
       </div>
 
-      <div class="max-w-6xl mx-auto px-6 py-8 space-y-6">
+      <div class="max-w-6xl mx-auto py-8 space-y-6">
         <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 space-y-4">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="w-full lg:w-1/2">
