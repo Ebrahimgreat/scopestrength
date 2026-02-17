@@ -15,7 +15,7 @@ defmodule CrohnjobsWeb.UserLoginLive do
         <.header class="text-center mb-4">
           Sign in to your account
           <:subtitle>
-            New here? <.link navigate={~p"/users/register"} class="font-semibold text-brand hover:underline">Create an account</.link>
+            Welcome to ScopeStrength
           </:subtitle>
         </.header>
 
@@ -45,6 +45,16 @@ defmodule CrohnjobsWeb.UserLoginLive do
               By signing in you agree to our <a href="#" class="underline">Terms</a> and <a href="#" class="underline">Privacy Policy</a>.
             </p>
           </.simple_form>
+
+          <div class="mt-6 pt-6 border-t border-gray-200 text-center">
+            <p class="text-sm text-gray-600 mb-3">Want to explore first?</p>
+            <.link href={~p"/demo"} method="post" class="inline-block w-full px-4 py-2.5 border-2 border-brand text-brand font-semibold rounded-lg hover:bg-brand hover:text-white transition-all duration-200 text-center">
+              Try Demo
+            </.link>
+            <p class="mt-2 text-xs text-gray-400">
+              Instant access with sample clients, programmes &amp; workouts
+            </p>
+          </div>
         </div>
       </div>
     </div>
