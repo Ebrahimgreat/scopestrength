@@ -18,7 +18,7 @@ defmodule CrohnjobsWeb.SubscriptionBanner do
       <div
         :if={@subscription_status == :trial}
         class={[
-          "px-4 py-2 text-sm font-medium flex items-center justify-between",
+          "px-4 py-2 text-sm font-medium flex flex-wrap items-center justify-between gap-2",
           trial_color(@trial_days_remaining)
         ]}
       >
@@ -45,7 +45,7 @@ defmodule CrohnjobsWeb.SubscriptionBanner do
       <!-- Paid Member Status -->
       <div
         :if={@subscription_status == :paid}
-        class="px-4 py-2 bg-green-600 text-white text-sm font-medium flex items-center justify-between"
+        class="px-4 py-2 bg-green-600 text-white text-sm font-medium flex flex-wrap items-center justify-between gap-2"
       >
         <div class="flex items-center gap-2">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
