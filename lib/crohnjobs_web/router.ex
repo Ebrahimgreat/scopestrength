@@ -123,13 +123,15 @@ defmodule CrohnjobsWeb.Router do
     live_session :redirect_if_user_is_authenticated,
       on_mount: [{CrohnjobsWeb.UserAuth, :redirect_if_user_is_authenticated}] do
       live "/", UserLoginLive, :new
-      live "/users/register", UserRegistrationLive, :new
+      # Registration disabled — demo accounts are generated via /demo
+      # live "/users/register", UserRegistrationLive, :new
       live "/users/log_in", UserLoginLive, :new
       live "/users/reset_password", UserForgotPasswordLive, :new
       live "/users/reset_password/:token", UserResetPasswordLive, :edit
     end
 
     post "/users/log_in", UserSessionController, :create
+    post "/demo", DemoController, :create
   end
 
   scope "/", CrohnjobsWeb do
