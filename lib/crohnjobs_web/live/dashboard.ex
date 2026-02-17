@@ -197,15 +197,15 @@ defmodule CrohnjobsWeb.Dashboard do
 
   <div class="w-full min-h-screen">
     <!-- Header -->
-    <div class="w-full px-6 lg:px-10 pt-10 pb-4">
-      <h1 class="text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">
+    <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-4">
+      <h1 class="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">
         Welcome back, <span class="text-emerald-700"><%= @name %></span>.
       </h1>
-      <p class="mt-2 text-slate-600 text-base lg:text-lg">Here’s your trainer overview.</p>
+      <p class="mt-2 text-slate-600 text-sm sm:text-base lg:text-lg">Here's your trainer overview.</p>
     </div>
 
     <!-- Main Content -->
-    <div class="w-full px-6 lg:px-10 py-8">
+    <div class="w-full px-0 sm:px-2 lg:px-4 py-8">
 
 
       <div class="mb-6 text-sm text-slate-600">

@@ -171,33 +171,33 @@ import Ecto.Query
     ~H"""
     <div class="max-w-4xl mx-auto px-4 py-6 space-y-6">
       <!-- Header with Date and Profile -->
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <.link navigate={~p"/client/settings"} class="flex-shrink-0 group">
             <%= if @client.profile_picture_url do %>
               <img
                 src={@client.profile_picture_url}
                 alt="Profile"
-                class="w-16 h-16 rounded-full object-cover border-2 border-emerald-200 group-hover:border-emerald-400 transition-colors"
+                class="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-emerald-200 group-hover:border-emerald-400 transition-colors"
               />
             <% else %>
-              <div class="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xl font-bold border-2 border-emerald-200 group-hover:border-emerald-400 transition-colors">
+              <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-lg sm:text-xl font-bold border-2 border-emerald-200 group-hover:border-emerald-400 transition-colors">
                 <%= get_user_initials(@client) %>
               </div>
             <% end %>
           </.link>
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p class="text-gray-500 text-sm mt-1">
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p class="text-gray-500 text-xs sm:text-sm mt-1">
               <%= Calendar.strftime(DateTime.utc_now(), "%A, %B %d, %Y") %>
             </p>
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <div class="text-right">
+          <div class="text-left sm:text-right">
             <%= if @client.trainer do %>
               <p class="text-sm text-gray-500">Your Trainer</p>
-              <p class="font-semibold text-gray-900"><%= @client.trainer.user.name %></p>
+              <p class="font-semibold text-gray-900 text-sm sm:text-base"><%= @client.trainer.user.name %></p>
             <% else %>
               <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">No trainer assigned</span>
             <% end %>
@@ -330,7 +330,7 @@ import Ecto.Query
             <p class="text-gray-500">No exercises tracked yet</p>
           </div>
         <% else %>
-          <div class="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <%= for exercise <- @exercise_progress do %>
               <.link
                 navigate={~p"/client/strengthProgress/#{exercise.exercise_id}"}
@@ -421,9 +421,9 @@ import Ecto.Query
                 </div>
                 <div class="divide-y divide-gray-100">
                   <%= for detail <- template.programmeDetails do %>
-                    <div class="px-4 py-3 flex items-center justify-between">
-                      <span class="font-medium text-gray-800"><%= detail.exercise.name %></span>
-                      <div class="flex items-center space-x-4 text-sm text-gray-600">
+                    <div class="px-4 py-3 flex items-center justify-between gap-2">
+                      <span class="font-medium text-gray-800 min-w-0 truncate"><%= detail.exercise.name %></span>
+                      <div class="flex items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-gray-600 flex-shrink-0">
                         <span><%= detail.set %> sets</span>
                         <span><%= detail.reps %> reps</span>
                         <%= if detail.rir do %>

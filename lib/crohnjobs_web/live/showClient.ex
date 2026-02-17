@@ -55,7 +55,7 @@ defmodule CrohnjobsWeb.ShowClient do
     ~H"""
     <div class="w-full min-h-screen bg-slate-50">
       <!-- Header -->
-      <div class="w-full px-6 lg:px-10 pt-10 pb-6">
+      <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 class="text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">
@@ -81,7 +81,7 @@ defmodule CrohnjobsWeb.ShowClient do
       </div>
 
     <!-- Main Content -->
-      <div class="w-full px-6 lg:px-10 pb-10">
+      <div class="w-full px-0 sm:px-2 lg:px-4 pb-10">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
 
     <!-- Client Information -->
