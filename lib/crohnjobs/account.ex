@@ -26,6 +26,265 @@ defmodule Crohnjobs.Account do
     Repo.get_by(User, email: email)
   end
 
+
+  @doc """
+  Generates a demo trainer account with sample clients, programmes, and workouts.
+  Returns {:ok, user} or {:error, reason}.
+  """
+  def generate_demo_account do
+    alias Crohnjobs.{Trainers, Clients, Subscriptions, Programmes, Training}
+    alias Crohnjobs.Exercises.Exercise
+
+    random = :crypto.strong_rand_bytes(5) |> Base.encode32(case: :lower, padding: false)
+    email = "demo_#{random}@scopestrength.com"
+    password = :crypto.strong_rand_bytes(12) |> Base.encode64()
+
+    Repo.transaction(fn ->
+      # 1. Create trainer user
+      {:ok, trainer_user} =
+        register_user(%{
+          name: "Demo Trainer",
+          email: email,
+          password: password,
+          role: "trainer"
+        })
+
+      # 2. Create trainer profile
+      {:ok, trainer} =
+        Trainers.create_trainer(%{
+          user_id: trainer_user.id,
+          bio: "Demo account — explore all features!",
+          specialization: "General Fitness"
+        })
+
+      # 3. Create 3-day demo trial subscription
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _sub} =
+        Subscriptions.create_subscription(%{
+          user_id: trainer_user.id,
+          name: "Demo Trial",
+          plan: "trial",
+          trial_start: now,
+          trial_end: DateTime.add(now, 3 * 86_400, :second)
+        })
+
+      # 4. Create 3 demo clients
+      clients_data = [
+        %{name: "Alex Johnson", age: 28, sex: "male", height: "178.0", notes: "Intermediate lifter, focuses on strength"},
+        %{name: "Sarah Martinez", age: 32, sex: "female", height: "165.0", notes: "Experienced, training for hypertrophy"},
+        %{name: "Mike Chen", age: 25, sex: "male", height: "182.0", notes: "Beginner, building base strength"}
+      ]
+
+      clients =
+        Enum.map(clients_data, fn data ->
+          client_random = :crypto.strong_rand_bytes(5) |> Base.encode32(case: :lower, padding: false)
+
+          {:ok, client_user} =
+            register_user(%{
+              name: data.name,
+              email: "demo_client_#{client_random}@scopestrength.com",
+              password: password,
+              role: "client"
+            })
+
+          {:ok, client} =
+            Clients.create_client(%{
+              user_id: client_user.id,
+              trainer_id: trainer.id,
+              age: data.age,
+              sex: data.sex,
+              height: data.height,
+              active: true,
+              notes: data.notes
+            })
+
+          client
+        end)
+
+      [alex, sarah, mike] = clients
+
+      # 5. Lookup exercises by name (from seed data)
+      exercise_names = [
+        "Barbell Bench Press", "Incline Dumbbell Press", "Cable Chest Fly",
+        "Tricep Pushdown", "Lateral Raise",
+        "Barbell Bent Over Row", "Lat Pulldown", "Cable Row",
+        "Barbell Curl", "Face Pull",
+        "Barbell Squat", "Romanian Deadlift", "Leg Press",
+        "Leg Extension", "Lying Leg Curl",
+        "Overhead Press", "Dumbbell Shoulder Press",
+        "Dumbbell Bench Press", "Cable Lateral Raise"
+      ]
+
+      exercises =
+        Enum.into(exercise_names, %{}, fn name ->
+          case Repo.get_by(Exercise, name: name) do
+            nil -> {name, nil}
+            ex -> {name, ex.id}
+          end
+        end)
+
+      # 6. Create programmes with templates and details
+      # Programme 1: Push Pull Legs
+      {:ok, ppl} = Programmes.create_programme(%{name: "Push Pull Legs", description: "Classic 3-day split", trainer_id: trainer.id})
+
+      {:ok, push_day} = Programmes.create_programme_template(%{name: "Push Day", programme_id: ppl.id})
+      for {ex_name, sets, reps, rir} <- [
+        {"Barbell Bench Press", "4", "8", 2},
+        {"Incline Dumbbell Press", "3", "10", 2},
+        {"Cable Chest Fly", "3", "12", 1},
+        {"Overhead Press", "3", "8", 2},
+        {"Lateral Raise", "3", "15", 1},
+        {"Tricep Pushdown", "3", "12", 1}
+      ], exercises[ex_name] do
+        Programmes.create_programme_details(%{
+          programme_template_id: push_day.id,
+          exercise_id: exercises[ex_name],
+          set: sets, reps: reps, rir: rir
+        })
+      end
+
+      {:ok, pull_day} = Programmes.create_programme_template(%{name: "Pull Day", programme_id: ppl.id})
+      for {ex_name, sets, reps, rir} <- [
+        {"Barbell Bent Over Row", "4", "8", 2},
+        {"Lat Pulldown", "3", "10", 2},
+        {"Cable Row", "3", "10", 2},
+        {"Face Pull", "3", "15", 1},
+        {"Barbell Curl", "3", "10", 1}
+      ], exercises[ex_name] do
+        Programmes.create_programme_details(%{
+          programme_template_id: pull_day.id,
+          exercise_id: exercises[ex_name],
+          set: sets, reps: reps, rir: rir
+        })
+      end
+
+      {:ok, leg_day} = Programmes.create_programme_template(%{name: "Leg Day", programme_id: ppl.id})
+      for {ex_name, sets, reps, rir} <- [
+        {"Barbell Squat", "4", "6", 2},
+        {"Romanian Deadlift", "3", "8", 2},
+        {"Leg Press", "3", "10", 2},
+        {"Leg Extension", "3", "12", 1},
+        {"Lying Leg Curl", "3", "12", 1}
+      ], exercises[ex_name] do
+        Programmes.create_programme_details(%{
+          programme_template_id: leg_day.id,
+          exercise_id: exercises[ex_name],
+          set: sets, reps: reps, rir: rir
+        })
+      end
+
+      # Programme 2: Upper Lower
+      {:ok, ul} = Programmes.create_programme(%{name: "Upper Lower", description: "4-day upper/lower split", trainer_id: trainer.id})
+
+      {:ok, upper} = Programmes.create_programme_template(%{name: "Upper Body", programme_id: ul.id})
+      for {ex_name, sets, reps, rir} <- [
+        {"Dumbbell Bench Press", "4", "8", 2},
+        {"Cable Row", "4", "10", 2},
+        {"Dumbbell Shoulder Press", "3", "10", 2},
+        {"Cable Lateral Raise", "3", "15", 1},
+        {"Barbell Curl", "3", "10", 1},
+        {"Tricep Pushdown", "3", "12", 1}
+      ], exercises[ex_name] do
+        Programmes.create_programme_details(%{
+          programme_template_id: upper.id,
+          exercise_id: exercises[ex_name],
+          set: sets, reps: reps, rir: rir
+        })
+      end
+
+      {:ok, lower} = Programmes.create_programme_template(%{name: "Lower Body", programme_id: ul.id})
+      for {ex_name, sets, reps, rir} <- [
+        {"Barbell Squat", "4", "6", 2},
+        {"Romanian Deadlift", "3", "8", 2},
+        {"Leg Press", "3", "10", 2},
+        {"Leg Extension", "3", "12", 1},
+        {"Lying Leg Curl", "3", "12", 1}
+      ], exercises[ex_name] do
+        Programmes.create_programme_details(%{
+          programme_template_id: lower.id,
+          exercise_id: exercises[ex_name],
+          set: sets, reps: reps, rir: rir
+        })
+      end
+
+      # 7. Assign programmes to clients
+      Programmes.create_programme_user(%{programme_id: ppl.id, client_id: alex.id, is_active: true})
+      Programmes.create_programme_user(%{programme_id: ul.id, client_id: sarah.id, is_active: true})
+      Programmes.create_programme_user(%{programme_id: ppl.id, client_id: mike.id, is_active: true})
+
+      # 8. Create sample workouts
+      standard_set_type = Repo.get_by(Training.SetType, name: "Standard")
+      set_type_id = if standard_set_type, do: standard_set_type.id
+
+      # Workout 1: Alex's Push Day (2 days ago)
+      {:ok, w1} = Training.create_workout(%{
+        name: "Push Day - Week 1",
+        date: DateTime.add(now, -2 * 86_400, :second),
+        notes: "Felt strong today",
+        client_id: alex.id
+      })
+
+      for {ex_name, sets_data} <- [
+        {"Barbell Bench Press", [{1, 10, 60.0}, {2, 8, 70.0}, {3, 8, 70.0}, {4, 6, 75.0}]},
+        {"Incline Dumbbell Press", [{1, 10, 22.5}, {2, 10, 22.5}, {3, 8, 25.0}]},
+        {"Lateral Raise", [{1, 15, 8.0}, {2, 12, 8.0}, {3, 12, 8.0}]}
+      ], exercises[ex_name] do
+        for {set_num, reps, weight} <- sets_data do
+          Training.create_workout_details(%{
+            workout_id: w1.id, exercise_id: exercises[ex_name],
+            set: set_num, reps: reps, weight: weight, set_type_id: set_type_id
+          })
+        end
+      end
+
+      # Workout 2: Sarah's Upper Body (yesterday)
+      {:ok, w2} = Training.create_workout(%{
+        name: "Upper Body - Week 1",
+        date: DateTime.add(now, -86_400, :second),
+        notes: "Good session, increased weight on rows",
+        client_id: sarah.id
+      })
+
+      for {ex_name, sets_data} <- [
+        {"Dumbbell Bench Press", [{1, 10, 16.0}, {2, 10, 16.0}, {3, 8, 18.0}, {4, 8, 18.0}]},
+        {"Cable Row", [{1, 12, 30.0}, {2, 10, 35.0}, {3, 10, 35.0}]},
+        {"Barbell Curl", [{1, 12, 15.0}, {2, 10, 15.0}, {3, 10, 15.0}]}
+      ], exercises[ex_name] do
+        for {set_num, reps, weight} <- sets_data do
+          Training.create_workout_details(%{
+            workout_id: w2.id, exercise_id: exercises[ex_name],
+            set: set_num, reps: reps, weight: weight, set_type_id: set_type_id
+          })
+        end
+      end
+
+      # Workout 3: Mike's Leg Day (today)
+      {:ok, w3} = Training.create_workout(%{
+        name: "Leg Day - Week 1",
+        date: now,
+        notes: "First leg day, took it easy",
+        client_id: mike.id
+      })
+
+      for {ex_name, sets_data} <- [
+        {"Barbell Squat", [{1, 10, 40.0}, {2, 8, 50.0}, {3, 8, 50.0}, {4, 6, 55.0}]},
+        {"Leg Press", [{1, 12, 80.0}, {2, 10, 100.0}, {3, 10, 100.0}]},
+        {"Leg Extension", [{1, 12, 25.0}, {2, 12, 25.0}, {3, 10, 30.0}]}
+      ], exercises[ex_name] do
+        for {set_num, reps, weight} <- sets_data do
+          Training.create_workout_details(%{
+            workout_id: w3.id, exercise_id: exercises[ex_name],
+            set: set_num, reps: reps, weight: weight, set_type_id: set_type_id
+          })
+        end
+      end
+
+      trainer_user
+    end)
+  end
+
+
   @doc """
   Gets a user by email and password.
 
