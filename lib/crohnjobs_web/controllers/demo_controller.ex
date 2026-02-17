@@ -8,7 +8,7 @@ defmodule CrohnjobsWeb.DemoController do
     case Account.generate_demo_account() do
       {:ok, user} ->
         conn
-        |> put_flash(:info, "Welcome to the demo! Explore all features with sample data.")
+        |> put_flash(:info, "Welcome to the demo! Your email: #{user.email} | Password: Demodemo1234")
         |> UserAuth.log_in_user(user)
 
       {:error, _reason} ->
