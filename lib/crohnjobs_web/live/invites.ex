@@ -55,7 +55,7 @@ defmodule CrohnjobsWeb.Invites do
   def render(assigns) do
     ~H"""
   <div class="w-full min-h-screen">
-  <div class="w-full px-6 lg:px-10 pt-10 pb-4">
+  <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-4">
 
               <div>
                 <h1 class="text-3xl font-bold text-gray-900">Client Invites</h1>
@@ -74,7 +74,7 @@ defmodule CrohnjobsWeb.Invites do
 
       </div>
 
-      <div class="w-full px-6 lg:px-10 py-8">
+      <div class="w-full px-0 sm:px-2 lg:px-4 py-8">
         <!-- Create Invite Form -->
         <%= if @show_form do %>
           <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
