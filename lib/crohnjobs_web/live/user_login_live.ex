@@ -54,6 +54,9 @@ defmodule CrohnjobsWeb.UserLoginLive do
             <p class="mt-2 text-xs text-gray-400">
               Instant access with sample clients, programmes &amp; workouts
             </p>
+            <p class="mt-2 text-xs text-gray-500">
+              💡 Demo password: <span class="font-semibold text-gray-700">Demodemo1234</span>
+            </p>
           </div>
         </div>
       </div>
