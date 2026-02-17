@@ -145,4 +145,11 @@ defmodule CrohnjobsWeb.Router do
       live "/users/confirm", UserConfirmationInstructionsLive, :new
     end
   end
+
+  # Catch-all: redirect unknown routes to login with a flash message
+  scope "/", CrohnjobsWeb do
+    pipe_through [:browser]
+
+    get "/*path", PageController, :not_found
+  end
 end
