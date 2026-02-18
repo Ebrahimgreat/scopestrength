@@ -136,8 +136,21 @@
     </div>
   </aside>
 
-  <main class="flex-1 min-w-0 pt-14 md:pt-0 p-4 md:p-6 lg:p-8">
-    <.flash_group flash={@flash} />
-    {@inner_content}
+  <main class="flex-1 min-w-0 pt-14 md:pt-0">
+    <!-- Demo Account Banner -->
+    <div :if={@current_user.type == "demo"} class="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 md:px-6 flex items-center justify-between gap-4 shadow-md">
+      <div class="flex items-center gap-3">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span class="text-sm md:text-base font-medium">You're exploring a demo account with sample data</span>
+      </div>
+    
+    </div>
+
+    <div class="p-4 md:p-6 lg:p-8">
+      <.flash_group flash={@flash} />
+      {@inner_content}
+    </div>
   </main>
 </div>
