@@ -19,6 +19,23 @@ defmodule CrohnjobsWeb.Router do
     plug :accepts, ["json"]
   end
 
+
+
+  scope "/admin", CrohnjobsWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :admin_session,
+      on_mount: [
+        {CrohnjobsWeb.UserAuth, :ensure_authenticated},
+        {CrohnjobsWeb.RequireRole, "admin"}
+      ],
+      layout: {CrohnjobsWeb.Layouts, :admin}
+       do
+      live "/", Admin.Dashboard
+    end
+  end
+
+
   scope "/client", CrohnjobsWeb do
     pipe_through [:browser, :require_authenticated_user]
 
@@ -43,6 +60,7 @@ defmodule CrohnjobsWeb.Router do
       live "/progress-photos", Client.ProgressPhotos
     end
   end
+
 
   scope "/trainer", CrohnjobsWeb do
     pipe_through [:browser, :require_authenticated_user]
@@ -79,6 +97,9 @@ defmodule CrohnjobsWeb.Router do
 
     oban_dashboard("/oban")
   end
+
+
+
 
   # Other scopes may use custom stacks.
   # scope "/api", CrohnjobsWeb do
