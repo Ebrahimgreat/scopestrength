@@ -152,6 +152,7 @@ alias Crohnjobs.Clients
 
       {:ok, trainer_id} ->
         # Proceed with registration
+        user_params = Map.put(user_params, "type", "normal")
         case Account.register_user(user_params) do
           {:ok, user} ->
             {:ok, _} =

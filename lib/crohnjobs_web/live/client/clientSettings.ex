@@ -207,6 +207,19 @@ defmodule CrohnjobsWeb.Client.ClientSettings do
 
       <h1 class="text-3xl font-bold text-gray-900 mb-8">Profile Settings</h1>
 
+      <!-- Demo Account Notice -->
+      <div :if={@current_user.type == "demo"} class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <div class="flex items-start gap-3">
+          <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          <div>
+            <h3 class="text-sm font-semibold text-amber-900">Demo Account</h3>
+            <p class="mt-1 text-sm text-amber-700">Settings are view-only in demo mode. Upgrade to a full account to modify your email and password.</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Profile Picture Section -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
         <div class="px-6 py-4 border-b border-gray-100">
@@ -375,8 +388,8 @@ defmodule CrohnjobsWeb.Client.ClientSettings do
           <div>
             <h3 class="text-lg font-semibold text-gray-900 mb-3">Name</h3>
             <.form id="name_form" phx-submit="update_name" class="space-y-4">
-              <.input type="text" name="name" label="Name" value={@name} />
-              <.button class="bg-emerald-600 hover:bg-emerald-700 text-white">
+              <.input type="text" name="name" label="Name" value={@name} disabled={@current_user.type == "demo"} />
+              <.button class="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={@current_user.type == "demo"}>
                 Update Name
               </.button>
             </.form>
@@ -390,7 +403,7 @@ defmodule CrohnjobsWeb.Client.ClientSettings do
               phx-submit="update_email"
               phx-change="validate_email"
             >
-              <.input field={@email_form[:email]} type="email" label="Email" required />
+              <.input field={@email_form[:email]} type="email" label="Email" required disabled={@current_user.type == "demo"} />
               <.input
                 field={@email_form[:current_password]}
                 name="current_password"
@@ -399,9 +412,10 @@ defmodule CrohnjobsWeb.Client.ClientSettings do
                 label="Current password"
                 value={@email_form_current_password}
                 required
+                disabled={@current_user.type == "demo"}
               />
               <:actions>
-                <.button phx-disable-with="Changing...">Change Email</.button>
+                <.button phx-disable-with="Changing..." disabled={@current_user.type == "demo"}>Change Email</.button>
               </:actions>
             </.simple_form>
           </div>
@@ -423,11 +437,12 @@ defmodule CrohnjobsWeb.Client.ClientSettings do
                 id="hidden_user_email"
                 value={@current_email}
               />
-              <.input field={@password_form[:password]} type="password" label="New password" required />
+              <.input field={@password_form[:password]} type="password" label="New password" required disabled={@current_user.type == "demo"} />
               <.input
                 field={@password_form[:password_confirmation]}
                 type="password"
                 label="Confirm new password"
+                disabled={@current_user.type == "demo"}
               />
               <.input
                 field={@password_form[:current_password]}
@@ -437,9 +452,10 @@ defmodule CrohnjobsWeb.Client.ClientSettings do
                 id="current_password_for_password"
                 value={@current_password}
                 required
+                disabled={@current_user.type == "demo"}
               />
               <:actions>
-                <.button phx-disable-with="Changing...">Change Password</.button>
+                <.button phx-disable-with="Changing..." disabled={@current_user.type == "demo"}>Change Password</.button>
               </:actions>
             </.simple_form>
           </div>

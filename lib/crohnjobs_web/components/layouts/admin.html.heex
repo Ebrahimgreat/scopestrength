@@ -3,9 +3,9 @@
   <div class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-slate-900 px-4 py-3 md:hidden">
     <.link href={~p"/trainer"} class="inline-flex items-center gap-2 text-base font-semibold text-white">
       <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-300 text-xs font-bold">
-        TP
+        AP
       </span>
-      Trainer Portal
+      Admin Portal
     </.link>
     <button id="mobile-menu-btn" onclick="document.getElementById('mobile-sidebar').classList.toggle('hidden')" class="text-white p-2">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -21,9 +21,9 @@
       <div class="px-6 py-6 border-b border-slate-800 flex items-center justify-between">
         <.link href={~p"/trainer"} class="inline-flex items-center gap-2 text-lg font-semibold tracking-tight text-white">
           <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 text-sm font-bold">
-            TP
+            AP
           </span>
-          Trainer Portal
+          Admin Portal
         </.link>
         <button onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,24 +145,7 @@
   </aside>
 
   <main class="flex-1 flex flex-col min-w-0 pt-14 md:pt-0">
-    <!-- Demo Account Banner -->
-    <div :if={@current_user.type == "demo"} class="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 md:px-6 flex items-center justify-between gap-4 shadow-md">
-      <div class="flex items-center gap-3">
-        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span class="text-sm md:text-base font-medium">You're exploring a demo account with sample data</span>
-      </div>
-     
-    </div>
-
-    <!-- Subscription Status Banner -->
-    <CrohnjobsWeb.SubscriptionBanner.subscription_banner
-      subscription_status={assigns[:subscription_status] || :trial}
-      trial_days_remaining={assigns[:trial_days_remaining] || 0}
-      current_user={@current_user}
-    />
-
+    
     <div class="flex-1 p-4 md:p-6 lg:p-8">
       <.flash_group flash={@flash} />
       {@inner_content}
