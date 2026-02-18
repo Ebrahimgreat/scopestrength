@@ -21,7 +21,15 @@ defmodule Crohnjobs.Account do
       iex> get_user_by_email("unknown@example.com")
       nil
 
+
   """
+
+  def get_admin_by_role(role) do
+    Repo.get_by(User, role: "admin")
+
+  end
+
+
   def get_user_by_email(email) when is_binary(email) do
     Repo.get_by(User, email: email)
   end
@@ -46,7 +54,8 @@ defmodule Crohnjobs.Account do
           name: "Demo Trainer",
           email: email,
           password: password,
-          role: "trainer"
+          role: "trainer",
+          type: "demo"
         })
 
       # 2. Create trainer profile
@@ -85,7 +94,8 @@ defmodule Crohnjobs.Account do
               name: data.name,
               email: "demo_client_#{client_random}@scopestrength.com",
               password: password,
-              role: "client"
+              role: "client",
+              type: "demo"
             })
 
           {:ok, client} =
