@@ -6,6 +6,7 @@ defmodule Crohnjobs.Account.User do
     field :email, :string
     field :name, :string
     field :role, :string
+    field :type, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
@@ -54,7 +55,7 @@ defmodule Crohnjobs.Account.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password, :name, :role])
+    |> cast(attrs, [:email, :password, :name, :role, :type])
     |> validate_email(opts)
     |> validate_password(opts)
   end
