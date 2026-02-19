@@ -1,13 +1,13 @@
 <div class="min-h-screen flex bg-gradient-to-br from-slate-100 via-white to-slate-50">
   <!-- Mobile Top Bar -->
-  <div class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-slate-900 px-4 py-3 md:hidden">
-    <.link href={~p"/trainer"} class="inline-flex items-center gap-2 text-base font-semibold text-white">
-      <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-300 text-xs font-bold">
-        AP
+  <div class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-violet-950 px-4 py-3 md:hidden">
+    <.link href={~p"/admin"} class="inline-flex items-center gap-2 text-base font-semibold text-white">
+      <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/20 text-violet-300 text-xs font-bold">
+        A
       </span>
-      Admin Portal
+      Admin
     </.link>
-    <button id="mobile-menu-btn" onclick="document.getElementById('mobile-sidebar').classList.toggle('hidden')" class="text-white p-2">
+    <button id="admin-mobile-menu-btn" onclick="document.getElementById('admin-mobile-sidebar').classList.toggle('hidden')" class="text-white p-2">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
       </svg>
@@ -15,17 +15,17 @@
   </div>
 
   <!-- Mobile Sidebar Overlay -->
-  <div id="mobile-sidebar" class="hidden fixed inset-0 z-50 md:hidden">
-    <div onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="absolute inset-0 bg-black/50"></div>
-    <aside class="relative w-72 h-full bg-slate-900 text-slate-100 flex flex-col overflow-y-auto">
-      <div class="px-6 py-6 border-b border-slate-800 flex items-center justify-between">
-        <.link href={~p"/trainer"} class="inline-flex items-center gap-2 text-lg font-semibold tracking-tight text-white">
-          <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 text-sm font-bold">
-            AP
+  <div id="admin-mobile-sidebar" class="hidden fixed inset-0 z-50 md:hidden">
+    <div onclick="document.getElementById('admin-mobile-sidebar').classList.add('hidden')" class="absolute inset-0 bg-black/50"></div>
+    <aside class="relative w-72 h-full bg-violet-950 text-slate-100 flex flex-col overflow-y-auto">
+      <div class="px-6 py-6 border-b border-violet-900 flex items-center justify-between">
+        <.link href={~p"/admin"} class="inline-flex items-center gap-2 text-lg font-semibold tracking-tight text-white">
+          <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/20 text-violet-300 text-sm font-bold">
+            A
           </span>
-          Admin Portal
+          Admin
         </.link>
-        <button onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
+        <button onclick="document.getElementById('admin-mobile-sidebar').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -33,50 +33,24 @@
       </div>
       <div class="px-6 py-4">
         <div class="flex items-center gap-3">
-          <div class="h-9 w-9 rounded-full bg-gradient-to-br from-emerald-400/30 to-emerald-600/30 border border-emerald-400/30"></div>
+          <div class="h-9 w-9 rounded-full bg-gradient-to-br from-violet-400/30 to-violet-600/30 border border-violet-400/30 flex items-center justify-center text-violet-300 text-sm font-bold">
+            <%= String.first(@current_user.name || "A") %>
+          </div>
           <div>
             <p class="text-sm font-medium text-slate-100">{@current_user.name}</p>
-            <p class="text-xs text-slate-400">Trainer</p>
+            <p class="text-xs text-violet-400">Admin</p>
           </div>
         </div>
       </div>
-      <nav class="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-        <.link href={~p"/trainer"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">D</span>
+      <nav class="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+        <.link href={~p"/admin"} onclick="document.getElementById('admin-mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-violet-900 hover:text-white transition">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-violet-900/50 text-slate-300 group-hover:bg-violet-500/20 group-hover:text-violet-200">D</span>
           Dashboard
         </.link>
-        <.link href={~p"/trainer/clients"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">C</span>
-          Clients
-        </.link>
-        <.link href={~p"/trainer/programmes"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">P</span>
-          Programmes
-        </.link>
-        <.link href={~p"/trainer/exercises/contribution"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">Ev</span>
-          Volume
-        </.link>
-        <.link href={~p"/trainer/exercises"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">E</span>
-          Exercises
-        </.link>
-        <.link href={~p"/trainer/invites"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">I</span>
-          Invites
-        </.link>
-        <.link href={~p"/trainer/chat"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">H</span>
-          Chat
-        </.link>
       </nav>
-      <div class="mt-auto px-4 py-5 border-t border-slate-800 space-y-2">
-        <.link href={~p"/trainer/settings"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">S</span>
-          Settings
-        </.link>
-        <.link href={~p"/users/log_out"} method="delete" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-rose-200 hover:bg-rose-500/10 hover:text-rose-100 transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-200 group-hover:bg-rose-500/20">L</span>
+      <div class="mt-auto px-4 py-5 border-t border-violet-900 space-y-1">
+        <.link href={~p"/users/log_out"} method="delete" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-rose-300 hover:bg-rose-500/10 hover:text-rose-100 transition">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-300 group-hover:bg-rose-500/20">L</span>
           Log out
         </.link>
       </div>
@@ -84,68 +58,41 @@
   </div>
 
   <!-- Desktop Sidebar -->
-  <aside class="hidden md:flex w-72 bg-slate-900 text-slate-100 flex-col border-r border-slate-800 sticky top-0 h-screen">
-    <div class="px-6 py-6 border-b border-slate-800">
-      <.link href={~p"/trainer"} class="inline-flex items-center gap-2 text-lg font-semibold tracking-tight text-white hover:text-emerald-200">
-        <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 text-sm font-bold">
-          TP
+  <aside class="hidden md:flex w-64 bg-violet-950 text-slate-100 flex-col border-r border-violet-900 sticky top-0 h-screen">
+    <div class="px-6 py-6 border-b border-violet-900">
+      <.link href={~p"/admin"} class="inline-flex items-center gap-2 text-lg font-semibold tracking-tight text-white hover:text-violet-200">
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/20 text-violet-300 text-sm font-bold">
+          A
         </span>
-        Trainer Portal
+        Admin
       </.link>
       <div class="mt-4 flex items-center gap-3">
-        <div class="h-9 w-9 rounded-full bg-gradient-to-br from-emerald-400/30 to-emerald-600/30 border border-emerald-400/30"></div>
+        <div class="h-9 w-9 rounded-full bg-gradient-to-br from-violet-400/30 to-violet-600/30 border border-violet-400/30 flex items-center justify-center text-violet-300 text-sm font-bold">
+          <%= String.first(@current_user.name || "A") %>
+        </div>
         <div>
           <p class="text-sm font-medium text-slate-100">{@current_user.name}</p>
-          <p class="text-xs text-slate-400">Trainer</p>
+          <p class="text-xs text-violet-400">Admin</p>
         </div>
       </div>
     </div>
 
-    <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-      <.link href={~p"/trainer"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">D</span>
+    <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+      <.link href={~p"/admin"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-violet-900 hover:text-white transition">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-violet-900/50 text-slate-300 group-hover:bg-violet-500/20 group-hover:text-violet-200">D</span>
         Dashboard
-      </.link>
-      <.link href={~p"/trainer/clients"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">C</span>
-        Clients
-      </.link>
-      <.link href={~p"/trainer/programmes"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">P</span>
-        Programmes
-      </.link>
-      <.link href={~p"/trainer/exercises/contribution"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">Ev</span>
-        Volume
-      </.link>
-      <.link href={~p"/trainer/exercises"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">E</span>
-        Exercises
-      </.link>
-      <.link href={~p"/trainer/invites"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">I</span>
-        Invites
-      </.link>
-      <.link href={~p"/trainer/chat"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">H</span>
-        Chat
       </.link>
     </nav>
 
-    <div class="mt-auto px-4 py-5 border-t border-slate-800 space-y-2">
-      <.link href={~p"/trainer/settings"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">S</span>
-        Settings
-      </.link>
-      <.link href={~p"/users/log_out"} method="delete" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-rose-200 hover:bg-rose-500/10 hover:text-rose-100 transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-200 group-hover:bg-rose-500/20">L</span>
+    <div class="mt-auto px-4 py-5 border-t border-violet-900 space-y-1">
+      <.link href={~p"/users/log_out"} method="delete" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-rose-300 hover:bg-rose-500/10 hover:text-rose-100 transition">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-300 group-hover:bg-rose-500/20">L</span>
         Log out
       </.link>
     </div>
   </aside>
 
   <main class="flex-1 flex flex-col min-w-0 pt-14 md:pt-0">
-    
     <div class="flex-1 p-4 md:p-6 lg:p-8">
       <.flash_group flash={@flash} />
       {@inner_content}
