@@ -240,6 +240,8 @@ exercises = [
   %{name: "JM Press", muscle: "Triceps", equipment: "Barbell"},
   %{name: "Close Grip Bench Press", muscle: "Triceps", equipment: "Barbell"},
   %{name: "Bodyweight Dips", muscle: "Triceps", equipment: "Bodyweight"},
+  %{name: "Chest Dips", muscle: "Chest", equipment: "Bodyweight"},
+  %{name: "Tricep Dips", muscle: "Triceps", equipment: "Bodyweight"},
 
   # CALVES
   %{name: "Standing Calf Raise", muscle: "Calves", equipment: "Machine"},
@@ -299,6 +301,7 @@ contributions = [
   # Decline Barbell Press
   %{exercise: "Decline Barbell Press", muscle: "Chest", role: "primary", multiplier: 1.0},
   %{exercise: "Decline Barbell Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Decline Barbell Press", muscle: "Front Delts", role: "secondary", multiplier: 0.5},
 
   # Dumbbell Bench Press
   %{exercise: "Dumbbell Bench Press", muscle: "Chest", role: "primary", multiplier: 1.0},
@@ -313,6 +316,7 @@ contributions = [
   # Decline Dumbbell Press
   %{exercise: "Decline Dumbbell Press", muscle: "Chest", role: "primary", multiplier: 1.0},
   %{exercise: "Decline Dumbbell Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Decline Dumbbell Press", muscle: "Front Delts", role: "secondary", multiplier: 0.5},
 
   # Dumbbell Fly (isolation - primary only)
   %{exercise: "Dumbbell Fly", muscle: "Chest", role: "primary", multiplier: 1.0},
@@ -325,6 +329,7 @@ contributions = [
   # Machine Chest Press
   %{exercise: "Machine Chest Press", muscle: "Chest", role: "primary", multiplier: 1.0},
   %{exercise: "Machine Chest Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Machine Chest Press", muscle: "Front Delts", role: "secondary", multiplier: 0.5},
 
   # Incline Machine Chest Press
   %{exercise: "Incline Machine Chest Press", muscle: "Chest", role: "primary", multiplier: 1.0},
@@ -359,10 +364,12 @@ contributions = [
   # Wide Lat Pulldown
   %{exercise: "Wide Lat Pulldown", muscle: "Lats", role: "primary", multiplier: 1.0},
   %{exercise: "Wide Lat Pulldown", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Wide Lat Pulldown", muscle: "Rear Delts", role: "secondary", multiplier: 0.5},
 
   # Lat Pulldown
   %{exercise: "Lat Pulldown", muscle: "Lats", role: "primary", multiplier: 1.0},
   %{exercise: "Lat Pulldown", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Lat Pulldown", muscle: "Rear Delts", role: "secondary", multiplier: 0.5},
 
   # Machine Pullover
   %{exercise: "Machine Pullover", muscle: "Lats", role: "primary", multiplier: 1.0},
@@ -373,10 +380,12 @@ contributions = [
   # Pull Up
   %{exercise: "Pull Up", muscle: "Lats", role: "primary", multiplier: 1.0},
   %{exercise: "Pull Up", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Pull Up", muscle: "Rear Delts", role: "secondary", multiplier: 0.5},
 
   # Chin Up
   %{exercise: "Chin Up", muscle: "Lats", role: "primary", multiplier: 1.0},
   %{exercise: "Chin Up", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Chin Up", muscle: "Rear Delts", role: "secondary", multiplier: 0.5},
 
   # Lat Prayer (isolation)
   %{exercise: "Lat Prayer", muscle: "Lats", role: "primary", multiplier: 1.0},
@@ -389,25 +398,30 @@ contributions = [
   %{exercise: "Barbell Bent Over Row", muscle: "Upper Back", role: "primary", multiplier: 1.0},
   %{exercise: "Barbell Bent Over Row", muscle: "Lats", role: "secondary", multiplier: 0.5},
   %{exercise: "Barbell Bent Over Row", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Barbell Bent Over Row", muscle: "Rear Delts", role: "secondary", multiplier: 0.5},
 
   # Dumbbell Row (One Arm)
   %{exercise: "Dumbbell Row (One Arm)", muscle: "Upper Back", role: "primary", multiplier: 1.0},
   %{exercise: "Dumbbell Row (One Arm)", muscle: "Lats", role: "secondary", multiplier: 0.5},
   %{exercise: "Dumbbell Row (One Arm)", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Dumbbell Row (One Arm)", muscle: "Rear Delts", role: "secondary", multiplier: 0.5},
 
   # Cable Row
   %{exercise: "Cable Row", muscle: "Upper Back", role: "primary", multiplier: 1.0},
   %{exercise: "Cable Row", muscle: "Lats", role: "secondary", multiplier: 0.5},
   %{exercise: "Cable Row", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Cable Row", muscle: "Rear Delts", role: "secondary", multiplier: 0.5},
 
   # Wide Grip Cable Row
   %{exercise: "Wide Grip Cable Row", muscle: "Upper Back", role: "primary", multiplier: 1.0},
   %{exercise: "Wide Grip Cable Row", muscle: "Rear Delts", role: "secondary", multiplier: 0.5},
+  %{exercise: "Wide Grip Cable Row", muscle: "Biceps", role: "secondary", multiplier: 0.5},
 
   # Seated Row
   %{exercise: "Seated Row", muscle: "Upper Back", role: "primary", multiplier: 1.0},
   %{exercise: "Seated Row", muscle: "Lats", role: "secondary", multiplier: 0.5},
   %{exercise: "Seated Row", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Seated Row", muscle: "Rear Delts", role: "secondary", multiplier: 0.5},
 
   # ═══════════════════════════════════════════════════════════════════
   # QUADS EXERCISES
@@ -553,10 +567,22 @@ contributions = [
   # Close Grip Bench Press
   %{exercise: "Close Grip Bench Press", muscle: "Triceps", role: "primary", multiplier: 1.0},
   %{exercise: "Close Grip Bench Press", muscle: "Chest", role: "secondary", multiplier: 0.5},
+  %{exercise: "Close Grip Bench Press", muscle: "Front Delts", role: "secondary", multiplier: 0.5},
 
   # Bodyweight Dips
   %{exercise: "Bodyweight Dips", muscle: "Triceps", role: "primary", multiplier: 1.0},
   %{exercise: "Bodyweight Dips", muscle: "Chest", role: "secondary", multiplier: 0.5},
+  %{exercise: "Bodyweight Dips", muscle: "Front Delts", role: "secondary", multiplier: 0.5},
+
+  # Chest Dips (forward lean = chest dominant)
+  %{exercise: "Chest Dips", muscle: "Chest", role: "primary", multiplier: 1.0},
+  %{exercise: "Chest Dips", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Chest Dips", muscle: "Front Delts", role: "secondary", multiplier: 0.5},
+
+  # Tricep Dips (upright torso = tricep dominant)
+  %{exercise: "Tricep Dips", muscle: "Triceps", role: "primary", multiplier: 1.0},
+  %{exercise: "Tricep Dips", muscle: "Chest", role: "secondary", multiplier: 0.3},
+  %{exercise: "Tricep Dips", muscle: "Front Delts", role: "secondary", multiplier: 0.5},
 
   # ═══════════════════════════════════════════════════════════════════
   # CALVES EXERCISES (all isolation)
