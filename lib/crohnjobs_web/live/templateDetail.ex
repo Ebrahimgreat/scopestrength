@@ -301,7 +301,7 @@ alias Crohnjobs.CustomExercises.CustomExercise
               </button>
             </div>
 
-            <.form phx-submit="addExercise" for={@newExerciseForm} class="mt-5 space-y-4">
+            <.form phx-submit="createExercise" for={@newExerciseForm} class="mt-5 space-y-4">
               <.input
                 type="text"
                 required
