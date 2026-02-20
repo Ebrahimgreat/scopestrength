@@ -230,7 +230,7 @@ exercises = [
   %{name: "Incline Dumbbell Curl", muscle: "Biceps", equipment: "Dumbbell"},
   %{name: "Bayesian Curl", muscle: "Biceps", equipment: "Cable"},
   %{name: "Recline Preacher Curl", muscle: "Biceps", equipment: "Dumbbell"},
-  %{name: "Recline Preacher Curl(One Arm)", muscle: "Biceps", equipment: "Dumbbell", is_uni_lateral: true},
+  %{name: "Recline Preacher Curl(One Arm)", muscle: "Biceps", equipment: "Dumbbell", is_unilateral: true},
 
   # TRICEPS
   %{name: "Tricep Pushdown", muscle: "Triceps", equipment: "Cable"},
