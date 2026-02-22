@@ -42,6 +42,7 @@ defmodule CrohnjobsWeb.UserAuth do
     case user.role do
       "trainer" -> ~p"/trainer"
       "client" -> ~p"/client"
+      "admin" -> ~p"/admin"
       _ -> ~p"/"
     end
   end
@@ -237,5 +238,6 @@ defmodule CrohnjobsWeb.UserAuth do
 
   defp signed_in_path(%{assigns: %{current_user: %{role: "trainer"}}}), do: ~p"/trainer"
   defp signed_in_path(%{assigns: %{current_user: %{role: "client"}}}), do: ~p"/client"
+  defp signed_in_path(%{assigns: %{current_user: %{role: "admin"}}}), do: ~p"/admin"
   defp signed_in_path(_), do: ~p"/"
 end
