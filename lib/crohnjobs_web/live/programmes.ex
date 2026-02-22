@@ -27,7 +27,7 @@ alias Crohnjobs.Programmes
       []
     end
     myProgramme = Enum.filter(programmes, &(&1.trainer_id == trainer.id))
-    {:ok, assign(socket, trainer_id: trainer.id, openProgamme: openProgramme, programmes: myProgramme, name: user.name, newProgramme: newProgramme)}
+    {:ok, assign(socket, trainer_id: trainer.id, openProgamme: openProgramme, programmes: myProgramme, name: user.name, newProgramme: newProgramme, delete_confirm_id: nil)}
 
   end
   def handle_event("addNewProgramme", _params, socket) do
@@ -41,17 +41,23 @@ end
   end
 def handle_event("deleteProgramme", %{"id"=> id}, socket) do
   id = String.to_integer(id)
-
-programme = Programmes.get_programme!(id)
-IO.inspect(programme)
-case Programmes.delete_programme(programme) do
-  {:ok, _programme}->
-    programmes = Enum.reject(socket.assigns.programmes, & (&1.id == id))
-     {:noreply, socket |> put_flash(:info, "Programme Deleted")|> assign(:programmes, programmes)}
-  _ ->{:noreply, socket|> put_flash(:error, "An Error has been occured")}
-
+  {:noreply, assign(socket, delete_confirm_id: id)}
 end
 
+def handle_event("cancel_delete", _params, socket) do
+  {:noreply, assign(socket, delete_confirm_id: nil)}
+end
+
+def handle_event("confirm_delete", _params, socket) do
+  id = socket.assigns.delete_confirm_id
+
+  programme = Programmes.get_programme!(id)
+  case Programmes.delete_programme(programme) do
+    {:ok, _programme}->
+      programmes = Enum.reject(socket.assigns.programmes, & (&1.id == id))
+       {:noreply, socket |> put_flash(:info, "Programme Deleted") |> assign(programmes: programmes, delete_confirm_id: nil)}
+    _ ->{:noreply, socket |> put_flash(:error, "An Error has been occured") |> assign(delete_confirm_id: nil)}
+  end
 end
 
   def handle_event("duplicateProgramme", %{"id" => id}, socket) do
@@ -203,6 +209,38 @@ end
 
 
 
+
+  <%= if @delete_confirm_id do %>
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div class="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4">
+          <div class="flex items-center justify-center w-12 h-12 mx-auto rounded-full bg-rose-100 mb-4">
+            <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 text-center">Delete Programme</h3>
+          <p class="mt-2 text-sm text-gray-600 text-center">
+            Are you sure you want to delete this programme? This action cannot be undone.
+          </p>
+          <div class="mt-6 flex gap-3 justify-center">
+            <button
+              type="button"
+              phx-click="cancel_delete"
+              class="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              phx-click="confirm_delete"
+              class="inline-flex items-center rounded-full border border-rose-200 bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-700 transition"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+      <% end %>
 
 </div>
     """
