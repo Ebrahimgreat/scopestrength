@@ -50,6 +50,7 @@ defmodule CrohnjobsWeb.Router do
       live "/chat", ClientChat
       live "/ai-coach", AiChat
       live "/notifications",Client.Notifications
+      live "/weight", Client.Weight
 
       live "/workouts", Client.Workouts
       live "/workouts/:id",Client.WorkoutShow
@@ -135,6 +136,7 @@ defmodule CrohnjobsWeb.Router do
       live "/trainer-subscription-expired", Client.TrainerSubscriptionExpired
 
       get "/download/workout", DownloadController, :workout
+      get "/download/client-report/:client_id", DownloadController, :client_report
     end
   end
 
