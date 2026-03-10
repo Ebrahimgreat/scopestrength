@@ -1,8 +1,9 @@
 import Config
 
 # Load .env file in development
-if config_env() == :dev and File.exists?(".env") do
-  File.read!(".env")
+env_path = Path.expand("../.env", __DIR__)
+if config_env() == :dev and File.exists?(env_path) do
+  File.read!(env_path)
   |> String.split("\n", trim: true)
   |> Enum.reject(&String.starts_with?(&1, "#"))
   |> Enum.each(fn line ->
