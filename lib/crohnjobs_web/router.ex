@@ -48,7 +48,6 @@ defmodule CrohnjobsWeb.Router do
       layout: {CrohnjobsWeb.Layouts, :client} do
       live "/", ClientDashboard
       live "/chat", ClientChat
-      live "/ai-coach", AiChat
       live "/notifications",Client.Notifications
       live "/weight", Client.Weight
 

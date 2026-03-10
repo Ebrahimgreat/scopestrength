@@ -33,7 +33,12 @@ muscle_names = [
   "Triceps",
   "Calves",
   "Hip Adductors",
-  "Hip Abductors"
+  "Hip Abductors",
+  "Forearms",
+  "Traps",
+  "Neck",
+  "Lower Back",
+  "Obliques"
 ]
 
 muscles =
@@ -259,7 +264,33 @@ exercises = [
 
   # HIP ABDUCTORS
   %{name: "Hip Abduction Machine", muscle: "Hip Abductors", equipment: "Machine"},
-  %{name: "Cable Hip Abduction", muscle: "Hip Abductors", equipment: "Cable", is_unilateral: true}
+  %{name: "Cable Hip Abduction", muscle: "Hip Abductors", equipment: "Cable", is_unilateral: true},
+
+  # FOREARMS
+  %{name: "Wrist Curl", muscle: "Forearms", equipment: "Dumbbell"},
+  %{name: "Reverse Wrist Curl", muscle: "Forearms", equipment: "Dumbbell"},
+  %{name: "Reverse Barbell Curl", muscle: "Forearms", equipment: "Barbell"},
+  %{name: "Farmer's Walk", muscle: "Forearms", equipment: "Dumbbell"},
+
+  # TRAPS
+  %{name: "Barbell Shrug", muscle: "Traps", equipment: "Barbell"},
+  %{name: "Dumbbell Shrug", muscle: "Traps", equipment: "Dumbbell"},
+  %{name: "Cable Shrug", muscle: "Traps", equipment: "Cable"},
+
+  # NECK
+  %{name: "Neck Curl", muscle: "Neck", equipment: "Plate"},
+  %{name: "Neck Extension", muscle: "Neck", equipment: "Plate"},
+  %{name: "Neck Lateral Flexion", muscle: "Neck", equipment: "Plate", is_unilateral: true},
+
+  # LOWER BACK
+  %{name: "Hyperextension", muscle: "Lower Back", equipment: "Bodyweight"},
+  %{name: "Reverse Hyperextension", muscle: "Lower Back", equipment: "Machine"},
+  %{name: "Barbell Good Morning", muscle: "Lower Back", equipment: "Barbell"},
+
+  # OBLIQUES
+  %{name: "Cable Woodchop", muscle: "Obliques", equipment: "Cable"},
+  %{name: "Side Bend", muscle: "Obliques", equipment: "Dumbbell"},
+  %{name: "Pallof Press", muscle: "Obliques", equipment: "Cable"}
 ]
 
 # Insert exercises and build exercise_map
@@ -343,11 +374,17 @@ contributions = [
   %{exercise: "Deadlift", muscle: "Glutes", role: "primary", multiplier: 1.0},
   %{exercise: "Deadlift", muscle: "Hamstrings", role: "secondary", multiplier: 0.5},
   %{exercise: "Deadlift", muscle: "Lats", role: "secondary", multiplier: 0.5},
+  %{exercise: "Deadlift", muscle: "Lower Back", role: "secondary", multiplier: 0.5},
+  %{exercise: "Deadlift", muscle: "Traps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Deadlift", muscle: "Forearms", role: "secondary", multiplier: 0.5},
 
   # Conventional Deadlift
   %{exercise: "Conventional Deadlift", muscle: "Glutes", role: "primary", multiplier: 1.0},
   %{exercise: "Conventional Deadlift", muscle: "Hamstrings", role: "secondary", multiplier: 0.5},
   %{exercise: "Conventional Deadlift", muscle: "Lats", role: "secondary", multiplier: 0.5},
+  %{exercise: "Conventional Deadlift", muscle: "Lower Back", role: "secondary", multiplier: 0.5},
+  %{exercise: "Conventional Deadlift", muscle: "Traps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Conventional Deadlift", muscle: "Forearms", role: "secondary", multiplier: 0.5},
 
   # Hip Thrust
   %{exercise: "Hip Thrust", muscle: "Glutes", role: "primary", multiplier: 1.0},
@@ -399,6 +436,7 @@ contributions = [
   %{exercise: "Barbell Bent Over Row", muscle: "Lats", role: "secondary", multiplier: 0.5},
   %{exercise: "Barbell Bent Over Row", muscle: "Biceps", role: "secondary", multiplier: 0.5},
   %{exercise: "Barbell Bent Over Row", muscle: "Rear Delts", role: "secondary", multiplier: 0.5},
+  %{exercise: "Barbell Bent Over Row", muscle: "Forearms", role: "secondary", multiplier: 0.5},
 
   # Dumbbell Row (One Arm)
   %{exercise: "Dumbbell Row (One Arm)", muscle: "Upper Back", role: "primary", multiplier: 1.0},
@@ -430,6 +468,7 @@ contributions = [
   # Barbell Squat
   %{exercise: "Barbell Squat", muscle: "Quads", role: "primary", multiplier: 1.0},
   %{exercise: "Barbell Squat", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+  %{exercise: "Barbell Squat", muscle: "Lower Back", role: "secondary", multiplier: 0.5},
 
   # Front Squat
   %{exercise: "Front Squat", muscle: "Quads", role: "primary", multiplier: 1.0},
@@ -470,6 +509,8 @@ contributions = [
   # Romanian Deadlift
   %{exercise: "Romanian Deadlift", muscle: "Hamstrings", role: "primary", multiplier: 1.0},
   %{exercise: "Romanian Deadlift", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+  %{exercise: "Romanian Deadlift", muscle: "Lower Back", role: "secondary", multiplier: 0.5},
+  %{exercise: "Romanian Deadlift", muscle: "Forearms", role: "secondary", multiplier: 0.5},
 
   # Lying Leg Curl (isolation)
   %{exercise: "Lying Leg Curl", muscle: "Hamstrings", role: "primary", multiplier: 1.0},
@@ -484,6 +525,7 @@ contributions = [
   # Good Mornings
   %{exercise: "Good Mornings", muscle: "Hamstrings", role: "primary", multiplier: 1.0},
   %{exercise: "Good Mornings", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+  %{exercise: "Good Mornings", muscle: "Lower Back", role: "secondary", multiplier: 0.5},
 
   # Single Leg Deadlift
   %{exercise: "Single Leg Deadlift", muscle: "Hamstrings", role: "primary", multiplier: 1.0},
@@ -492,6 +534,7 @@ contributions = [
   # Back Extension
   %{exercise: "Back Extension", muscle: "Hamstrings", role: "primary", multiplier: 1.0},
   %{exercise: "Back Extension", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+  %{exercise: "Back Extension", muscle: "Lower Back", role: "secondary", multiplier: 0.5},
 
   # ═══════════════════════════════════════════════════════════════════
   # FRONT DELTS EXERCISES
@@ -500,10 +543,12 @@ contributions = [
   # Overhead Press
   %{exercise: "Overhead Press", muscle: "Front Delts", role: "primary", multiplier: 1.0},
   %{exercise: "Overhead Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Overhead Press", muscle: "Traps", role: "secondary", multiplier: 0.5},
 
   # Dumbbell Shoulder Press
   %{exercise: "Dumbbell Shoulder Press", muscle: "Front Delts", role: "primary", multiplier: 1.0},
   %{exercise: "Dumbbell Shoulder Press", muscle: "Triceps", role: "secondary", multiplier: 0.5},
+  %{exercise: "Dumbbell Shoulder Press", muscle: "Traps", role: "secondary", multiplier: 0.5},
 
   # Front Raise (isolation)
   %{exercise: "Front Raise", muscle: "Front Delts", role: "primary", multiplier: 1.0},
@@ -549,6 +594,7 @@ contributions = [
   %{exercise: "Barbell Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
   %{exercise: "Preacher Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
   %{exercise: "Hammer Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
+  %{exercise: "Hammer Curl", muscle: "Forearms", role: "secondary", multiplier: 0.5},
   %{exercise: "Incline Dumbbell Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
   %{exercise: "Bayesian Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
   %{exercise: "Recline Preacher Curl", muscle: "Biceps", role: "primary", multiplier: 1.0},
@@ -612,7 +658,77 @@ contributions = [
   # ═══════════════════════════════════════════════════════════════════
 
   %{exercise: "Hip Abduction Machine", muscle: "Hip Abductors", role: "primary", multiplier: 1.0},
-  %{exercise: "Cable Hip Abduction", muscle: "Hip Abductors", role: "primary", multiplier: 1.0}
+  %{exercise: "Cable Hip Abduction", muscle: "Hip Abductors", role: "primary", multiplier: 1.0},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # FOREARMS EXERCISES
+  # ═══════════════════════════════════════════════════════════════════
+
+  # Wrist Curl (isolation)
+  %{exercise: "Wrist Curl", muscle: "Forearms", role: "primary", multiplier: 1.0},
+
+  # Reverse Wrist Curl (isolation)
+  %{exercise: "Reverse Wrist Curl", muscle: "Forearms", role: "primary", multiplier: 1.0},
+
+  # Reverse Barbell Curl
+  %{exercise: "Reverse Barbell Curl", muscle: "Forearms", role: "primary", multiplier: 1.0},
+  %{exercise: "Reverse Barbell Curl", muscle: "Biceps", role: "secondary", multiplier: 0.5},
+
+  # Farmer's Walk
+  %{exercise: "Farmer's Walk", muscle: "Forearms", role: "primary", multiplier: 1.0},
+  %{exercise: "Farmer's Walk", muscle: "Traps", role: "secondary", multiplier: 0.5},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # TRAPS EXERCISES
+  # ═══════════════════════════════════════════════════════════════════
+
+  # Barbell Shrug (isolation)
+  %{exercise: "Barbell Shrug", muscle: "Traps", role: "primary", multiplier: 1.0},
+
+  # Dumbbell Shrug (isolation)
+  %{exercise: "Dumbbell Shrug", muscle: "Traps", role: "primary", multiplier: 1.0},
+
+  # Cable Shrug (isolation)
+  %{exercise: "Cable Shrug", muscle: "Traps", role: "primary", multiplier: 1.0},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # NECK EXERCISES (all isolation)
+  # ═══════════════════════════════════════════════════════════════════
+
+  %{exercise: "Neck Curl", muscle: "Neck", role: "primary", multiplier: 1.0},
+  %{exercise: "Neck Extension", muscle: "Neck", role: "primary", multiplier: 1.0},
+  %{exercise: "Neck Lateral Flexion", muscle: "Neck", role: "primary", multiplier: 1.0},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # LOWER BACK EXERCISES
+  # ═══════════════════════════════════════════════════════════════════
+
+  # Hyperextension
+  %{exercise: "Hyperextension", muscle: "Lower Back", role: "primary", multiplier: 1.0},
+  %{exercise: "Hyperextension", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+
+  # Reverse Hyperextension
+  %{exercise: "Reverse Hyperextension", muscle: "Lower Back", role: "primary", multiplier: 1.0},
+  %{exercise: "Reverse Hyperextension", muscle: "Glutes", role: "secondary", multiplier: 0.5},
+
+  # Barbell Good Morning
+  %{exercise: "Barbell Good Morning", muscle: "Lower Back", role: "primary", multiplier: 1.0},
+  %{exercise: "Barbell Good Morning", muscle: "Hamstrings", role: "secondary", multiplier: 0.5},
+
+  # ═══════════════════════════════════════════════════════════════════
+  # OBLIQUES EXERCISES
+  # ═══════════════════════════════════════════════════════════════════
+
+  # Cable Woodchop
+  %{exercise: "Cable Woodchop", muscle: "Obliques", role: "primary", multiplier: 1.0},
+  %{exercise: "Cable Woodchop", muscle: "Abs", role: "secondary", multiplier: 0.5},
+
+  # Side Bend (isolation)
+  %{exercise: "Side Bend", muscle: "Obliques", role: "primary", multiplier: 1.0},
+
+  # Pallof Press
+  %{exercise: "Pallof Press", muscle: "Obliques", role: "primary", multiplier: 1.0},
+  %{exercise: "Pallof Press", muscle: "Abs", role: "secondary", multiplier: 0.5}
 ]
 
 Enum.each(contributions, fn attrs ->
