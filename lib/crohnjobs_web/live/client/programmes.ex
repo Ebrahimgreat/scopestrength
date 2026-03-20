@@ -1,49 +1,48 @@
-defmodule CrohnjobsWeb.Programmes do
-alias Crohnjobs.Programmes
+defmodule CrohnjobsWeb.Client.Programmes do
+  alias Crohnjobs.Programmes
 
   use CrohnjobsWeb, :live_view
 
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
 
-    openProgramme = false
     newProgramme = Programmes.change_programme(%Programmes.Programme{}) |> to_form()
 
     programmes =
       Programmes.list_programme()
       |> Enum.filter(&(&1.user_id == user.id))
 
-    {:ok, assign(socket, user_id: user.id, openProgamme: openProgramme, programmes: programmes, name: user.name, newProgramme: newProgramme, delete_confirm_id: nil)}
+    {:ok, assign(socket, user_id: user.id, programmes: programmes, name: user.name, newProgramme: newProgramme, delete_confirm_id: nil)}
   end
 
   def handle_event("addNewProgramme", _params, socket) do
     newProgramme = %{name: "Untitled", description: "untitled", user_id: socket.assigns.user_id}
-case Programmes.create_programme(newProgramme) do
-  {:ok, programme}-> {:noreply, update(socket, :programmes, fn programmes->[programme | programmes]end)}
-  _ -> {:noreply, socket|> put_flash(:error, "An error has been occured ")}
-end
-
+    case Programmes.create_programme(newProgramme) do
+      {:ok, programme} -> {:noreply, update(socket, :programmes, fn programmes -> [programme | programmes] end)}
+      _ -> {:noreply, socket |> put_flash(:error, "An error has occurred")}
+    end
   end
-def handle_event("deleteProgramme", %{"id"=> id}, socket) do
-  id = String.to_integer(id)
-  {:noreply, assign(socket, delete_confirm_id: id)}
-end
 
-def handle_event("cancel_delete", _params, socket) do
-  {:noreply, assign(socket, delete_confirm_id: nil)}
-end
-
-def handle_event("confirm_delete", _params, socket) do
-  id = socket.assigns.delete_confirm_id
-
-  programme = Programmes.get_programme!(id)
-  case Programmes.delete_programme(programme) do
-    {:ok, _programme}->
-      programmes = Enum.reject(socket.assigns.programmes, & (&1.id == id))
-       {:noreply, socket |> put_flash(:info, "Programme Deleted") |> assign(programmes: programmes, delete_confirm_id: nil)}
-    _ ->{:noreply, socket |> put_flash(:error, "An Error has been occured") |> assign(delete_confirm_id: nil)}
+  def handle_event("deleteProgramme", %{"id" => id}, socket) do
+    id = String.to_integer(id)
+    {:noreply, assign(socket, delete_confirm_id: id)}
   end
-end
+
+  def handle_event("cancel_delete", _params, socket) do
+    {:noreply, assign(socket, delete_confirm_id: nil)}
+  end
+
+  def handle_event("confirm_delete", _params, socket) do
+    id = socket.assigns.delete_confirm_id
+
+    programme = Programmes.get_programme!(id)
+    case Programmes.delete_programme(programme) do
+      {:ok, _programme} ->
+        programmes = Enum.reject(socket.assigns.programmes, &(&1.id == id))
+        {:noreply, socket |> put_flash(:info, "Programme Deleted") |> assign(programmes: programmes, delete_confirm_id: nil)}
+      _ -> {:noreply, socket |> put_flash(:error, "An error has occurred") |> assign(delete_confirm_id: nil)}
+    end
+  end
 
   def handle_event("duplicateProgramme", %{"id" => id}, socket) do
     id = String.to_integer(id)
@@ -64,9 +63,9 @@ end
     <div class="w-full min-h-screen">
     <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-4">
         <div class="w-full px-0 sm:px-2 lg:px-4 py-8">
-          <h1 class="text-3xl font-bold tracking-tight text-slate-900">Training Programmes</h1>
+          <h1 class="text-3xl font-bold tracking-tight text-slate-900">My Programmes</h1>
           <p class="mt-2 text-slate-600 text-base lg:text-lg">
-            Manage your custom training programmes, <%= @name %>
+            Create and manage your training programmes, <%= @name %>
           </p>
         </div>
       </div>
@@ -87,12 +86,10 @@ end
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                 </svg>
-                <%= if @openProgamme, do: "Cancel", else: "Add New Programme" %>
+                Add New Programme
               </.button>
             </div>
             </div>
-
-
 
       <%= if length(@programmes) > 0 do %>
             <div class="overflow-x-auto">
@@ -141,7 +138,7 @@ end
                       <td class="px-6 py-4 whitespace-nowrap text-center">
                         <div class="flex items-center justify-center gap-2">
                           <.link
-                            navigate={~p"/trainer/programmes/#{programme.id}"}
+                            navigate={~p"/client/programmes/#{programme.id}"}
                             class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 transition"
                           >
                             View
@@ -170,7 +167,6 @@ end
               </table>
             </div>
           <% else %>
-            <!-- Empty State -->
             <div class="text-center py-12">
               <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -191,9 +187,6 @@ end
               </div>
             </div>
           <% end %>
-
-
-
 
   <%= if @delete_confirm_id do %>
       <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -229,7 +222,5 @@ end
 
 </div>
     """
-
   end
-
 end

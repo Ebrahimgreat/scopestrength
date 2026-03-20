@@ -1,11 +1,10 @@
-defmodule CrohnjobsWeb.ProgrammeShow do
+defmodule CrohnjobsWeb.Client.ProgrammeShow do
   use CrohnjobsWeb, :live_view
 
   alias Crohnjobs.DownloadProgramme
   alias Crohnjobs.Programmes
   alias Crohnjobs.Programmes.Programme
   alias Crohnjobs.Repo
-  alias Crohnjobs.Trainers
 
   def handle_event("deleteTemplate", params, socket) do
     id = String.to_integer(params["id"])
@@ -93,20 +92,17 @@ defmodule CrohnjobsWeb.ProgrammeShow do
     end
   end
 
-  @spec mount(map(), any(), any()) :: {:ok, any()}
   def mount(%{"id" => id}, _session, socket) do
     user = socket.assigns.current_user
 
     case Programmes.get_programme_with_template(id) do
       nil ->
-        {:ok, socket |> put_flash(:error, "Programme not found") |> redirect(to: "/programmes")}
+        {:ok, socket |> put_flash(:error, "Programme not found") |> redirect(to: "/client/programmes")}
 
       programme ->
         case programme.user_id == user.id do
           true ->
             my_programme = Programmes.change_programme(programme) |> to_form()
-
-            # Calculate total volume across all templates
             muscle_volume = Programmes.calculate_programme_volume(programme)
 
             {:ok, assign(socket,
@@ -117,7 +113,7 @@ defmodule CrohnjobsWeb.ProgrammeShow do
             )}
 
           false ->
-            {:ok, socket |> put_flash(:error, "Programme not found") |> redirect(to: "/programmes")}
+            {:ok, socket |> put_flash(:error, "Programme not found") |> redirect(to: "/client/programmes")}
         end
     end
   end
@@ -132,7 +128,7 @@ defmodule CrohnjobsWeb.ProgrammeShow do
             <div class="absolute -right-20 -top-24 h-56 w-56 rounded-full bg-emerald-100/70 blur-2xl"></div>
             <div class="relative flex flex-col gap-6 p-6 sm:p-8">
               <div class="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
-                <.link navigate={~p"/trainer/programmes"} class="hover:text-slate-700 transition-colors">
+                <.link navigate={~p"/client/programmes"} class="hover:text-slate-700 transition-colors">
                   Programmes
                 </.link>
                 <span>/</span>
@@ -191,7 +187,6 @@ defmodule CrohnjobsWeb.ProgrammeShow do
             </div>
           </section>
 
-          <!-- Volume Tracking Section -->
           <%= if map_size(@muscle_volume) > 0 do %>
             <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 class="text-lg font-semibold text-slate-900 mb-4">Total Programme Volume</h2>
@@ -273,7 +268,7 @@ defmodule CrohnjobsWeb.ProgrammeShow do
 
                         <div class="flex items-center gap-2">
                           <.link
-                            navigate={~p"/trainer/programmes/#{@programmeId}/template/#{template.id}"}
+                            navigate={~p"/client/programmes/#{@programmeId}/template/#{template.id}"}
                             class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                           >
                             Open

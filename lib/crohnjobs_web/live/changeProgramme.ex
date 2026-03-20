@@ -32,7 +32,7 @@ defmodule CrohnjobsWeb.ChangeProgramme do
         case client.trainer_id == trainer.id do
           true ->
             clientProgramme = Repo.get_by(ProgrammeUser, client_id: client_id, is_active: true) |> Repo.preload(:programme)
-            programmes = Repo.all(from(Programme, where: [trainer_id: ^trainer.id]))
+            programmes = Repo.all(from(Programme, where: [user_id: ^user.id]))
 
             {:ok, assign(socket, programmes: programmes, clientProgramme: clientProgramme, client_id: client_id)}
 

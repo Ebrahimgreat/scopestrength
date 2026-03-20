@@ -344,6 +344,66 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
     end
   end
 
+  def handle_event("load_from_own_programme", %{"template-id" => template_id}, socket) do
+    workout_id = socket.assigns.workout_id
+
+    template =
+      socket.assigns.own_programmes
+      |> Enum.flat_map(& &1.programmeTemplates)
+      |> Enum.find(&("#{&1.id}" == template_id))
+
+    if template do
+      result =
+        Repo.transaction(fn ->
+          Repo.delete_all(from w in WorkoutDetails, where: w.workout_id == ^workout_id)
+
+          template.programmeDetails
+          |> Enum.uniq_by(& &1.exercise_id)
+          |> Enum.each(fn detail ->
+            if detail.exercise.is_unilateral do
+              case Training.create_workout_details(%{workout_id: workout_id, exercise_id: detail.exercise_id, set: 1, side: "left", reps: 10, weight: nil}) do
+                {:ok, _} ->
+                  case Training.create_workout_details(%{workout_id: workout_id, exercise_id: detail.exercise_id, set: 1, side: "right", reps: 10, weight: nil}) do
+                    {:ok, _} -> :ok
+                    {:error, changeset} -> Repo.rollback(changeset)
+                  end
+                {:error, changeset} -> Repo.rollback(changeset)
+              end
+            else
+              case Training.create_workout_details(%{workout_id: workout_id, exercise_id: detail.exercise_id, set: 1, reps: 10, weight: nil}) do
+                {:ok, _} -> :ok
+                {:error, changeset} -> Repo.rollback(changeset)
+              end
+            end
+          end)
+        end)
+
+      case result do
+        {:ok, _} ->
+          workouts =
+            Repo.all(
+              from w in WorkoutDetails,
+                where: w.workout_id == ^workout_id,
+                order_by: [asc: w.set]
+            )
+            |> Repo.preload([:exercise, :set_type])
+
+          {grouped_workouts, muscle_group_frequencies} = build_workout_assigns(workouts)
+
+          {:noreply,
+           socket
+           |> assign(:workouts, grouped_workouts)
+           |> assign(:muscle_group_frequencies, muscle_group_frequencies)
+           |> put_flash(:info, "Workout loaded from programme")}
+
+        {:error, _} ->
+          {:noreply, socket |> put_flash(:error, "Failed to load programme")}
+      end
+    else
+      {:noreply, socket |> put_flash(:error, "Template not found")}
+    end
+  end
+
   def mount(params, _session, socket) do
     user = socket.assigns.current_user
     client = Repo.get_by(Crohnjobs.Clients.Client, %{user_id: user.id})
@@ -425,12 +485,20 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                       is_active: true
                     })|>Repo.preload(programme: [programmeTemplates: [programmeDetails: :exercise]])
 
+                  own_programmes =
+                    Repo.all(
+                      from p in Crohnjobs.Programmes.Programme,
+                        where: p.user_id == ^user.id,
+                        preload: [programmeTemplates: [programmeDetails: :exercise]]
+                    )
+
                   newForm = WorkoutDetails.changeset(%WorkoutDetails{},%{})|>to_form()
 
                 {:ok,
                  socket
                  |> assign(:client, client)
                  |>assign(:programme, programme)
+                 |>assign(:own_programmes, own_programmes)
                  |> assign(:workout_id, workout_id_int)
                  |> assign(:workout, workout)
                  |> assign(:workout_form, workout_form)
@@ -560,6 +628,34 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                     </button>
                   <% end %>
                 </div>
+              </div>
+            <% end %>
+
+            <%= if length(@own_programmes) > 0 do %>
+              <div class="mb-6 border border-indigo-100 bg-indigo-50/40 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <div>
+                    <h2 class="text-sm font-semibold text-indigo-900">Load from my programmes</h2>
+                    <p class="text-xs text-indigo-700">Replaces current workout with 1 set per exercise.</p>
+                  </div>
+                </div>
+                <%= for programme <- @own_programmes do %>
+                  <p class="text-xs font-medium text-indigo-800 mb-2"><%= programme.name %></p>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                    <%= for template <- programme.programmeTemplates do %>
+                      <button
+                        type="button"
+                        phx-click="load_from_own_programme"
+                        phx-value-template-id={template.id}
+                        data-confirm="This will replace your current workout. Continue?"
+                        class="flex items-center justify-between rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-800 hover:bg-indigo-50"
+                      >
+                        <span class="truncate"><%= template.name %></span>
+                        <span class="text-[10px] text-indigo-600">Load</span>
+                      </button>
+                    <% end %>
+                  </div>
+                <% end %>
               </div>
             <% end %>
 
