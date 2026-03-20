@@ -1,38 +1,23 @@
 defmodule CrohnjobsWeb.Programmes do
-alias Crohnjobs.Trainers
 alias Crohnjobs.Programmes
-
 
   use CrohnjobsWeb, :live_view
 
-  def mount(params, _session, socket) do
-   trainer_id = params["trainer_id"]
-
-
+  def mount(_params, _session, socket) do
     user = socket.assigns.current_user
 
-
     openProgramme = false
-    newProgramme = Programmes.change_programme(%Programmes.Programme{})|>to_form()
-    trainer = Trainers.get_trainer_byUserId(user.id)
+    newProgramme = Programmes.change_programme(%Programmes.Programme{}) |> to_form()
 
-    if trainer_id != trainer.id do
-      redirect(socket, to: "/")
-    end
+    programmes =
+      Programmes.list_programme()
+      |> Enum.filter(&(&1.user_id == user.id))
 
-    programmes = if trainer do
-      programmes = Programmes.list_programme()
-      Enum.filter(programmes, &(&1.trainer_id == trainer.id))
-    else
-      []
-    end
-    myProgramme = Enum.filter(programmes, &(&1.trainer_id == trainer.id))
-    {:ok, assign(socket, trainer_id: trainer.id, openProgamme: openProgramme, programmes: myProgramme, name: user.name, newProgramme: newProgramme, delete_confirm_id: nil)}
-
+    {:ok, assign(socket, user_id: user.id, openProgamme: openProgramme, programmes: programmes, name: user.name, newProgramme: newProgramme, delete_confirm_id: nil)}
   end
-  def handle_event("addNewProgramme", _params, socket) do
 
-  newProgramme = %{name: "Untitled", description: "untitled", trainer_id: socket.assigns.trainer_id}
+  def handle_event("addNewProgramme", _params, socket) do
+    newProgramme = %{name: "Untitled", description: "untitled", user_id: socket.assigns.user_id}
 case Programmes.create_programme(newProgramme) do
   {:ok, programme}-> {:noreply, update(socket, :programmes, fn programmes->[programme | programmes]end)}
   _ -> {:noreply, socket|> put_flash(:error, "An error has been occured ")}

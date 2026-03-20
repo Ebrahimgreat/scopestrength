@@ -81,7 +81,7 @@ defmodule Crohnjobs.Programmes do
         create_programme(%{
           name: "#{programme.name} (copy)",
           description: programme.description,
-          trainer_id: programme.trainer_id
+          user_id: programme.user_id
         })
 
       Enum.each(programme.programmeTemplates, fn template ->

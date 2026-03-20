@@ -96,16 +96,13 @@ defmodule CrohnjobsWeb.ProgrammeShow do
   @spec mount(map(), any(), any()) :: {:ok, any()}
   def mount(%{"id" => id}, _session, socket) do
     user = socket.assigns.current_user
-    trainer = Trainers.get_trainer_byUserId(user.id)
 
     case Programmes.get_programme_with_template(id) do
       nil ->
         {:ok, socket |> put_flash(:error, "Programme not found") |> redirect(to: "/programmes")}
 
       programme ->
-        IO.inspect(programme)
-
-        case programme.trainer_id == trainer.id do
+        case programme.user_id == user.id do
           true ->
             my_programme = Programmes.change_programme(programme) |> to_form()
 

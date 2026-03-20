@@ -73,7 +73,7 @@ defmodule CrohnjobsWeb.Dashboard do
     case user.role do
       "trainer" ->
         trainer = Trainers.get_trainer_byUserId(user.id)
-        programmes = Repo.all(from p in Crohnjobs.Programmes.Programme, where: p.trainer_id == ^trainer.id)
+        programmes = Repo.all(from p in Crohnjobs.Programmes.Programme, where: p.user_id == ^user.id)
 
         if connected?(socket) do
           Phoenix.PubSub.subscribe(
@@ -141,7 +141,7 @@ defmodule CrohnjobsWeb.Dashboard do
 
         data =
           Repo.get(Trainer, trainer.id)
-          |> Repo.preload([:programmes, clients: [:user]])
+          |> Repo.preload([clients: [:user]])
 
          clients=data.clients
          active_client_ids= Enum.map(most_active_clients, fn%{client: c}-> c.id end)
@@ -210,7 +210,7 @@ defmodule CrohnjobsWeb.Dashboard do
 
       <div class="mb-6 text-sm text-slate-600">
         <span class="font-medium text-slate-800"><%= length(@data.clients) %></span> clients ·
-        <span class="font-medium text-slate-800"><%= length(@data.programmes) %></span> programmes ·
+        <span class="font-medium text-slate-800"><%= length(@programmes) %></span> programmes ·
 
       </div>
 
@@ -343,13 +343,13 @@ defmodule CrohnjobsWeb.Dashboard do
       <div class="mb-8 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <h2 class="text-base font-semibold text-slate-900">Programmes</h2>
-          <span class="text-xs text-slate-500"><%= length(@data.programmes) %> total</span>
+          <span class="text-xs text-slate-500"><%= length(@programmes) %> total</span>
         </div>
-        <%= if Enum.empty?(@data.programmes) do %>
+        <%= if Enum.empty?(@programmes) do %>
           <div class="px-5 py-6 text-sm text-slate-500">No programmes yet.</div>
         <% else %>
           <div class="divide-y divide-slate-100">
-            <%= for programme <- @data.programmes do %>
+            <%= for programme <- @programmes do %>
               <.link navigate={~p"/trainer/programmes/#{programme.id}"} class="block px-5 py-4 hover:bg-slate-50 transition-colors">
                 <p class="text-sm font-medium text-slate-900"><%= programme.name %></p>
                 <%= if programme.description do %>

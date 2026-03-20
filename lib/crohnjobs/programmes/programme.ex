@@ -5,7 +5,7 @@ defmodule Crohnjobs.Programmes.Programme do
   schema "programme" do
  field :name, :string
  field :description, :string
- belongs_to :trainer, CrohnJobs.Trainer
+ belongs_to :user, Crohnjobs.Account.User
  has_many :programmeTemplates, Crohnjobs.Programmes.ProgrammeTemplate
 
     timestamps(type: :utc_datetime)
@@ -14,7 +14,7 @@ defmodule Crohnjobs.Programmes.Programme do
   @doc false
   def changeset(programme, attrs) do
     programme
-    |> cast(attrs, [:name, :description, :trainer_id])
+    |> cast(attrs, [:name, :description, :user_id])
     |> validate_required([])
   end
 end

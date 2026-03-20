@@ -40,7 +40,7 @@ alias Crohnjobs.Trainers
     template ->
       programme = Repo.get(Programme, template.programme_id)
 
-      case programme.trainer_id == trainer.id do
+      case programme.user_id == user.id do
         true ->
           template = Repo.preload(template, programmeDetails: [exercise: [:muscle, :equipment]])
 
