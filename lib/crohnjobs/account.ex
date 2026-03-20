@@ -136,7 +136,7 @@ defmodule Crohnjobs.Account do
 
       # 6. Create programmes with templates and details
       # Programme 1: Push Pull Legs
-      {:ok, ppl} = Programmes.create_programme(%{name: "Push Pull Legs", description: "Classic 3-day split", trainer_id: trainer.id})
+      {:ok, ppl} = Programmes.create_programme(%{name: "Push Pull Legs", description: "Classic 3-day split", user_id: trainer_user.id})
 
       {:ok, push_day} = Programmes.create_programme_template(%{name: "Push Day", programme_id: ppl.id})
       for {ex_name, sets, reps, rir} <- [
@@ -185,7 +185,7 @@ defmodule Crohnjobs.Account do
       end
 
       # Programme 2: Upper Lower
-      {:ok, ul} = Programmes.create_programme(%{name: "Upper Lower", description: "4-day upper/lower split", trainer_id: trainer.id})
+      {:ok, ul} = Programmes.create_programme(%{name: "Upper Lower", description: "4-day upper/lower split", user_id: trainer_user.id})
 
       {:ok, upper} = Programmes.create_programme_template(%{name: "Upper Body", programme_id: ul.id})
       for {ex_name, sets, reps, rir} <- [
