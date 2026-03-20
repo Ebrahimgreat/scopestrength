@@ -65,7 +65,10 @@ defmodule Crohnjobs.MixProject do
       {:gen_stage, "~> 1.0.0"},
       {:live_charts, "~> 0.4.0"},
       {:tidewave, "~> 0.5", only: :dev},
-      {:elixlsx, "~> 0.6"}
+      {:elixlsx, "~> 0.6"},
+      {:kino, "~> 0.12"},
+      {:vega_lite, "~> 0.1.0"},
+      {:reactor, "~> 0.9"}
 
     ]
   end
