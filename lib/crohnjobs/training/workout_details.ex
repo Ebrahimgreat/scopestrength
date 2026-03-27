@@ -6,6 +6,7 @@ defmodule Crohnjobs.Training.WorkoutDetails do
     field :reps, :float
     field :weight, :float
     field :set, :integer
+    field :rir, :float, default: 0.0
     field :side, :string, default: "both"
     field :notes, :string
     belongs_to :exercise, Crohnjobs.Exercises.Exercise
@@ -17,7 +18,7 @@ defmodule Crohnjobs.Training.WorkoutDetails do
   @doc false
   def changeset(workout_details, attrs) do
     workout_details
-    |> cast(attrs, [:reps, :weight, :set, :side, :notes, :set_type_id, :workout_id, :exercise_id])
+    |> cast(attrs, [:reps, :weight, :set, :side, :notes, :set_type_id, :workout_id, :rir, :exercise_id])
     |> validate_required([])
     |> validate_inclusion(:side, ["both", "left", "right"])
     |> set_default_set_type()

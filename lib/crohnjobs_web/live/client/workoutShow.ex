@@ -94,13 +94,19 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
         id -> String.to_integer(id)
       end
 
+    rir =
+      case Float.parse(params["workout_details"]["rir"] || "") do
+        {num, _} -> num
+        :error -> 0.0
+      end
+
     notes = params["workout_details"]["notes"]
 
     # Store pending changes instead of saving immediately
     pending_changes = Map.put(
       socket.assigns.pending_changes,
       workout_detail_id,
-      %{reps: reps, weight: weight, set_type_id: set_type_id, notes: notes}
+      %{reps: reps, weight: weight, set_type_id: set_type_id, notes: notes, rir: rir}
     )
 
     # Update the form display
@@ -109,7 +115,7 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
       |> Enum.map(fn {exercise_id, sets} ->
         updated_sets = Enum.map(sets, fn workout_form ->
           if workout_form.data.id == workout_detail_id do
-            updated_data = %{workout_form.data | reps: reps, weight: weight, set_type_id: set_type_id, notes: notes}
+            updated_data = %{workout_form.data | reps: reps, weight: weight, set_type_id: set_type_id, notes: notes, rir: rir}
             updated_data
             |> Training.change_workout_details()
             |> to_form()
@@ -845,6 +851,21 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                                     <span class="text-xs text-gray-400">kg</span>
                                   </div>
                                 </div>
+                                <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                  <p class="text-[11px] uppercase tracking-wide text-gray-400">RIR</p>
+                                  <div class="flex items-center gap-2 mt-1">
+                                    <input
+                                      type="number"
+                                      name={"workout_details[rir]"}
+                                      value={workout.data.rir}
+                                      placeholder="0"
+                                      min="0"
+                                      step="0.5"
+                                      phx-debounce="500"
+                                      class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none"
+                                    />
+                                  </div>
+                                </div>
                               </div>
 
                               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1021,7 +1042,7 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
 
                               <!-- Stats -->
                               <div class="flex-1">
-                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-2">
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-2">
                                   <div>
                                     <p class="text-xs text-gray-500 uppercase tracking-wide">Reps</p>
                                     <p class="text-lg font-semibold text-gray-900"><%= workout.data.reps %></p>
@@ -1029,6 +1050,10 @@ alias CrohnjobsWeb.Exercises, as: ExercisesLiveView
                                   <div>
                                     <p class="text-xs text-gray-500 uppercase tracking-wide">Weight</p>
                                     <p class="text-lg font-semibold text-gray-900"><%= workout.data.weight %> kg</p>
+                                  </div>
+                                  <div>
+                                    <p class="text-xs text-gray-500 uppercase tracking-wide">RIR</p>
+                                    <p class="text-lg font-semibold text-gray-900"><%= workout.data.rir || 0 %></p>
                                   </div>
                                     <div>
                                       <p class="text-xs text-gray-500 uppercase tracking-wide">Type</p>
