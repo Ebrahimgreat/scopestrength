@@ -16,6 +16,9 @@ defmodule CrohnjobsWeb.Client.ProgressPhotos do
      |> assign(:client, client)
      |> assign(:photos, photos)
      |> assign(:show_upload_form, false)
+     |> assign(:notes, "")
+     |> assign(:editing_photo, nil)
+     |> assign(:edit_notes, "")
      |> allow_upload(:progress_photo,
        accept: ~w(.jpg .jpeg .png .gif),
        max_entries: 1,
@@ -25,6 +28,10 @@ defmodule CrohnjobsWeb.Client.ProgressPhotos do
 
   def handle_event("toggle_upload_form", _params, socket) do
     {:noreply, assign(socket, :show_upload_form, !socket.assigns.show_upload_form)}
+  end
+
+  def handle_event("validate", %{"notes" => notes} = _params, socket) do
+    {:noreply, assign(socket, :notes, notes)}
   end
 
   def handle_event("validate", _params, socket) do
@@ -102,6 +109,7 @@ defmodule CrohnjobsWeb.Client.ProgressPhotos do
              socket
              |> assign(:photos, photos)
              |> assign(:show_upload_form, false)
+             |> assign(:notes, "")
              |> put_flash(:info, "Progress photo uploaded!")}
 
           {:error, changeset} ->
@@ -111,6 +119,41 @@ defmodule CrohnjobsWeb.Client.ProgressPhotos do
 
       [] ->
         {:noreply, socket |> put_flash(:error, "No file was uploaded")}
+    end
+  end
+
+  def handle_event("edit_photo", %{"id" => id}, socket) do
+    client = socket.assigns.client
+    photo = ProgressPhotos.get_progress_photo_for_client!(String.to_integer(id), client.id)
+    {:noreply, socket |> assign(:editing_photo, photo) |> assign(:edit_notes, photo.notes || "")}
+  end
+
+  def handle_event("cancel_edit", _params, socket) do
+    {:noreply, socket |> assign(:editing_photo, nil) |> assign(:edit_notes, "")}
+  end
+
+  def handle_event("validate_edit", %{"edit_notes" => edit_notes}, socket) do
+    {:noreply, assign(socket, :edit_notes, edit_notes)}
+  end
+
+  def handle_event("save_edit", %{"edit_notes" => edit_notes}, socket) do
+    photo = socket.assigns.editing_photo
+    client = socket.assigns.client
+    notes = if(edit_notes == "", do: nil, else: edit_notes)
+
+    case ProgressPhotos.update_progress_photo(photo, %{notes: notes}) do
+      {:ok, _updated} ->
+        photos = ProgressPhotos.list_progress_photos_for_client(client.id)
+
+        {:noreply,
+         socket
+         |> assign(:photos, photos)
+         |> assign(:editing_photo, nil)
+         |> assign(:edit_notes, "")
+         |> put_flash(:info, "Photo updated!")}
+
+      {:error, _changeset} ->
+        {:noreply, socket |> put_flash(:error, "Failed to update photo")}
     end
   end
 
@@ -179,7 +222,7 @@ defmodule CrohnjobsWeb.Client.ProgressPhotos do
             <form phx-submit="save_photo" phx-change="validate" class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
-                <textarea name="notes" rows="2" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., Week 4 of program, feeling stronger"></textarea>
+                <textarea name="notes" rows="2" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., Week 4 of program, feeling stronger"><%= @notes %></textarea>
               </div>
 
               <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-emerald-400 transition-colors">
@@ -239,7 +282,16 @@ defmodule CrohnjobsWeb.Client.ProgressPhotos do
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden group">
               <div class="relative aspect-[3/4]">
                 <img src={photo.photo_url} alt="Progress photo" class="w-full h-full object-cover" />
-                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <button
+                    phx-click="edit_photo"
+                    phx-value-id={photo.id}
+                    class="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full p-2"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                  </button>
                   <button
                     phx-click="delete_photo"
                     phx-value-id={photo.id}
@@ -255,11 +307,47 @@ defmodule CrohnjobsWeb.Client.ProgressPhotos do
               <div class="p-4">
                 <p class="text-sm font-medium text-gray-900"><%= Calendar.strftime(photo.date, "%B %d, %Y") %></p>
                 <%= if photo.notes do %>
-                  <p class="text-sm text-gray-500 mt-1"><%= photo.notes %></p>
+                  <div class="mt-2 bg-gray-50 rounded-lg p-2">
+                    <p class="text-sm text-gray-700"><%= photo.notes %></p>
+                  </div>
                 <% end %>
               </div>
             </div>
           <% end %>
+        </div>
+      <% end %>
+
+      <%= if @editing_photo do %>
+        <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" phx-click="cancel_edit">
+          <div class="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden" phx-click-away="cancel_edit">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 class="text-xl font-semibold text-gray-900">Edit Photo</h2>
+              <button phx-click="cancel_edit" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            <div class="p-6">
+              <div class="mb-4">
+                <img src={@editing_photo.photo_url} alt="Progress photo" class="w-full max-h-64 object-contain rounded-lg" />
+              </div>
+              <form phx-submit="save_edit" phx-change="validate_edit" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea name="edit_notes" rows="3" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="Add notes about this photo..."><%= @edit_notes %></textarea>
+                </div>
+                <div class="flex gap-3">
+                  <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg transition-colors">
+                    Save Changes
+                  </button>
+                  <button type="button" phx-click="cancel_edit" class="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium">
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       <% end %>
     </div>
