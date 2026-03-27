@@ -56,25 +56,9 @@ defmodule CrohnjobsWeb.VolumeTracking do
   end
 
   defp get_volume_data(client_id, period) do
-    # Calculate date range based on period
-    {start_datetime, grouped_by} =
-      case period do
-        "weekly" ->
-          # Last 12 weeks
-          start_date = Date.add(Date.utc_today(), -84)
-          {DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC"), :week}
+    grouped_by = if period == "monthly", do: :month, else: :week
 
-        "monthly" ->
-          # Last 6 months
-          start_date = Date.add(Date.utc_today(), -180)
-          {DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC"), :month}
-
-        _ ->
-          start_date = Date.add(Date.utc_today(), -84)
-          {DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC"), :week}
-      end
-
-    # Query workout details
+    # Query all workout details for this client
     workout_details =
       Repo.all(
         from wd in WorkoutDetails,
@@ -82,7 +66,7 @@ defmodule CrohnjobsWeb.VolumeTracking do
           on: wd.workout_id == w.id,
           join: e in Exercise,
           on: wd.exercise_id == e.id,
-          where: w.client_id == ^client_id and w.date >= ^start_datetime,
+          where: w.client_id == ^client_id,
           select: %{
             workout_id: w.id,
             exercise_id: e.id,
@@ -213,6 +197,67 @@ defmodule CrohnjobsWeb.VolumeTracking do
     end)
     |> Enum.sort_by(& &1.period_key, :desc)
     |> Enum.group_by(& &1.muscle_name)
+    |> then(fn volume_by_muscle ->
+      # Find earliest workout date to start periods from
+      earliest_date =
+        workout_details
+        |> Enum.map(fn d -> DateTime.to_date(d.date) end)
+        |> Enum.min(Date, fn -> Date.utc_today() end)
+
+      all_periods = generate_all_periods(grouped_by, earliest_date)
+
+      # Get all muscles so ones with 0 volume still show
+      all_muscles = Repo.all(from m in Muscles, select: m.name, order_by: m.name)
+
+      Enum.into(all_muscles, %{}, fn muscle_name ->
+        existing = Map.get(volume_by_muscle, muscle_name, [])
+        existing_by_key = Map.new(existing, fn p -> {p.period_key, p} end)
+
+        filled_periods =
+          Enum.map(all_periods, fn {period_key, period_label} ->
+            Map.get(existing_by_key, period_key, %{
+              muscle_name: muscle_name,
+              period_label: period_label,
+              period_key: period_key,
+              total_sets: 0.0,
+              direct_sets: 0.0,
+              effective_sets: 0.0
+            })
+          end)
+
+        {muscle_name, filled_periods}
+      end)
+    end)
+  end
+
+  defp generate_all_periods(:week, earliest_date) do
+    today = Date.utc_today()
+    start = Date.beginning_of_week(earliest_date)
+
+    start
+    |> Stream.iterate(&Date.add(&1, 7))
+    |> Enum.take_while(&(Date.compare(&1, today) != :gt))
+    |> Enum.map(fn week_start ->
+      key = {week_start.year, week_start}
+      label = "Week of #{Calendar.strftime(week_start, "%b %d")}"
+      {key, label}
+    end)
+    |> Enum.sort_by(&elem(&1, 0), :desc)
+  end
+
+  defp generate_all_periods(:month, earliest_date) do
+    today = Date.utc_today()
+
+    Stream.iterate({earliest_date.year, earliest_date.month}, fn {y, m} ->
+      if m == 12, do: {y + 1, 1}, else: {y, m + 1}
+    end)
+    |> Enum.take_while(fn {y, m} -> {y, m} <= {today.year, today.month} end)
+    |> Enum.map(fn {y, m} ->
+      key = {y, m}
+      label = Calendar.strftime(Date.new!(y, m, 1), "%B %Y")
+      {key, label}
+    end)
+    |> Enum.sort_by(&elem(&1, 0), :desc)
   end
 
   def render(assigns) do
@@ -267,7 +312,7 @@ defmodule CrohnjobsWeb.VolumeTracking do
               <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
                 <h2 class="text-base font-semibold text-gray-900"><%= muscle_name %></h2>
                 <span class="text-xs font-medium text-gray-500">
-                  <%= if @period == "weekly", do: "Last 12 weeks", else: "Last 6 months" %>
+                  <%= if @period == "weekly", do: "Weekly breakdown", else: "Monthly breakdown" %>
                 </span>
               </div>
 
@@ -308,9 +353,21 @@ defmodule CrohnjobsWeb.VolumeTracking do
                           nil
                         end %>
 
-                      <tr class="hover:bg-gray-50/70">
+                      <tr class={if period.total_sets == 0.0, do: "bg-amber-50/50 hover:bg-amber-50", else: "hover:bg-gray-50/70"}>
                         <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 sm:px-6">
-                          <%= period.period_label %>
+                          <div class="flex items-center gap-2">
+                            <%= period.period_label %>
+                            <%= if period.total_sets == 0.0 do %>
+                              <span class="relative group cursor-help">
+                                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg z-10">
+                                  No sets recorded this <%= if @period == "weekly", do: "week", else: "month" %>
+                                </span>
+                              </span>
+                            <% end %>
+                          </div>
                         </td>
                         <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-semibold text-gray-900 sm:px-6">
                           <%= period.total_sets %>
