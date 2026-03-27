@@ -235,7 +235,7 @@ defmodule CrohnjobsWeb.Client.Workouts do
                         <% end %>
                       </p>
                       </.link>
-                      <.button phx-click="deleteWorkout" phx-value-id={workout.id}>
+                      <.button phx-click="deleteWorkout" phx-value-id={workout.id} data-confirm="Are you sure you want to delete this workout?">
                       Delete
                       </.button>
                     </div>
