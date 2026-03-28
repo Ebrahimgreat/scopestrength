@@ -27,13 +27,15 @@ defmodule CrohnjobsWeb.VolumeTracking do
           true ->
             period = "weekly"
             volume_data = get_volume_data(client_id, period)
+            muscle_ids = Repo.all(from m in Muscles, select: {m.name, m.id}) |> Map.new()
 
             {:ok,
              assign(socket,
                client: client,
                client_id: client_id,
                period: period,
-               volume_data: volume_data
+               volume_data: volume_data,
+               muscle_ids: muscle_ids
              )}
 
           false ->
@@ -310,7 +312,12 @@ defmodule CrohnjobsWeb.VolumeTracking do
           <%= for {muscle_name, periods} <- @volume_data |> Enum.sort_by(fn {muscle, _} -> muscle end) do %>
             <section class="overflow-hidden rounded-xl border border-gray-200 bg-white">
               <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
-                <h2 class="text-base font-semibold text-gray-900"><%= muscle_name %></h2>
+                <.link
+                  navigate={"/trainer/clients/#{@client_id}/volumeTracking/#{@muscle_ids[muscle_name]}"}
+                  class="text-base font-semibold text-gray-900 hover:text-emerald-600 transition-colors"
+                >
+                  <%= muscle_name %>
+                </.link>
                 <span class="text-xs font-medium text-gray-500">
                   <%= if @period == "weekly", do: "Weekly breakdown", else: "Monthly breakdown" %>
                 </span>
