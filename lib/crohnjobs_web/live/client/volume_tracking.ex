@@ -16,14 +16,17 @@ defmodule CrohnjobsWeb.Client.VolumeTracking do
     # Default to weekly view
     period = "weekly"
     volume_data = get_volume_data(client.id, period)
+    muscle_ids = Repo.all(from m in Muscles, select: {m.name, m.id}) |> Map.new()
 
     {:ok,
      assign(socket,
        client: client,
        client_id: client.id,
        period: period,
-       volume_data: volume_data
+       volume_data: volume_data,
+       muscle_ids: muscle_ids
      )}
+
   end
 
   def handle_event("change_period", %{"period" => period}, socket) do
@@ -74,11 +77,13 @@ defmodule CrohnjobsWeb.Client.VolumeTracking do
             select: %{
               exercise_id: c.exercise_id,
               muscle_name: m.name,
+              muscle_id: m.id,
               role: c.role,
               multiplier: c.multiplier
             }
         )
       end
+      IO.inspect(muscle_contributions)
 
     # Group contributions by exercise
     contributions_by_exercise = Enum.group_by(muscle_contributions, & &1.exercise_id)
@@ -109,6 +114,7 @@ defmodule CrohnjobsWeb.Client.VolumeTracking do
       Enum.map(contributions, fn c ->
         %{
           muscle_name: c.muscle_name,
+          muscle_id: c.muscle_id,
           role: c.role,
           multiplier: c.multiplier,
           set_count: set_count,
@@ -291,7 +297,13 @@ defmodule CrohnjobsWeb.Client.VolumeTracking do
           <%= for {muscle_name, periods} <- @volume_data |> Enum.sort_by(fn {muscle, _} -> muscle end) do %>
             <section class="overflow-hidden rounded-xl border border-gray-200 bg-white">
               <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
-                <h2 class="text-base font-semibold text-gray-900"><%= muscle_name %></h2>
+                <.link
+                  navigate={"/client/volumeTracking/#{@muscle_ids[muscle_name]}"}
+                  class="text-base font-semibold text-gray-900 hover:text-emerald-600 transition-colors"
+                >
+                  <%= muscle_name %>
+                </.link>
+
                 <span class="text-xs font-medium text-gray-500">
                   <%= if @period == "weekly", do: "Weekly breakdown", else: "Monthly breakdown" %>
                 </span>
