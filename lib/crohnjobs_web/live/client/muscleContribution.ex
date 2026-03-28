@@ -52,11 +52,12 @@ defmodule CrohnjobsWeb.Client.MuscleContribution do
               entries
               |> Enum.group_by(& &1.exercise_name)
               |> Enum.into(%{}, fn {ex_name, ex_entries} ->
+                exercise_id = List.first(ex_entries).exercise_id
                 by_date =
                   ex_entries
                   |> Enum.group_by(&DateTime.to_date(&1.date))
                   |> Enum.sort_by(&elem(&1, 0), {:desc, Date})
-                {ex_name, by_date}
+                {ex_name, {exercise_id, by_date}}
               end)
             {role, by_exercise}
           end)
@@ -109,7 +110,7 @@ defmodule CrohnjobsWeb.Client.MuscleContribution do
                 </h2>
 
                 <div class="space-y-4">
-                  <%= for {exercise_name, by_date} <- by_exercise |> Enum.sort_by(&elem(&1, 0)) do %>
+                  <%= for {exercise_name, {exercise_id, by_date}} <- by_exercise |> Enum.sort_by(&elem(&1, 0)) do %>
                     <% key = "#{role}||#{exercise_name}" %>
                     <% current_page = Map.get(@pages, key, 0) %>
                     <% total_pages = ceil(length(by_date) / 5) %>
@@ -117,7 +118,9 @@ defmodule CrohnjobsWeb.Client.MuscleContribution do
 
                     <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
                       <div class="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-2.5">
-                        <h3 class="text-sm font-semibold text-gray-900"><%= exercise_name %></h3>
+                        <.link navigate={~p"/client/strengthProgress/#{exercise_id}"} class="text-sm font-semibold text-gray-900 hover:text-emerald-600 transition-colors">
+                          <%= exercise_name %>
+                        </.link>
                         <span class="text-xs text-gray-400"><%= length(by_date) %> sessions</span>
                       </div>
 
