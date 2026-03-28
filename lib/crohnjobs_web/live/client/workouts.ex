@@ -213,36 +213,43 @@ defmodule CrohnjobsWeb.Client.Workouts do
             </form>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <%= for workout <- @workouts do %>
-              <div class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 overflow-hidden">
-                <div class="p-6">
-                  <div class="flex items-center space-x-4 mb-4">
-
-                    <div>
-
-                     <.link navigate={~p"/client/workouts/#{workout.id}"}>
-                      <h3 class="text-xl font-bold text-gray-900 group-hover:text-emerald-600 transition-colors duration-200">
-                        {workout.name || "Workout"}
-                      </h3>
-                      <p class="text-sm text-gray-500 flex items-center mt-1">
-
-
-                        <%= if workout.date do %>
-                          {Calendar.strftime(workout.date, "%B %d, %Y")}
-                        <% else %>
-                          No date set
-                        <% end %>
-                      </p>
-                      </.link>
-                      <.button phx-click="deleteWorkout" phx-value-id={workout.id} data-confirm="Are you sure you want to delete this workout?">
-                      Delete
-                      </.button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            <% end %>
+          <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th class="px-4 py-3">Name</th>
+                  <th class="px-4 py-3">Date</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <%= for workout <- @workouts do %>
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-3">
+                        <.link navigate={~p"/client/workouts/#{workout.id}"} class="font-medium text-gray-900 hover:text-emerald-600">
+                          <%= workout.name || "Untitled" %>
+                        </.link>
+                        <button
+                          phx-click="deleteWorkout"
+                          phx-value-id={workout.id}
+                          data-confirm="Are you sure you want to delete this workout?"
+                          class="text-xs text-red-400 hover:text-red-600 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-gray-500">
+                      <%= if workout.date do %>
+                        <%= Calendar.strftime(workout.date, "%b %d, %Y") %>
+                      <% else %>
+                        —
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
           </div>
 
           <%= if @total_pages > 1 do %>
