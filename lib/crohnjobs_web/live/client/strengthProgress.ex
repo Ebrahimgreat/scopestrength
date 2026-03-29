@@ -35,17 +35,17 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
       |> Enum.group_by(& &1.workout.date)
       |> Enum.sort_by(&elem(&1, 0))
       |> Enum.map(fn {date, sets} ->
-        top_set = Enum.max_by(sets, & &1.weight)
+        top_set = Enum.max_by(sets, fn s -> s.weight * (1 + s.reps / 30.0) end)
         e1rm = Float.round(top_set.weight * (1 + top_set.reps / 30.0), 1)
-        %{date: date, sets: sets, top_weight: top_set.weight, e1rm: e1rm}
+        %{date: date, sets: sets, e1rm: e1rm}
       end)
 
     grouped_workouts =
       sessions
       |> Enum.with_index()
       |> Enum.map(fn {session, idx} ->
-        prev_weight = if idx > 0, do: Enum.at(sessions, idx - 1).top_weight, else: nil
-        Map.put(session, :prev_top_weight, prev_weight)
+        prev_e1rm = if idx > 0, do: Enum.at(sessions, idx - 1).e1rm, else: nil
+        Map.put(session, :prev_e1rm, prev_e1rm)
       end)
 
     {:ok,
@@ -127,7 +127,7 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
               </thead>
               <tbody class="divide-y divide-gray-100 bg-white">
                 <%= for session <- @grouped_workouts do %>
-                  <% diff = if session.prev_top_weight, do: session.top_weight - session.prev_top_weight, else: nil %>
+                  <% diff = if session.prev_e1rm, do: Float.round(session.e1rm - session.prev_e1rm, 1), else: nil %>
                   <tr class="hover:bg-gray-50/70">
                     <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 sm:px-6">
                       <%= Calendar.strftime(session.date, "%d %b %Y") %>
@@ -138,11 +138,11 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
                           <span class="text-gray-300 text-xs">—</span>
                         <% diff > 0 -> %>
                           <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
-                            ▲ +<%= diff %>kg
+                            ▲ +<%= diff %>kg e1RM
                           </span>
                         <% diff < 0 -> %>
                           <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-rose-200">
-                            ▼ <%= diff %>kg
+                            ▼ <%= diff %>kg e1RM
                           </span>
                         <% true -> %>
                           <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
