@@ -5,6 +5,10 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
   use CrohnjobsWeb, :live_view
   import Ecto.Query
 
+  defp top_set(sets) do
+    Enum.max_by(sets, fn s -> {Decimal.to_float(s.weight), s.reps} end)
+  end
+
   def mount(params, _session, socket) do
     exercise_id = String.to_integer(params["exercise_id"])
     user = socket.assigns.current_user
@@ -23,7 +27,7 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
 
     {exercise_name, pr} =
       if length(workout_details) > 0 do
-        pr = Enum.max_by(workout_details, & &1.weight)
+        pr = top_set(workout_details)
         {hd(workout_details).exercise.name, pr}
       else
         {"", nil}
@@ -35,17 +39,16 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
       |> Enum.group_by(& &1.workout.date)
       |> Enum.sort_by(&elem(&1, 0))
       |> Enum.map(fn {date, sets} ->
-        top_set = Enum.max_by(sets, fn s -> s.weight * (1 + s.reps / 30.0) end)
-        e1rm = Float.round(top_set.weight * (1 + top_set.reps / 30.0), 1)
-        %{date: date, sets: sets, e1rm: e1rm}
+        best = top_set(sets)
+        %{date: date, sets: sets, top_weight: Decimal.to_float(best.weight), top_reps: best.reps}
       end)
 
     grouped_workouts =
       sessions
       |> Enum.with_index()
       |> Enum.map(fn {session, idx} ->
-        prev_e1rm = if idx > 0, do: Enum.at(sessions, idx - 1).e1rm, else: nil
-        Map.put(session, :prev_e1rm, prev_e1rm)
+        prev = if idx > 0, do: Enum.at(sessions, idx - 1), else: nil
+        Map.put(session, :prev, prev)
       end)
 
     {:ok,
@@ -78,7 +81,7 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
       <% else %>
 
         <!-- PR Card -->
-        <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div class="mb-6 grid grid-cols-3 gap-4">
           <div class="rounded-xl border border-gray-200 bg-white p-4">
             <p class="text-xs font-medium text-gray-500">Personal Record</p>
             <p class="mt-1 text-2xl font-bold text-gray-900"><%= @pr.weight %> <span class="text-sm font-normal text-gray-500">kg</span></p>
@@ -86,12 +89,6 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
           <div class="rounded-xl border border-gray-200 bg-white p-4">
             <p class="text-xs font-medium text-gray-500">PR Reps</p>
             <p class="mt-1 text-2xl font-bold text-gray-900"><%= @pr.reps %> <span class="text-sm font-normal text-gray-500">reps</span></p>
-          </div>
-          <div class="rounded-xl border border-gray-200 bg-white p-4">
-            <p class="text-xs font-medium text-gray-500">Est. 1RM</p>
-            <p class="mt-1 text-2xl font-bold text-emerald-600">
-              <%= Float.round(@pr.weight * (1 + @pr.reps / 30.0), 1) %> <span class="text-sm font-normal text-gray-500">kg</span>
-            </p>
           </div>
           <div class="rounded-xl border border-gray-200 bg-white p-4">
             <p class="text-xs font-medium text-gray-500">Sessions</p>
@@ -115,9 +112,6 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
                   <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Trend
                   </th>
-                  <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    e1RM
-                  </th>
                   <%= for set_num <- 1..max_sets do %>
                     <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Set <%= set_num %>
@@ -127,31 +121,35 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
               </thead>
               <tbody class="divide-y divide-gray-100 bg-white">
                 <%= for session <- @grouped_workouts do %>
-                  <% diff = if session.prev_e1rm, do: Float.round(session.e1rm - session.prev_e1rm, 1), else: nil %>
                   <tr class="hover:bg-gray-50/70">
                     <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 sm:px-6">
                       <%= Calendar.strftime(session.date, "%d %b %Y") %>
                     </td>
                     <td class="whitespace-nowrap px-4 py-3 text-center text-sm">
                       <%= cond do %>
-                        <% diff == nil -> %>
+                        <% session.prev == nil -> %>
                           <span class="text-gray-300 text-xs">—</span>
-                        <% diff > 0 -> %>
+                        <% session.top_weight > session.prev.top_weight -> %>
                           <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
-                            ▲ +<%= diff %>kg e1RM
+                            ▲ +<%= Float.round(session.top_weight - session.prev.top_weight, 1) %>kg
                           </span>
-                        <% diff < 0 -> %>
+                        <% session.top_weight < session.prev.top_weight -> %>
                           <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-rose-200">
-                            ▼ <%= diff %>kg e1RM
+                            ▼ <%= Float.round(session.top_weight - session.prev.top_weight, 1) %>kg
+                          </span>
+                        <% session.top_reps > session.prev.top_reps -> %>
+                          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+                            ▲ +<%= session.top_reps - session.prev.top_reps %> reps
+                          </span>
+                        <% session.top_reps < session.prev.top_reps -> %>
+                          <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-rose-200">
+                            ▼ <%= session.top_reps - session.prev.top_reps %> reps
                           </span>
                         <% true -> %>
                           <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
                             = same
                           </span>
                       <% end %>
-                    </td>
-                    <td class="whitespace-nowrap px-4 py-3 text-center text-sm font-semibold text-emerald-600">
-                      <%= session.e1rm %>kg
                     </td>
                     <%= for set_num <- 1..max_sets do %>
                       <td class="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-700">
