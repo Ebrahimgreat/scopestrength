@@ -6,7 +6,7 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
   import Ecto.Query
 
   defp top_set(sets) do
-    Enum.max_by(sets, fn s -> {Decimal.to_float(s.weight), s.reps} end)
+    Enum.max_by(sets, fn s -> {s.weight, s.reps} end)
   end
 
   def mount(params, _session, socket) do
@@ -40,7 +40,7 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
       |> Enum.sort_by(&elem(&1, 0))
       |> Enum.map(fn {date, sets} ->
         best = top_set(sets)
-        %{date: date, sets: sets, top_weight: Decimal.to_float(best.weight), top_reps: best.reps}
+        %{date: date, sets: sets, top_weight: best.weight, top_reps: best.reps}
       end)
 
     grouped_workouts =
