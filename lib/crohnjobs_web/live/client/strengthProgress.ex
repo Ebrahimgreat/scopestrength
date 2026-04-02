@@ -40,8 +40,10 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
       |> Enum.sort_by(&elem(&1, 0))
       |> Enum.map(fn {date, sets} ->
         best = top_set(sets)
-        %{date: date, sets: sets, top_weight: best.weight, top_reps: best.reps}
+        avg_reps = Float.round(Enum.sum(Enum.map(sets, & &1.reps)) / length(sets), 1)
+        %{date: date, sets: sets, top_weight: best.weight, top_reps: best.reps, avg_reps: avg_reps}
       end)
+      
 
     grouped_workouts =
       sessions
@@ -51,11 +53,19 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
         Map.put(session, :prev, prev)
       end)
 
+    overall_avg_reps =
+      if length(workout_details) > 0 do
+        Float.round(Enum.sum(Enum.map(workout_details, & &1.reps)) / length(workout_details), 1)
+      else
+        0.0
+      end
+
     {:ok,
      assign(socket,
        exercise_name: exercise_name,
        pr: pr,
-       grouped_workouts: grouped_workouts
+       grouped_workouts: grouped_workouts,
+       overall_avg_reps: overall_avg_reps
      )}
   end
 
@@ -81,7 +91,7 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
       <% else %>
 
         <!-- PR Card -->
-        <div class="mb-6 grid grid-cols-3 gap-4">
+        <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div class="rounded-xl border border-gray-200 bg-white p-4">
             <p class="text-xs font-medium text-gray-500">Personal Record</p>
             <p class="mt-1 text-2xl font-bold text-gray-900"><%= @pr.weight %> <span class="text-sm font-normal text-gray-500">kg</span></p>
@@ -89,6 +99,10 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
           <div class="rounded-xl border border-gray-200 bg-white p-4">
             <p class="text-xs font-medium text-gray-500">PR Reps</p>
             <p class="mt-1 text-2xl font-bold text-gray-900"><%= @pr.reps %> <span class="text-sm font-normal text-gray-500">reps</span></p>
+          </div>
+          <div class="rounded-xl border border-gray-200 bg-white p-4">
+            <p class="text-xs font-medium text-gray-500">Avg Reps</p>
+            <p class="mt-1 text-2xl font-bold text-gray-900"><%= @overall_avg_reps %> <span class="text-sm font-normal text-gray-500">reps</span></p>
           </div>
           <div class="rounded-xl border border-gray-200 bg-white p-4">
             <p class="text-xs font-medium text-gray-500">Sessions</p>
@@ -111,6 +125,9 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
                   </th>
                   <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Trend
+                  </th>
+                  <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Avg Reps
                   </th>
                   <%= for set_num <- 1..max_sets do %>
                     <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -150,6 +167,9 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
                             = same
                           </span>
                       <% end %>
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                      <%= session.avg_reps %>
                     </td>
                     <%= for set_num <- 1..max_sets do %>
                       <td class="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-700">

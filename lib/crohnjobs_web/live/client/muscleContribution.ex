@@ -57,7 +57,16 @@ defmodule CrohnjobsWeb.Client.MuscleContribution do
                   ex_entries
                   |> Enum.group_by(&DateTime.to_date(&1.date))
                   |> Enum.sort_by(&elem(&1, 0), {:desc, Date})
-                {ex_name, {exercise_id, by_date}}
+                  |> Enum.map(fn {date, sets} ->
+                    session_avg_reps = Float.round(Enum.sum(Enum.map(sets, & &1.reps)) / length(sets), 1)
+                    weighted = Enum.filter(sets, &(&1.weight && &1.weight > 0))
+                    session_avg_weight = if length(weighted) > 0, do: Float.round(Enum.sum(Enum.map(weighted, & &1.weight)) / length(weighted), 1), else: nil
+                    {date, sets, session_avg_reps, session_avg_weight}
+                  end)
+                overall_avg_reps = Float.round(Enum.sum(Enum.map(ex_entries, & &1.reps)) / length(ex_entries), 1)
+                weighted_all = Enum.filter(ex_entries, &(&1.weight && &1.weight > 0))
+                overall_avg_weight = if length(weighted_all) > 0, do: Float.round(Enum.sum(Enum.map(weighted_all, & &1.weight)) / length(weighted_all), 1), else: nil
+                {ex_name, {exercise_id, by_date, overall_avg_reps, overall_avg_weight}}
               end)
             {role, by_exercise}
           end)
@@ -81,7 +90,7 @@ defmodule CrohnjobsWeb.Client.MuscleContribution do
 
   defp get_total_pages(exercises, key) do
     [role, exercise_name] = String.split(key, "||", parts: 2)
-    by_date = exercises |> Map.get(role, %{}) |> Map.get(exercise_name, [])
+    {_exercise_id, by_date, _avg_reps, _avg_weight} = exercises |> Map.get(role, %{}) |> Map.get(exercise_name, {nil, [], nil, nil})
     ceil(length(by_date) / @page_size)
   end
 
@@ -110,7 +119,7 @@ defmodule CrohnjobsWeb.Client.MuscleContribution do
                 </h2>
 
                 <div class="space-y-4">
-                  <%= for {exercise_name, {exercise_id, by_date}} <- by_exercise |> Enum.sort_by(&elem(&1, 0)) do %>
+                  <%= for {exercise_name, {exercise_id, by_date, overall_avg_reps, overall_avg_weight}} <- by_exercise |> Enum.sort_by(&elem(&1, 0)) do %>
                     <% key = "#{role}||#{exercise_name}" %>
                     <% current_page = Map.get(@pages, key, 0) %>
                     <% total_pages = ceil(length(by_date) / 5) %>
@@ -121,15 +130,24 @@ defmodule CrohnjobsWeb.Client.MuscleContribution do
                         <.link navigate={~p"/client/strengthProgress/#{exercise_id}"} class="text-sm font-semibold text-gray-900 hover:text-emerald-600 transition-colors">
                           <%= exercise_name %>
                         </.link>
-                        <span class="text-xs text-gray-400"><%= length(by_date) %> sessions</span>
+                        <div class="flex items-center gap-3">
+                          <span class="text-xs text-gray-400">avg <%= overall_avg_reps %> reps</span>
+                          <%= if overall_avg_weight do %>
+                            <span class="text-xs text-gray-400">avg <%= overall_avg_weight %>kg</span>
+                          <% end %>
+                          <span class="text-xs text-gray-400"><%= length(by_date) %> sessions</span>
+                        </div>
                       </div>
 
                       <div class="divide-y divide-gray-100">
-                        <%= for {date, sets} <- page_sessions do %>
+                        <%= for {date, sets, session_avg_reps, session_avg_weight} <- page_sessions do %>
                           <div class="px-4 py-3">
-                            <p class="mb-2 text-xs font-medium text-gray-500">
-                              <%= Calendar.strftime(date, "%b %d, %Y") %>
-                            </p>
+                            <div class="mb-2 flex items-center gap-3">
+                              <p class="text-xs font-medium text-gray-500">
+                                <%= Calendar.strftime(date, "%b %d, %Y") %>
+                              </p>
+                              <span class="text-xs text-gray-400">avg <%= session_avg_reps %> reps<%= if session_avg_weight, do: " @ #{session_avg_weight}kg" %></span>
+                            </div>
                             <div class="flex flex-wrap gap-2">
                               <%= for s <- sets do %>
                                 <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
