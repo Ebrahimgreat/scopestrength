@@ -37,7 +37,7 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
     sessions =
       workout_details
       |> Enum.group_by(& &1.workout.date)
-      |> Enum.sort_by(&elem(&1, 0))
+      |> Enum.sort_by(&elem(&1, 0), {:desc, Date})
       |> Enum.map(fn {date, sets} ->
         best = top_set(sets)
         avg_reps = Float.round(Enum.sum(Enum.map(sets, & &1.reps)) / length(sets), 1)
@@ -49,7 +49,7 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
       sessions
       |> Enum.with_index()
       |> Enum.map(fn {session, idx} ->
-        prev = if idx > 0, do: Enum.at(sessions, idx - 1), else: nil
+        prev = Enum.at(sessions, idx + 1)
         Map.put(session, :prev, prev)
       end)
 
