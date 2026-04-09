@@ -12,6 +12,17 @@ alias Crohnjobs.Training.{Workout, WorkoutDetails}
 import Ecto.Query
   use CrohnjobsWeb, :live_view
 
+
+  def handle_event("filterExercise", %{"id" => id}, socket) do
+    muscle_id = String.to_integer(id)
+    filtered = Enum.filter(socket.assigns.all_exercise_progress, &(&1.muscle_id == muscle_id))
+    {:noreply, assign(socket, exercise_progress: filtered, filterApplied: muscle_id)}
+  end
+
+  def handle_event("resetFilters", _, socket) do
+    {:noreply, assign(socket, exercise_progress: socket.assigns.all_exercise_progress, filterApplied: nil)}
+  end
+
   def handle_event("submit_invite_code", %{"code" => code}, socket) do
     user = socket.assigns.current_user
     client = socket.assigns.client
@@ -141,19 +152,27 @@ import Ecto.Query
         where: w.client_id == ^client.id,
         join: e in assoc(wd, :exercise),
         group_by: [e.id, e.name],
-        select: %{exercise_id: e.id, name: e.name, total_sets: count(wd.id)}
+        select: %{exercise_id: e.id, name: e.name, muscle_id: e.muscle_id, total_sets: count(wd.id)}
       )
       |> Repo.all()
+
+
+      #Get Muscles
+
+      muscles = Crohnjobs.Exercises.list_mucles()
 
     {:ok, assign(socket,
       report: false,
       client: client,
+      filterApplied: nil,
       current_programme: currentProgramme,
       invite_code: "",
       recent_workouts: recent_workouts,
       exercise_progress: exercise_progress,
+      all_exercise_progress: exercise_progress,
       notifications: notifications,
-      notification_count: length(notifications)
+      notification_count: length(notifications),
+      muscles: muscles
     )}
   end
   def handle_info({:notification, %Notification{} = notification}, socket) do
@@ -320,6 +339,34 @@ import Ecto.Query
           <h2 class="text-lg font-semibold text-gray-900">Your Exercise Progress</h2>
           <p class="text-sm text-gray-500 mt-1">Track your strength gains over time</p>
         </div>
+
+        <!-- Muscle Filters -->
+        <div class="px-5 py-3 flex flex-wrap gap-2 border-b border-gray-100">
+          <button
+            type="button"
+            phx-click="resetFilters"
+            class="px-3 py-1.5 rounded-full text-xs font-semibold border transition bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+          >
+            All
+          </button>
+          <%= for muscle <- @muscles do %>
+            <button
+              type="button"
+              phx-click="filterExercise"
+              phx-value-id={muscle.id}
+              class={[
+                "px-3 py-1.5 rounded-full text-xs font-semibold border transition",
+                if(@filterApplied == muscle.id,
+                  do: "bg-emerald-600 text-white border-emerald-600",
+                  else: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                )
+              ]}
+            >
+              <%= muscle.name %>
+            </button>
+          <% end %>
+        </div>
+
 
         <%= if Enum.empty?(@exercise_progress) do %>
           <div class="p-8 text-center">
