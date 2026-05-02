@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.SetReclinePreacherCurlUnilateral do
+defmodule Scopestrength.Repo.Migrations.SetReclinePreacherCurlUnilateral do
   use Ecto.Migration
 
   def up do

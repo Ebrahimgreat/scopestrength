@@ -1,12 +1,12 @@
-defmodule CrohnjobsWeb do
+defmodule ScopestrengthWeb do
   @moduledoc """
   The entrypoint for defining your web interface, such
   as controllers, components, channels, and so on.
 
   This can be used in your application as:
 
-      use CrohnjobsWeb, :controller
-      use CrohnjobsWeb, :html
+      use ScopestrengthWeb, :controller
+      use ScopestrengthWeb, :html
 
   The definitions below will be executed for every controller,
   component, etc, so keep them short and clean, focused
@@ -40,9 +40,9 @@ defmodule CrohnjobsWeb do
     quote do
       use Phoenix.Controller,
         formats: [:html, :json],
-        layouts: [html: CrohnjobsWeb.Layouts]
+        layouts: [html: ScopestrengthWeb.Layouts]
 
-      use Gettext, backend: CrohnjobsWeb.Gettext
+      use Gettext, backend: ScopestrengthWeb.Gettext
 
       import Plug.Conn
 
@@ -53,7 +53,7 @@ defmodule CrohnjobsWeb do
   def live_view do
     quote do
       use Phoenix.LiveView,
-        layout: {CrohnjobsWeb.Layouts, :app}
+        layout: {ScopestrengthWeb.Layouts, :app}
 
       unquote(html_helpers())
     end
@@ -83,12 +83,12 @@ defmodule CrohnjobsWeb do
   defp html_helpers do
     quote do
       # Translation
-      use Gettext, backend: CrohnjobsWeb.Gettext
+      use Gettext, backend: ScopestrengthWeb.Gettext
 
       # HTML escaping functionality
       import Phoenix.HTML
       # Core UI components
-      import CrohnjobsWeb.CoreComponents
+      import ScopestrengthWeb.CoreComponents
 
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS
@@ -101,9 +101,9 @@ defmodule CrohnjobsWeb do
   def verified_routes do
     quote do
       use Phoenix.VerifiedRoutes,
-        endpoint: CrohnjobsWeb.Endpoint,
-        router: CrohnjobsWeb.Router,
-        statics: CrohnjobsWeb.static_paths()
+        endpoint: ScopestrengthWeb.Endpoint,
+        router: ScopestrengthWeb.Router,
+        statics: ScopestrengthWeb.static_paths()
     end
   end
 

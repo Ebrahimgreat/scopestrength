@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.CreateMeasurements do
+defmodule Scopestrength.Repo.Migrations.CreateMeasurements do
   use Ecto.Migration
 
   def change do

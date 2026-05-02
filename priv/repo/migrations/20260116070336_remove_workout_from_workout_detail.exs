@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.RemoveWorkoutFromWorkoutDetail do
+defmodule Scopestrength.Repo.Migrations.RemoveWorkoutFromWorkoutDetail do
   use Ecto.Migration
 
   def change do

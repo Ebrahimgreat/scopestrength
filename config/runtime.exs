@@ -26,12 +26,12 @@ end
 # If you use `mix release`, you need to explicitly enable the server
 # by passing the PHX_SERVER=true when you start it:
 #
-#     PHX_SERVER=true bin/crohnjobs start
+#     PHX_SERVER=true bin/scopestrength start
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
 if System.get_env("PHX_SERVER") do
-  config :crohnjobs, CrohnjobsWeb.Endpoint, server: true
+  config :scopestrength, ScopestrengthWeb.Endpoint, server: true
 end
 
 if config_env() == :prod do
@@ -48,7 +48,7 @@ if config_env() == :prod do
       For example: ecto://USER:PASS@HOST/DATABASE
       """
 
-  config :crohnjobs, Crohnjobs.Repo,
+  config :scopestrength, Scopestrength.Repo,
     url: database_url,
     ssl: [verify: :verify_none],
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "2")
@@ -67,9 +67,9 @@ if config_env() == :prod do
 
   port = String.to_integer(System.get_env("PORT") || "4000")
 
-  config :crohnjobs, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+  config :scopestrength, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
-  config :crohnjobs, CrohnjobsWeb.Endpoint,
+  config :scopestrength, ScopestrengthWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     check_origin: [
       "https://#{host}",
@@ -88,7 +88,7 @@ if config_env() == :prod do
   # To get SSL working, you will need to add the `https` key
   # to your endpoint configuration:
   #
-  #     config :crohnjobs, CrohnjobsWeb.Endpoint,
+  #     config :scopestrength, ScopestrengthWeb.Endpoint,
   #       https: [
   #         ...,
   #         port: 443,
@@ -110,7 +110,7 @@ if config_env() == :prod do
   # We also recommend setting `force_ssl` in your config/prod.exs,
   # ensuring no data is ever sent via http, always redirecting to https:
   #
-  #     config :crohnjobs, CrohnjobsWeb.Endpoint,
+  #     config :scopestrength, ScopestrengthWeb.Endpoint,
   #       force_ssl: [hsts: true]
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
@@ -121,7 +121,7 @@ if config_env() == :prod do
   # Also, you may need to configure the Swoosh API client of your choice if you
   # are not using SMTP. Here is an example of the configuration:
   #
-  #     config :crohnjobs, Crohnjobs.Mailer,
+  #     config :scopestrength, Scopestrength.Mailer,
   #       adapter: Swoosh.Adapters.Mailgun,
   #       api_key: System.get_env("MAILGUN_API_KEY"),
   #       domain: System.get_env("MAILGUN_DOMAIN")

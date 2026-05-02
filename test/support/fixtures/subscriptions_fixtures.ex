@@ -1,7 +1,7 @@
-defmodule Crohnjobs.SubscriptionsFixtures do
+defmodule Scopestrength.SubscriptionsFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.Subscriptions` context.
+  entities via the `Scopestrength.Subscriptions` context.
   """
 
   @doc """
@@ -13,7 +13,7 @@ defmodule Crohnjobs.SubscriptionsFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.Subscriptions.create_subscription()
+      |> Scopestrength.Subscriptions.create_subscription()
 
     subscription
   end

@@ -1,7 +1,7 @@
-defmodule Crohnjobs.CustomExercisesFixtures do
+defmodule Scopestrength.CustomExercisesFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.CustomExercises` context.
+  entities via the `Scopestrength.CustomExercises` context.
   """
 
   @doc """
@@ -13,7 +13,7 @@ defmodule Crohnjobs.CustomExercisesFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.CustomExercises.create_custom_exercise()
+      |> Scopestrength.CustomExercises.create_custom_exercise()
 
     custom_exercise
   end
