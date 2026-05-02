@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.DropCustomExercisesTable do
+defmodule Scopestrength.Repo.Migrations.DropCustomExercisesTable do
   use Ecto.Migration
 
   def change do

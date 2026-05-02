@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.AddIsUnilateralToExercises do
+defmodule Scopestrength.Repo.Migrations.AddIsUnilateralToExercises do
   use Ecto.Migration
 
   def change do

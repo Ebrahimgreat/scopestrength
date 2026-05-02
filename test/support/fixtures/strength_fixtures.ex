@@ -1,7 +1,7 @@
-defmodule Crohnjobs.StrengthFixtures do
+defmodule Scopestrength.StrengthFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.Strength` context.
+  entities via the `Scopestrength.Strength` context.
   """
 
   @doc """
@@ -13,7 +13,7 @@ defmodule Crohnjobs.StrengthFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.Strength.create_strength_progress()
+      |> Scopestrength.Strength.create_strength_progress()
 
     strength_progress
   end

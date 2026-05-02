@@ -1,7 +1,7 @@
-defmodule Crohnjobs.WorkoutFixtures do
+defmodule Scopestrength.WorkoutFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.Workout` context.
+  entities via the `Scopestrength.Workout` context.
   """
 
   @doc """
@@ -15,7 +15,7 @@ defmodule Crohnjobs.WorkoutFixtures do
         name: "some name",
         type: "some type"
       })
-      |> Crohnjobs.Workout.create_exercise()
+      |> Scopestrength.Workout.create_exercise()
 
     exercise
   end

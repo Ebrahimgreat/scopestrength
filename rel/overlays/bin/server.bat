@@ -1,2 +1,2 @@
 set PHX_SERVER=true
-call "%~dp0\crohnjobs" start
+call "%~dp0\scopestrength" start
