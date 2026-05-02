@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.AddProfilePictureToClients do
+defmodule Scopestrength.Repo.Migrations.AddProfilePictureToClients do
   use Ecto.Migration
 
   def change do

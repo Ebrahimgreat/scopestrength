@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.DropStrengthProgress do
+defmodule Scopestrength.Repo.Migrations.DropStrengthProgress do
   use Ecto.Migration
 
   def change do

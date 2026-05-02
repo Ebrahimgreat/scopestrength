@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.CreateClientNotes do
+defmodule Scopestrength.Repo.Migrations.CreateClientNotes do
   use Ecto.Migration
 
   def change do

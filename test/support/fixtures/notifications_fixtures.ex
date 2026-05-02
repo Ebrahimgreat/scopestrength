@@ -1,7 +1,7 @@
-defmodule Crohnjobs.NotificationsFixtures do
+defmodule Scopestrength.NotificationsFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.Notifications` context.
+  entities via the `Scopestrength.Notifications` context.
   """
 
   @doc """
@@ -13,7 +13,7 @@ defmodule Crohnjobs.NotificationsFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.Notifications.create_notification()
+      |> Scopestrength.Notifications.create_notification()
 
     notification
   end
