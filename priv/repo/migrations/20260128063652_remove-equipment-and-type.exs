@@ -1,4 +1,4 @@
-defmodule :"Elixir.Crohnjobs.Repo.Migrations.Remove-equipment-and-type" do
+defmodule :"Elixir.Scopestrength.Repo.Migrations.Remove-equipment-and-type" do
   use Ecto.Migration
 
   def change do

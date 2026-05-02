@@ -5,17 +5,17 @@
 # Inside the script, you can read and write to any of your
 # repositories directly:
 #
-#     Crohnjobs.Repo.insert!(%Crohnjobs.SomeSchema{})
+#     Scopestrength.Repo.insert!(%Scopestrength.SomeSchema{})
 #
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
-alias Crohnjobs.Repo
-alias Crohnjobs.Account.User
-alias Crohnjobs.Trainers.Trainer
-alias Crohnjobs.Clients.Client
-alias Crohnjobs.Exercises.{Exercise, Muscles, Equipment}
-alias Crohnjobs.Exercises.ExerciseMuscleContribution
-alias Crohnjobs.Subscriptions.Subscription
+alias Scopestrength.Repo
+alias Scopestrength.Account.User
+alias Scopestrength.Trainers.Trainer
+alias Scopestrength.Clients.Client
+alias Scopestrength.Exercises.{Exercise, Muscles, Equipment}
+alias Scopestrength.Exercises.ExerciseMuscleContribution
+alias Scopestrength.Subscriptions.Subscription
 
 # ── Seed muscle groups ──────────────────────────────────────────────
 muscle_names = [
@@ -751,7 +751,7 @@ Enum.each(contributions, fn attrs ->
 end)
 
 # ── Seed set types ──────────────────────────────────────────────────
-alias Crohnjobs.Training.SetType
+alias Scopestrength.Training.SetType
 
 set_types = [
   %{name: "Standard", description: "Regular set with prescribed reps and weight"},

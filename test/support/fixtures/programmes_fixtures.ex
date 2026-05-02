@@ -1,7 +1,7 @@
-defmodule Crohnjobs.ProgrammesFixtures do
+defmodule Scopestrength.ProgrammesFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.Programmes` context.
+  entities via the `Scopestrength.Programmes` context.
   """
 
   @doc """
@@ -13,7 +13,7 @@ defmodule Crohnjobs.ProgrammesFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.Programmes.create_programme()
+      |> Scopestrength.Programmes.create_programme()
 
     programme
   end
@@ -27,7 +27,7 @@ defmodule Crohnjobs.ProgrammesFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.Programmes.create_programme_details()
+      |> Scopestrength.Programmes.create_programme_details()
 
     programme_details
   end
@@ -41,7 +41,7 @@ defmodule Crohnjobs.ProgrammesFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.Programmes.create_programme_template()
+      |> Scopestrength.Programmes.create_programme_template()
 
     programme_template
   end
@@ -55,7 +55,7 @@ defmodule Crohnjobs.ProgrammesFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.Programmes.create_programme_user()
+      |> Scopestrength.Programmes.create_programme_user()
 
     programme_user
   end

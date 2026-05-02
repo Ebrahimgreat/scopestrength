@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.CreateAdminAccount do
+defmodule Scopestrength.Repo.Migrations.CreateAdminAccount do
   use Ecto.Migration
 
   def up do

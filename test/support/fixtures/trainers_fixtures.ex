@@ -1,7 +1,7 @@
-defmodule Crohnjobs.TrainersFixtures do
+defmodule Scopestrength.TrainersFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.Trainers` context.
+  entities via the `Scopestrength.Trainers` context.
   """
 
   @doc """
@@ -13,7 +13,7 @@ defmodule Crohnjobs.TrainersFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.Trainers.create_trainer()
+      |> Scopestrength.Trainers.create_trainer()
 
     trainer
   end

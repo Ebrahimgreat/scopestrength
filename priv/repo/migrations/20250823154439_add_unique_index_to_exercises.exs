@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.AddUniqueIndexToExercises do
+defmodule Scopestrength.Repo.Migrations.AddUniqueIndexToExercises do
   use Ecto.Migration
 
   def change do
