@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.CreateProgressPhotos do
+defmodule Scopestrength.Repo.Migrations.CreateProgressPhotos do
   use Ecto.Migration
 
   def change do

@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.CreateInvites do
+defmodule Scopestrength.Repo.Migrations.CreateInvites do
   use Ecto.Migration
 
   def change do

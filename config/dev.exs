@@ -1,11 +1,11 @@
 import Config
 
 # Configure your database
-config :crohnjobs, Crohnjobs.Repo,
+config :scopestrength, Scopestrength.Repo,
   username: "postgres",
   password: "",
   hostname: "localhost",
-  database: "crohnjobs_dev",
+  database: "scopestrength_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
@@ -16,7 +16,7 @@ config :crohnjobs, Crohnjobs.Repo,
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
-config :crohnjobs, CrohnjobsWeb.Endpoint,
+config :scopestrength, ScopestrengthWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}, port: 4000],
@@ -25,8 +25,8 @@ config :crohnjobs, CrohnjobsWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "NsDXsLAhKfXO4jhSJKQOsCPgQWEwsoNX8gIMjESC596LyRWra+9e/iQbgWGgIE+X",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:crohnjobs, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:crohnjobs, ~w(--watch)]}
+    esbuild: {Esbuild, :install_and_run, [:scopestrength, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:scopestrength, ~w(--watch)]}
   ]
 
 # ## SSL Support
@@ -53,17 +53,17 @@ config :crohnjobs, CrohnjobsWeb.Endpoint,
 # different ports.
 
 # Watch static and templates for browser reloading.
-config :crohnjobs, CrohnjobsWeb.Endpoint,
+config :scopestrength, ScopestrengthWeb.Endpoint,
   live_reload: [
     patterns: [
       ~r"priv/static/(?!uploads/).*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
-      ~r"lib/crohnjobs_web/(controllers|live|components)/.*(ex|heex)$"
+      ~r"lib/scopestrength_web/(controllers|live|components)/.*(ex|heex)$"
     ]
   ]
 
 # Enable dev routes for dashboard and mailbox
-config :crohnjobs, dev_routes: true
+config :scopestrength, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"

@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.AddInviteCodeToTrainerTable do
+defmodule Scopestrength.Repo.Migrations.AddInviteCodeToTrainerTable do
   use Ecto.Migration
 
   def change do

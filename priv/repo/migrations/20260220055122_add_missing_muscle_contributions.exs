@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.AddMissingMuscleContributions do
+defmodule Scopestrength.Repo.Migrations.AddMissingMuscleContributions do
   use Ecto.Migration
 
   def up do
