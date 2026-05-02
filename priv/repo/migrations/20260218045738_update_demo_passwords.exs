@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.UpdateDemoPasswords do
+defmodule Scopestrength.Repo.Migrations.UpdateDemoPasswords do
   use Ecto.Migration
 
   def up do

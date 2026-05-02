@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.RemoveNameFromClients do
+defmodule Scopestrength.Repo.Migrations.RemoveNameFromClients do
   use Ecto.Migration
 
   def change do

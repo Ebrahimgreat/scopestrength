@@ -1,7 +1,7 @@
-defmodule Crohnjobs.AccountFixtures do
+defmodule Scopestrength.AccountFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.Account` context.
+  entities via the `Scopestrength.Account` context.
   """
 
   def unique_user_email, do: "user#{System.unique_integer()}@example.com"
@@ -18,7 +18,7 @@ defmodule Crohnjobs.AccountFixtures do
     {:ok, user} =
       attrs
       |> valid_user_attributes()
-      |> Crohnjobs.Account.register_user()
+      |> Scopestrength.Account.register_user()
 
     user
   end
