@@ -1,7 +1,7 @@
-defmodule Crohnjobs.ProgressPhotosFixtures do
+defmodule Scopestrength.ProgressPhotosFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.ProgressPhotos` context.
+  entities via the `Scopestrength.ProgressPhotos` context.
   """
 
   @doc """
@@ -15,7 +15,7 @@ defmodule Crohnjobs.ProgressPhotosFixtures do
         notes: "some notes",
         photo_url: "some photo_url"
       })
-      |> Crohnjobs.ProgressPhotos.create_progress_photo()
+      |> Scopestrength.ProgressPhotos.create_progress_photo()
 
     progress_photo
   end

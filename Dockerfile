@@ -66,7 +66,7 @@ ENV MIX_ENV="prod"
 ENV PHX_SERVER="true"
 
 # Copy the release from the build stage
-COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/crohnjobs ./
+COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/scopestrength ./
 
 USER nobody
 

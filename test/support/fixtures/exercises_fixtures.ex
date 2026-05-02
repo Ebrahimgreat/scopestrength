@@ -1,7 +1,7 @@
-defmodule Crohnjobs.ExercisesFixtures do
+defmodule Scopestrength.ExercisesFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.Exercises` context.
+  entities via the `Scopestrength.Exercises` context.
   """
 
   @doc """
@@ -13,7 +13,7 @@ defmodule Crohnjobs.ExercisesFixtures do
       |> Enum.into(%{
         name: "some name"
       })
-      |> Crohnjobs.Exercises.create_muscles()
+      |> Scopestrength.Exercises.create_muscles()
 
     muscles
   end
@@ -27,7 +27,7 @@ defmodule Crohnjobs.ExercisesFixtures do
       |> Enum.into(%{
         name: "some name"
       })
-      |> Crohnjobs.Exercises.create_equipment()
+      |> Scopestrength.Exercises.create_equipment()
 
     equipment
   end
@@ -41,7 +41,7 @@ defmodule Crohnjobs.ExercisesFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.Exercises.create_exercise_muscle_contribution()
+      |> Scopestrength.Exercises.create_exercise_muscle_contribution()
 
     exercise_muscle_contribution
   end

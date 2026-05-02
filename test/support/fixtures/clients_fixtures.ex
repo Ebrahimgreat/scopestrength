@@ -1,7 +1,7 @@
-defmodule Crohnjobs.ClientsFixtures do
+defmodule Scopestrength.ClientsFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.Clients` context.
+  entities via the `Scopestrength.Clients` context.
   """
 
   @doc """
@@ -13,7 +13,7 @@ defmodule Crohnjobs.ClientsFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.Clients.create_client()
+      |> Scopestrength.Clients.create_client()
 
     client
   end

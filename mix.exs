@@ -1,9 +1,9 @@
-defmodule Crohnjobs.MixProject do
+defmodule Scopestrength.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :crohnjobs,
+      app: :scopestrength,
       version: "0.1.0",
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -18,7 +18,7 @@ defmodule Crohnjobs.MixProject do
   # Type `mix help compile.app` for more information.
   def application do
     [
-      mod: {Crohnjobs.Application, []},
+      mod: {Scopestrength.Application, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end
@@ -86,10 +86,10 @@ defmodule Crohnjobs.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind crohnjobs", "esbuild crohnjobs"],
+      "assets.build": ["tailwind scopestrength", "esbuild scopestrength"],
       "assets.deploy": [
-        "tailwind crohnjobs --minify",
-        "esbuild crohnjobs --minify",
+        "tailwind scopestrength --minify",
+        "esbuild scopestrength --minify",
         "phx.digest"
       ]
     ]

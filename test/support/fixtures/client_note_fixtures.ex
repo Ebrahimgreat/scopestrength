@@ -1,7 +1,7 @@
-defmodule Crohnjobs.ClientNoteFixtures do
+defmodule Scopestrength.ClientNoteFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.ClientNote` context.
+  entities via the `Scopestrength.ClientNote` context.
   """
 
   @doc """
@@ -13,7 +13,7 @@ defmodule Crohnjobs.ClientNoteFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.ClientNote.create_client_notes()
+      |> Scopestrength.ClientNote.create_client_notes()
 
     client_notes
   end

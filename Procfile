@@ -1,1 +1,1 @@
-web: _build/prod/rel/crohnjobs/bin/server
+web: _build/prod/rel/scopestrength/bin/server
