@@ -1,7 +1,7 @@
-defmodule Crohnjobs.MeasurementsFixtures do
+defmodule Scopestrength.MeasurementsFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.Measurements` context.
+  entities via the `Scopestrength.Measurements` context.
   """
 
   @doc """
@@ -13,7 +13,7 @@ defmodule Crohnjobs.MeasurementsFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.Measurements.create_measurement()
+      |> Scopestrength.Measurements.create_measurement()
 
     measurement
   end
@@ -27,7 +27,7 @@ defmodule Crohnjobs.MeasurementsFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.Measurements.create_measurement_data()
+      |> Scopestrength.Measurements.create_measurement_data()
 
     measurement_data
   end

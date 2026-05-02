@@ -1,2 +1,2 @@
 ExUnit.start()
-Ecto.Adapters.SQL.Sandbox.mode(Crohnjobs.Repo, :manual)
+Ecto.Adapters.SQL.Sandbox.mode(Scopestrength.Repo, :manual)

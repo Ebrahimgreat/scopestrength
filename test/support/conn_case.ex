@@ -1,4 +1,4 @@
-defmodule CrohnjobsWeb.ConnCase do
+defmodule ScopestrengthWeb.ConnCase do
   @moduledoc """
   This module defines the test case to be used by
   tests that require setting up a connection.
@@ -11,7 +11,7 @@ defmodule CrohnjobsWeb.ConnCase do
   we enable the SQL sandbox, so changes done to the database
   are reverted at the end of every test. If you are using
   PostgreSQL, you can even run database tests asynchronously
-  by setting `use CrohnjobsWeb.ConnCase, async: true`, although
+  by setting `use ScopestrengthWeb.ConnCase, async: true`, although
   this option is not recommended for other databases.
   """
 
@@ -20,19 +20,19 @@ defmodule CrohnjobsWeb.ConnCase do
   using do
     quote do
       # The default endpoint for testing
-      @endpoint CrohnjobsWeb.Endpoint
+      @endpoint ScopestrengthWeb.Endpoint
 
-      use CrohnjobsWeb, :verified_routes
+      use ScopestrengthWeb, :verified_routes
 
       # Import conveniences for testing with connections
       import Plug.Conn
       import Phoenix.ConnTest
-      import CrohnjobsWeb.ConnCase
+      import ScopestrengthWeb.ConnCase
     end
   end
 
   setup tags do
-    Crohnjobs.DataCase.setup_sandbox(tags)
+    Scopestrength.DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 
@@ -45,7 +45,7 @@ defmodule CrohnjobsWeb.ConnCase do
   test context.
   """
   def register_and_log_in_user(%{conn: conn}) do
-    user = Crohnjobs.AccountFixtures.user_fixture()
+    user = Scopestrength.AccountFixtures.user_fixture()
     %{conn: log_in_user(conn, user), user: user}
   end
 
@@ -55,7 +55,7 @@ defmodule CrohnjobsWeb.ConnCase do
   It returns an updated `conn`.
   """
   def log_in_user(conn, user) do
-    token = Crohnjobs.Account.generate_user_session_token(user)
+    token = Scopestrength.Account.generate_user_session_token(user)
 
     conn
     |> Phoenix.ConnTest.init_test_session(%{})

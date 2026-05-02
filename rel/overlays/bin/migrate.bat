@@ -1,1 +1,1 @@
-call "%~dp0\crohnjobs" eval Crohnjobs.Release.migrate
+call "%~dp0\scopestrength" eval Scopestrength.Release.migrate

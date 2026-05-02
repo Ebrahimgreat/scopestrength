@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.AddChestAndTricepDips do
+defmodule Scopestrength.Repo.Migrations.AddChestAndTricepDips do
   use Ecto.Migration
 
   def up do

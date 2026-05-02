@@ -1,7 +1,7 @@
-defmodule Crohnjobs.ChatFixtures do
+defmodule Scopestrength.ChatFixtures do
   @moduledoc """
   This module defines test helpers for creating
-  entities via the `Crohnjobs.Chat` context.
+  entities via the `Scopestrength.Chat` context.
   """
 
   @doc """
@@ -13,7 +13,7 @@ defmodule Crohnjobs.ChatFixtures do
       |> Enum.into(%{
 
       })
-      |> Crohnjobs.Chat.create_message()
+      |> Scopestrength.Chat.create_message()
 
     message
   end

@@ -1,4 +1,4 @@
-defmodule Crohnjobs.Repo.Migrations.AddUserId do
+defmodule Scopestrength.Repo.Migrations.AddUserId do
   use Ecto.Migration
 
   def change do

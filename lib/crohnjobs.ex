@@ -1,6 +1,6 @@
-defmodule Crohnjobs do
+defmodule Scopestrength do
   @moduledoc """
-  Crohnjobs keeps the contexts that define your domain
+  Scopestrength keeps the contexts that define your domain
   and business logic.
 
   Contexts are also responsible for managing your data, regardless
