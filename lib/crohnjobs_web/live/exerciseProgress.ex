@@ -1,14 +1,17 @@
 defmodule CrohnjobsWeb.ExerciseProgress do
-alias Crohnjobs.Repo
-alias Crohnjobs.Trainers
-alias Crohnjobs.Clients
-alias Crohnjobs.Training.WorkoutDetails
-alias Crohnjobs.Training.Workout
-import Ecto.Query
+  alias Crohnjobs.Repo
+  alias Crohnjobs.Trainers
+  alias Crohnjobs.Clients
+  alias Crohnjobs.Training.WorkoutDetails
+  alias Crohnjobs.Training.Workout
+  import Ecto.Query
   use CrohnjobsWeb, :live_view
 
+  defp top_set(sets) do
+    Enum.max_by(sets, fn s -> {s.weight || 0, s.reps || 0} end)
+  end
 
-  def mount(params, session, socket) do
+  def mount(params, _session, socket) do
     exercise_id = String.to_integer(params["exercise_id"])
     client_id = String.to_integer(params["id"])
     user = socket.assigns.current_user
@@ -30,26 +33,52 @@ import Ecto.Query
                   join: w in Workout,
                   on: wd.workout_id == w.id,
                   where: w.client_id == ^client_id and wd.exercise_id == ^exercise_id,
-                  order_by: [desc: wd.inserted_at],
+                  order_by: [asc: w.date, asc: wd.set],
                   preload: :exercise,
                   preload: :workout
               )
 
-            {exercise_name, max_detail} =
+            {exercise_name, pr} =
               if length(workout_details) > 0 do
-                max_detail = Enum.max_by(workout_details, &(&1.weight))
-                {hd(workout_details).exercise.name, max_detail}
+                pr = top_set(workout_details)
+                {hd(workout_details).exercise.name, pr}
               else
                 {"", nil}
               end
-              grouped_workout = Enum.group_by(workout_details, &(&1.workout.date))|> Enum.map(fn{date,sets}->
-                %{date: date, sets: sets}
 
+            sessions =
+              workout_details
+              |> Enum.group_by(& &1.workout.date)
+              |> Enum.sort_by(&elem(&1, 0), {:desc, Date})
+              |> Enum.map(fn {date, sets} ->
+                best = top_set(sets)
+                avg_reps = Float.round(Enum.sum(Enum.map(sets, &(&1.reps || 0))) / length(sets), 1)
+                %{date: date, sets: sets, top_weight: best.weight, top_reps: best.reps, avg_reps: avg_reps}
               end)
-              IO.inspect(grouped_workout)
 
+            grouped_workouts =
+              sessions
+              |> Enum.with_index()
+              |> Enum.map(fn {session, idx} ->
+                prev = Enum.at(sessions, idx + 1)
+                Map.put(session, :prev, prev)
+              end)
 
-            {:ok, assign(socket, grouped_workouts: grouped_workout, workout_details: workout_details, max_detail: max_detail)}
+            overall_avg_reps =
+              if length(workout_details) > 0 do
+                Float.round(Enum.sum(Enum.map(workout_details, &(&1.reps || 0))) / length(workout_details), 1)
+              else
+                0.0
+              end
+
+            {:ok,
+             assign(socket,
+               exercise_name: exercise_name,
+               pr: pr,
+               grouped_workouts: grouped_workouts,
+               overall_avg_reps: overall_avg_reps,
+               client_id: client_id
+             )}
 
           false ->
             {:ok,
@@ -59,81 +88,138 @@ import Ecto.Query
         end
     end
   end
+
   def render(assigns) do
     ~H"""
-    <div>
-  <%= if length(@workout_details) == 0 do %>
-        <div class="bg-gray-100 rounded-lg p-6 text-center">
-          <p class="text-gray-600">No workout data available for this exercise yet.</p>
+    <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+
+      <!-- Header -->
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold text-gray-900"><%= @exercise_name %></h1>
+          <p class="mt-1 text-sm text-gray-500">Strength Progress</p>
+        </div>
+        <.link navigate={~p"/trainer/clients/#{@client_id}"} class="text-sm font-medium text-gray-500 hover:text-gray-900">
+          ← Back
+        </.link>
+      </div>
+
+      <%= if length(@grouped_workouts) == 0 do %>
+        <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+          <p class="text-gray-500">No workout data available for this exercise yet.</p>
         </div>
       <% else %>
-        <!-- Max Weight Stats Card -->
-        <div class="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg shadow-lg p-6 text-white">
-          <h2 class="text-lg font-semibold mb-4">Personal Record</h2>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="bg-white bg-opacity-20 rounded-lg p-4">
-              <p class="text-sm opacity-90">Max Weight</p>
-              <p class="text-3xl font-bold"><%= @max_detail.weight %> kg</p>
-            </div>
 
-            <div class="bg-white bg-opacity-20 rounded-lg p-4">
-              <p class="text-sm opacity-90">Date Achieved</p>
-              <p class="text-lg font-bold">
-                <%= Calendar.strftime(@max_detail.workout.date, "%d %b %Y") %>
-              </p>
-            </div>
+        <!-- PR Card -->
+        <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div class="rounded-xl border border-gray-200 bg-white p-4">
+            <p class="text-xs font-medium text-gray-500">Personal Record</p>
+            <p class="mt-1 text-2xl font-bold text-gray-900">
+              <%= if @pr.weight, do: @pr.weight, else: "—" %>
+              <%= if @pr.weight do %><span class="text-sm font-normal text-gray-500">kg</span><% end %>
+            </p>
+          </div>
+          <div class="rounded-xl border border-gray-200 bg-white p-4">
+            <p class="text-xs font-medium text-gray-500">PR Reps</p>
+            <p class="mt-1 text-2xl font-bold text-gray-900">
+              <%= if @pr.reps, do: @pr.reps, else: "—" %>
+              <%= if @pr.reps do %><span class="text-sm font-normal text-gray-500">reps</span><% end %>
+            </p>
+          </div>
+          <div class="rounded-xl border border-gray-200 bg-white p-4">
+            <p class="text-xs font-medium text-gray-500">Avg Reps</p>
+            <p class="mt-1 text-2xl font-bold text-gray-900"><%= @overall_avg_reps %> <span class="text-sm font-normal text-gray-500">reps</span></p>
+          </div>
+          <div class="rounded-xl border border-gray-200 bg-white p-4">
+            <p class="text-xs font-medium text-gray-500">Sessions</p>
+            <p class="mt-1 text-2xl font-bold text-gray-900"><%= length(@grouped_workouts) %></p>
           </div>
         </div>
-      <% end %>
 
-      <%= if length(@workout_details) > 0 do %>
-        <% max_sets = Enum.max_by(@grouped_workouts, fn g -> length(g.sets) end) |> then(& &1.sets) |> length() %>
-
-        <div class="bg-white shadow rounded-lg overflow-hidden mt-6">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50">
-                  Date
-                </th>
-                <%= for set_num <- 1..max_sets do %>
-                  <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Set <%= set_num %>
+        <!-- Session Table -->
+        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <div class="border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
+            <h2 class="text-sm font-semibold text-gray-700">Session History</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <% max_sets = @grouped_workouts |> Enum.map(fn g -> length(g.sets) end) |> Enum.max() %>
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr class="bg-white">
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
+                    Date
                   </th>
-                <% end %>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <%= for detail <- @grouped_workouts do %>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white">
-                    <%= Calendar.strftime(detail.date, "%d %b %Y") %>
-                  </td>
+                  <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Trend
+                  </th>
+                  <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Avg Reps
+                  </th>
                   <%= for set_num <- 1..max_sets do %>
-                    <td class="px-4 py-4 text-center text-sm text-gray-900">
-                      <%= case Enum.find(detail.sets, &(&1.set == set_num)) do %>
-                        <% nil -> %>
-                          <span class="text-gray-300">—</span>
-                        <% set_detail -> %>
-                          <div class="font-semibold">
-                            <%= set_detail.weight %>×<%= set_detail.reps %>
-                          </div>
-                          <%= if set_detail.side != "both" do %>
-                            <div class="text-xs text-gray-500 capitalize">
-                              <%= set_detail.side %>
-                            </div>
-                          <% end %>
-                      <% end %>
-                    </td>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Set <%= set_num %>
+                    </th>
                   <% end %>
                 </tr>
-              <% end %>
-            </tbody>
-          </table>
+              </thead>
+              <tbody class="divide-y divide-gray-100 bg-white">
+                <%= for session <- @grouped_workouts do %>
+                  <tr class="hover:bg-gray-50/70">
+                    <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 sm:px-6">
+                      <%= Calendar.strftime(session.date, "%d %b %Y") %>
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-center text-sm">
+                      <%= cond do %>
+                        <% session.prev == nil -> %>
+                          <span class="text-gray-300 text-xs">—</span>
+                        <% session.top_weight > session.prev.top_weight -> %>
+                          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+                            ▲ +<%= Float.round(session.top_weight - session.prev.top_weight, 1) %>kg
+                          </span>
+                        <% session.top_weight < session.prev.top_weight -> %>
+                          <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-rose-200">
+                            ▼ <%= Float.round(session.top_weight - session.prev.top_weight, 1) %>kg
+                          </span>
+                        <% session.top_reps > session.prev.top_reps -> %>
+                          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+                            ▲ +<%= session.top_reps - session.prev.top_reps %> reps
+                          </span>
+                        <% session.top_reps < session.prev.top_reps -> %>
+                          <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-rose-200">
+                            ▼ <%= session.top_reps - session.prev.top_reps %> reps
+                          </span>
+                        <% true -> %>
+                          <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                            = same
+                          </span>
+                      <% end %>
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                      <%= session.avg_reps %>
+                    </td>
+                    <%= for set_num <- 1..max_sets do %>
+                      <td class="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-700">
+                        <%= case Enum.find(session.sets, &(&1.set == set_num)) do %>
+                          <% nil -> %>
+                            <span class="text-gray-200">—</span>
+                          <% s -> %>
+                            <span class="font-semibold"><%= s.weight || "BW" %><%= if s.weight do %>kg<% end %></span>
+                            <span class="text-gray-400"> × </span>
+                            <span><%= s.reps || "—" %></span>
+                            <%= if s.side != "both" do %>
+                              <div class="text-xs text-gray-400 capitalize"><%= s.side %></div>
+                            <% end %>
+                        <% end %>
+                      </td>
+                    <% end %>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
         </div>
       <% end %>
     </div>
     """
   end
-
 end
