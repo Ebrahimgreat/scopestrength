@@ -6,7 +6,7 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
   import Ecto.Query
 
   defp top_set(sets) do
-    Enum.max_by(sets, fn s -> {s.weight, s.reps} end)
+    Enum.max_by(sets, fn s -> {s.weight || 0, s.reps || 0} end)
   end
 
   def mount(params, _session, socket) do
@@ -40,7 +40,7 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
       |> Enum.sort_by(&elem(&1, 0), {:desc, Date})
       |> Enum.map(fn {date, sets} ->
         best = top_set(sets)
-        avg_reps = Float.round(Enum.sum(Enum.map(sets, & &1.reps)) / length(sets), 1)
+        avg_reps = Float.round(Enum.sum(Enum.map(sets, &(&1.reps || 0))) / length(sets), 1)
         %{date: date, sets: sets, top_weight: best.weight, top_reps: best.reps, avg_reps: avg_reps}
       end)
       
@@ -55,7 +55,7 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
 
     overall_avg_reps =
       if length(workout_details) > 0 do
-        Float.round(Enum.sum(Enum.map(workout_details, & &1.reps)) / length(workout_details), 1)
+        Float.round(Enum.sum(Enum.map(workout_details, &(&1.reps || 0))) / length(workout_details), 1)
       else
         0.0
       end
@@ -94,11 +94,17 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
         <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div class="rounded-xl border border-gray-200 bg-white p-4">
             <p class="text-xs font-medium text-gray-500">Personal Record</p>
-            <p class="mt-1 text-2xl font-bold text-gray-900"><%= @pr.weight %> <span class="text-sm font-normal text-gray-500">kg</span></p>
+            <p class="mt-1 text-2xl font-bold text-gray-900">
+              <%= if @pr.weight, do: @pr.weight, else: "—" %>
+              <%= if @pr.weight do %><span class="text-sm font-normal text-gray-500">kg</span><% end %>
+            </p>
           </div>
           <div class="rounded-xl border border-gray-200 bg-white p-4">
             <p class="text-xs font-medium text-gray-500">PR Reps</p>
-            <p class="mt-1 text-2xl font-bold text-gray-900"><%= @pr.reps %> <span class="text-sm font-normal text-gray-500">reps</span></p>
+            <p class="mt-1 text-2xl font-bold text-gray-900">
+              <%= if @pr.reps, do: @pr.reps, else: "—" %>
+              <%= if @pr.reps do %><span class="text-sm font-normal text-gray-500">reps</span><% end %>
+            </p>
           </div>
           <div class="rounded-xl border border-gray-200 bg-white p-4">
             <p class="text-xs font-medium text-gray-500">Avg Reps</p>
@@ -177,9 +183,9 @@ defmodule CrohnjobsWeb.Client.StrengthProgress do
                           <% nil -> %>
                             <span class="text-gray-200">—</span>
                           <% s -> %>
-                            <span class="font-semibold"><%= s.weight %>kg</span>
+                            <span class="font-semibold"><%= s.weight || "BW" %><%= if s.weight do %>kg<% end %></span>
                             <span class="text-gray-400"> × </span>
-                            <span><%= s.reps %></span>
+                            <span><%= s.reps || "—" %></span>
                             <%= if s.side != "both" do %>
                               <div class="text-xs text-gray-400 capitalize"><%= s.side %></div>
                             <% end %>
