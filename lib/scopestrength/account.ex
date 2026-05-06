@@ -63,7 +63,12 @@ defmodule Scopestrength.Account do
         Trainers.create_trainer(%{
           user_id: trainer_user.id,
           bio: "Demo account — explore all features!",
-          specialization: "General Fitness"
+          specialization: "General Fitness",
+          location: "Pakistan",
+          price_per_month: 5000,
+          is_public: true,
+          years_experience: 5,
+          style: "Powerlifting Coach"
         })
 
       # 3. Create 3-day demo trial subscription
