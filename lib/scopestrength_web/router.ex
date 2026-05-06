@@ -50,7 +50,8 @@ defmodule ScopestrengthWeb.Router do
       live "/chat", ClientChat
       live "/notifications",Client.Notifications
       live "/weight", Client.Weight
-
+      live "/marketplace",Client.Marketplace
+      live "/marketplace/:trainer_id",Client.Marketplacetrainer
       live "/workouts", Client.Workouts
       live "/volumeTracking/:contribution",Client.MuscleContribution
       live "/workouts/:id",Client.WorkoutShow
@@ -82,6 +83,7 @@ defmodule ScopestrengthWeb.Router do
       live "/clients", Clients
       live "/clients/:id", ShowClient
       live "/clients/:id/notes", ClientNotes
+      live "/requests",Clientrequests
       live "/clients/:id/workouts", Workouts
       live "/clients/:id/strengthProgress/:exercise_id", ExerciseProgress
       live "/clients/:id/volumeTracking", VolumeTracking
