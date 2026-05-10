@@ -6,7 +6,6 @@ alias Scopestrength.Programmes.Programme
 alias Scopestrength.Accounts.Trainer
 alias Scopestrength.Clients.Client
 alias Scopestrength.DownloadProgramme
-alias Scopestrength.Invites
 alias Scopestrength.Repo
 alias Scopestrength.Training.{Workout, WorkoutDetails}
 import Ecto.Query
@@ -23,40 +22,6 @@ import Ecto.Query
     {:noreply, assign(socket, exercise_progress: socket.assigns.all_exercise_progress, filterApplied: nil)}
   end
 
-  def handle_event("submit_invite_code", %{"code" => code}, socket) do
-    user = socket.assigns.current_user
-    client = socket.assigns.client
-
-    case Invites.redeem_invite(code, user.email) do
-      {:ok, trainer_id} ->
-        case Invites.link_client_to_trainer(client.id, trainer_id) do
-          {:ok, updated_client} ->
-            client = Repo.get!(Client, client.id) |> Repo.preload(trainer: :user)
-            {:noreply, socket
-              |> assign(client: client, invite_code: "")
-              |> put_flash(:info, "Successfully linked with your trainer!")}
-
-          {:error, _} ->
-            {:noreply, socket |> put_flash(:error, "Failed to link with trainer")}
-        end
-
-      {:error, :invalid_code} ->
-        {:noreply, socket |> put_flash(:error, "Invalid invite code")}
-
-      {:error, :already_used} ->
-        {:noreply, socket |> put_flash(:error, "This invite code has already been used")}
-
-      {:error, :email_mismatch} ->
-        {:noreply, socket |> put_flash(:error, "This invite code was created for a different email address")}
-
-      {:error, _} ->
-        {:noreply, socket |> put_flash(:error, "Something went wrong")}
-    end
-  end
-
-  def handle_event("update_invite_code", %{"code" => code}, socket) do
-    {:noreply, assign(socket, invite_code: code)}
-  end
 
   def handle_event("mark_notification_read", %{"id" => notification_id}, socket) do
     notification = Notifications.get_notification!(notification_id)
@@ -105,21 +70,28 @@ import Ecto.Query
 
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
-    client = Repo.get_by(Client, %{user_id: user.id}) |> Repo.preload(trainer: :user)
+    client = case Repo.get_by(Client, %{user_id: user.id}) do
+      nil -> nil
+      c -> Repo.preload(c, trainer: :user)
+    end
 
     currentProgramme =
-      from(pu in ProgrammeUser,
-        where: pu.client_id == ^client.id and pu.is_active == true,
-        order_by: [desc: pu.inserted_at],
-        limit: 1
-      )
-      |> Repo.one()
-      |> case do
-        nil -> nil
-        pu -> Repo.preload(pu, [programme: [programmeTemplates: [programmeDetails: :exercise]]])
+      if client do
+        from(pu in ProgrammeUser,
+          where: pu.client_id == ^client.id and pu.is_active == true,
+          order_by: [desc: pu.inserted_at],
+          limit: 1
+        )
+        |> Repo.one()
+        |> case do
+          nil -> nil
+          pu -> Repo.preload(pu, [programme: [programmeTemplates: [programmeDetails: :exercise]]])
+        end
+      else
+        nil
       end
 
-    if connected?(socket) do
+    if connected?(socket) && client do
       Phoenix.PubSub.subscribe(
         Scopestrength.PubSub,
         "notifications:client:#{client.id}"
@@ -127,34 +99,43 @@ import Ecto.Query
     end
 
     notifications =
-      Repo.all(
-        from n in Notification,
-          where: n.recipient_type == "client" and n.recipient_id == ^client.id and is_nil(n.read_at),
-          order_by: [desc: n.inserted_at],
-          limit: 10
-      )
+      if client do
+        Repo.all(
+          from n in Notification,
+            where: n.recipient_type == "client" and n.recipient_id == ^client.id and is_nil(n.read_at),
+            order_by: [desc: n.inserted_at],
+            limit: 10
+        )
+      else
+        []
+      end
 
-
-    # Get recent workouts
     recent_workouts =
-      from(w in Workout,
-        where: w.client_id == ^client.id,
-        order_by: [desc: w.date],
-        limit: 5,
-        preload: [workoutDetails: :exercise]
-      )
-      |> Repo.all()
+      if client do
+        from(w in Workout,
+          where: w.client_id == ^client.id,
+          order_by: [desc: w.date],
+          limit: 5,
+          preload: [workoutDetails: :exercise]
+        )
+        |> Repo.all()
+      else
+        []
+      end
 
-    # Get exercise progress (unique exercises the client has done)
     exercise_progress =
-      from(wd in WorkoutDetails,
-        join: w in Workout, on: wd.workout_id == w.id,
-        where: w.client_id == ^client.id,
-        join: e in assoc(wd, :exercise),
-        group_by: [e.id, e.name],
-        select: %{exercise_id: e.id, name: e.name, muscle_id: e.muscle_id, total_sets: count(wd.id)}
-      )
-      |> Repo.all()
+      if client do
+        from(wd in WorkoutDetails,
+          join: w in Workout, on: wd.workout_id == w.id,
+          where: w.client_id == ^client.id,
+          join: e in assoc(wd, :exercise),
+          group_by: [e.id, e.name],
+          select: %{exercise_id: e.id, name: e.name, muscle_id: e.muscle_id, total_sets: count(wd.id)}
+        )
+        |> Repo.all()
+      else
+        []
+      end
 
 
       #Get Muscles
@@ -166,7 +147,6 @@ import Ecto.Query
       client: client,
       filterApplied: nil,
       current_programme: currentProgramme,
-      invite_code: "",
       recent_workouts: recent_workouts,
       exercise_progress: exercise_progress,
       all_exercise_progress: exercise_progress,
@@ -386,36 +366,13 @@ import Ecto.Query
         <% end %>
       </div>
 
-      <%= if @client.trainer == nil do %>
-        <!-- Invite Code Entry -->
+      <%= if is_nil(@client) || is_nil(@client.trainer_id) do %>
         <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-          <div class="flex items-center space-x-3 mb-4">
-            <div class="p-2 bg-emerald-100 rounded-lg">
-              <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
-              </svg>
-            </div>
-            <h2 class="text-xl font-bold text-gray-900">Have an invite code?</h2>
-          </div>
-          <p class="text-gray-600 mb-4">Enter the invite code from your trainer to connect with them.</p>
-          <form phx-submit="submit_invite_code" class="space-y-4">
-            <div>
-              <input
-                type="text"
-                name="code"
-                value={@invite_code}
-                phx-change="update_invite_code"
-                placeholder="Enter invite code (e.g., ABC12345)"
-                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 font-mono text-lg tracking-wider uppercase"
-              />
-            </div>
-            <.button
-              type="submit"
-              class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"
-            >
-              Connect with Trainer
-            </.button>
-          </form>
+          <h2 class="text-xl font-bold text-gray-900 mb-2">Find a Trainer</h2>
+          <p class="text-gray-600 mb-4">Browse our marketplace to connect with a strength coach.</p>
+          <.link navigate={~p"/client/marketplace"} class="inline-flex items-center px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors">
+            Browse Trainers
+          </.link>
         </div>
       <% end %>
 

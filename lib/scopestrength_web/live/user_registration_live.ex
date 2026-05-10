@@ -100,7 +100,7 @@ defmodule ScopestrengthWeb.UserRegistrationLive do
             })
 
           "client" ->
-            Clients.create_client(%{user_id: user.id})
+            {:ok, _} = Clients.create_client(%{user_id: user.id})
         end
 
         {:noreply, socket |> assign(trigger_submit: true) |> assign_form(changeset)}

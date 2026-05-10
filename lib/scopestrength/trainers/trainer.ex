@@ -18,7 +18,6 @@ defmodule Scopestrength.Trainers.Trainer do
     field :profile_picture_url, :string
     belongs_to :user, Scopestrength.Account.User
     has_many :clients, Scopestrength.Clients.Client
-    has_many :invites, Scopestrength.Invites.Invite
     has_many :certifications, Scopestrength.Trainers.Certification
 
     timestamps(type: :utc_datetime)
