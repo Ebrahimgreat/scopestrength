@@ -194,7 +194,7 @@ import Ecto.Query
         </div>
         <div class="flex items-center gap-3">
           <div class="text-left sm:text-right">
-            <%= if @client.trainer do %>
+            <%= if @client && @client.trainer do %>
               <p class="text-sm text-gray-500">Your Trainer</p>
               <p class="font-semibold text-gray-900 text-sm sm:text-base"><%= @client.trainer.user.name %></p>
             <% else %>
