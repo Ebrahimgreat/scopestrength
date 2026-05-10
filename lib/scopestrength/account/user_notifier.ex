@@ -12,8 +12,12 @@ defmodule Scopestrength.Account.UserNotifier do
       |> subject(subject)
       |> text_body(body)
 
-    with {:ok, _metadata} <- Mailer.deliver(email) do
-      {:ok, email}
+    try do
+      with {:ok, _metadata} <- Mailer.deliver(email) do
+        {:ok, email}
+      end
+    rescue
+      _ -> {:error, :email_unavailable}
     end
   end
 
