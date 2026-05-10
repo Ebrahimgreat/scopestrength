@@ -173,7 +173,7 @@ import Ecto.Query
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <.link navigate={~p"/client/settings"} class="flex-shrink-0 group">
-            <%= if @client.profile_picture_url do %>
+            <%= if @client && @client.profile_picture_url do %>
               <img
                 src={@client.profile_picture_url}
                 alt="Profile"
