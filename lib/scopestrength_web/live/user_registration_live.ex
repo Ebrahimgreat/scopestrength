@@ -76,11 +76,10 @@ defmodule ScopestrengthWeb.UserRegistrationLive do
 
     case Account.register_user(user_params) do
       {:ok, user} ->
-        {:ok, _} =
-          Account.deliver_user_confirmation_instructions(
-            user,
-            &url(~p"/users/confirm/#{&1}")
-          )
+        Account.deliver_user_confirmation_instructions(
+          user,
+          &url(~p"/users/confirm/#{&1}")
+        )
 
         changeset = Account.change_user_registration(user)
 
