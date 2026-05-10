@@ -22,7 +22,7 @@ defmodule Scopestrength.Clients do
   end
 
   def get_client_byUserId(user_id) do
-    Repo.get_by!(Client, user_id: user_id)
+    Repo.get_by(Client, user_id: user_id)
   end
 
   @doc """
