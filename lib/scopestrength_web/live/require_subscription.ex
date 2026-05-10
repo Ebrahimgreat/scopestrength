@@ -53,11 +53,9 @@ defmodule ScopestrengthWeb.RequireSubscription do
   end
 
   defp check_subscription_access(socket, %{role: "client"} = user) do
-    # Clients don't have their own subscription - check their trainer's
     case get_client_trainer_subscription(user.id) do
       {:ok, subscription, trainer_name} ->
         if Subscriptions.in_trial?(subscription) || has_paid_access?(subscription) do
-          # Trainer has active subscription - client has access
           socket =
             socket
             |> assign(:subscription, subscription)
@@ -66,12 +64,20 @@ defmodule ScopestrengthWeb.RequireSubscription do
 
           {:cont, socket}
         else
-          # Trainer's subscription expired - redirect to dedicated page
           {:halt, push_navigate(socket, to: "/trainer-subscription-expired")}
         end
 
+      {:error, :no_trainer} ->
+        # Client has no trainer yet — allow access so they can use the marketplace
+        socket =
+          socket
+          |> assign(:subscription, nil)
+          |> assign(:trainer_name, nil)
+          |> assign(:subscription_status, :no_trainer)
+
+        {:cont, socket}
+
       {:error, _reason} ->
-        # No trainer found or no subscription - redirect to dedicated page
         {:halt, push_navigate(socket, to: "/trainer-subscription-expired")}
     end
   end
@@ -82,14 +88,24 @@ defmodule ScopestrengthWeb.RequireSubscription do
   end
 
   defp get_client_trainer_subscription(user_id) do
-    with client when not is_nil(client) <- Clients.get_client_byUserId(user_id),
-         trainer when not is_nil(trainer) <- Trainers.get_trainer!(client.trainer_id),
-         trainer_user when not is_nil(trainer_user) <- Account.get_user!(trainer.user_id),
-         subscription when not is_nil(subscription) <- Subscriptions.list_subscription_by_user_id(trainer_user) do
-      trainer_name = trainer_user.name || trainer_user.email
-      {:ok, subscription, trainer_name}
-    else
-      _ -> {:error, :not_found}
+    client = Clients.get_client_byUserId(user_id)
+
+    cond do
+      is_nil(client) ->
+        {:error, :no_trainer}
+
+      is_nil(client.trainer_id) ->
+        {:error, :no_trainer}
+
+      true ->
+        with trainer when not is_nil(trainer) <- Trainers.get_trainer!(client.trainer_id),
+             trainer_user when not is_nil(trainer_user) <- Account.get_user!(trainer.user_id),
+             subscription when not is_nil(subscription) <- Subscriptions.list_subscription_by_user_id(trainer_user) do
+          trainer_name = trainer_user.name || trainer_user.email
+          {:ok, subscription, trainer_name}
+        else
+          _ -> {:error, :not_found}
+        end
     end
   rescue
     _ -> {:error, :not_found}

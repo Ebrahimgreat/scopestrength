@@ -52,70 +52,7 @@ defmodule ScopestrengthWeb.UpgradeLive do
             </a>
           </div>
 
-          <div class="grid md:grid-cols-3 gap-6 mb-8">
-            <div class="text-left">
-              <div class="flex items-center gap-2 mb-2">
-                <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fill-rule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-                <h3 class="font-semibold text-gray-900">Unlimited Clients</h3>
-              </div>
-              <p class="text-gray-600 text-sm">Manage as many clients as you need</p>
-            </div>
-
-            <div class="text-left">
-              <div class="flex items-center gap-2 mb-2">
-                <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fill-rule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-                <h3 class="font-semibold text-gray-900">Full Access</h3>
-              </div>
-              <p class="text-gray-600 text-sm">All features unlocked</p>
-            </div>
-
-            <div class="text-left">
-              <div class="flex items-center gap-2 mb-2">
-                <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fill-rule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-                <h3 class="font-semibold text-gray-900">Priority Support</h3>
-              </div>
-              <p class="text-gray-600 text-sm">Get help when you need it</p>
-            </div>
-          </div>
-
-          <%= if String.starts_with?(@current_user.email, "demo_") do %>
-            <div class="bg-amber-50 border border-amber-200 rounded-lg p-5 mb-6">
-              <h3 class="font-semibold text-amber-800 mb-2">Enjoying the demo?</h3>
-              <p class="text-amber-700 text-sm mb-3">
-                You're currently on a demo account. If you'd like to transition to a full account
-                with your own data, reach out to us and we'll get you set up with an extended trial.
-              </p>
-              <a
-                href="mailto:ebrahim@scopestrength.com?subject=Full%20Trial%20Request&body=Hi%2C%20I%20tried%20the%20demo%20and%20would%20like%20a%20full%20trial%20account."
-                class="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white font-medium rounded-lg hover:bg-amber-700 transition-colors text-sm"
-              >
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                </svg>
-                Request Full Trial
-              </a>
-            </div>
-          <% end %>
-
+          
           <div class="border-t pt-6 flex gap-4 justify-center">
             <.link
               href={~p"/users/log_out"}

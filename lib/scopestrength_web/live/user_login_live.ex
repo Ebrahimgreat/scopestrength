@@ -46,25 +46,15 @@ defmodule ScopestrengthWeb.UserLoginLive do
             </p>
           </.simple_form>
 
-          <div class="mt-6 pt-6 border-t border-gray-200 text-center">
-            <p class="text-sm text-gray-600 mb-3">Want to explore first?</p>
-            <form action={~p"/demo"} method="post" class="space-y-3">
-              <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
-              <input
-                type="email"
-                name="email"
-                placeholder="Enter your email for instant demo access"
-                required
-                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none"
-              />
-              <button type="submit" class="w-full px-4 py-2.5 border-2 border-brand text-brand font-semibold rounded-lg hover:bg-brand hover:text-white transition-all duration-200">
-                Try Demo
-              </button>
-            </form>
-            <p class="mt-2 text-xs text-gray-400">
-              Instant access with sample clients, programmes &amp; workouts
+          <div class="mt-4 text-center">
+            <p class="text-sm text-gray-600">
+              Don't have an account?
+              <.link navigate={~p"/users/register"} class="font-semibold text-brand hover:underline">
+                Sign up free
+              </.link>
             </p>
           </div>
+
         </div>
       </div>
     </div>
