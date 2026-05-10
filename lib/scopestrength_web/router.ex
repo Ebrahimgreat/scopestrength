@@ -79,7 +79,6 @@ defmodule ScopestrengthWeb.Router do
       ],
       layout: {ScopestrengthWeb.Layouts, :trainer} do
       live "/chat", TrainerChat
-      live "/invites", Invites
       live "/clients", Clients
       live "/clients/:id", ShowClient
       live "/clients/:id/notes", ClientNotes
@@ -153,8 +152,7 @@ defmodule ScopestrengthWeb.Router do
     live_session :redirect_if_user_is_authenticated,
       on_mount: [{ScopestrengthWeb.UserAuth, :redirect_if_user_is_authenticated}] do
       live "/", UserLoginLive, :new
-      # Registration disabled — demo accounts are generated via /demo
-      # live "/users/register", UserRegistrationLive, :new
+       live "/users/register", UserRegistrationLive, :new
       live "/users/log_in", UserLoginLive, :new
       live "/users/reset_password", UserForgotPasswordLive, :new
       live "/users/reset_password/:token", UserResetPasswordLive, :edit
