@@ -83,7 +83,6 @@ defmodule ScopestrengthWeb.Client.VolumeTracking do
             }
         )
       end
-      IO.inspect(muscle_contributions)
 
     # Group contributions by exercise
     contributions_by_exercise = Enum.group_by(muscle_contributions, & &1.exercise_id)
@@ -129,7 +128,8 @@ defmodule ScopestrengthWeb.Client.VolumeTracking do
       period_key =
         case grouped_by do
           :week ->
-            {workout_date.year, Date.beginning_of_week(workout_date)}
+            week_start = Date.beginning_of_week(workout_date)
+            {week_start.year, week_start.month, week_start.day}
           :month ->
             {workout_date.year, workout_date.month}
         end
@@ -165,8 +165,8 @@ defmodule ScopestrengthWeb.Client.VolumeTracking do
       period_label =
         case grouped_by do
           :week ->
-            {_year, week_start} = period_key
-            "Week of #{Calendar.strftime(week_start, "%b %d")}"
+            {y, m, d} = period_key
+            "Week of #{Calendar.strftime(Date.new!(y, m, d), "%b %d")}"
           :month ->
             {year, month} = period_key
             date = Date.new!(year, month, 1)
@@ -225,7 +225,7 @@ defmodule ScopestrengthWeb.Client.VolumeTracking do
     |> Stream.iterate(&Date.add(&1, 7))
     |> Enum.take_while(&(Date.compare(&1, today) != :gt))
     |> Enum.map(fn week_start ->
-      key = {week_start.year, week_start}
+      key = {week_start.year, week_start.month, week_start.day}
       label = "Week of #{Calendar.strftime(week_start, "%b %d")}"
       {key, label}
     end)
