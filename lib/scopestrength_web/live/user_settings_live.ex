@@ -17,19 +17,15 @@ defmodule ScopestrengthWeb.UserSettingsLive do
 
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
-    trainer = Trainers.get_trainer_byUserId(user.id) |> Repo.preload(:certifications)
+    trainer = Trainers.get_trainer_byUserId(user.id)
     email_changeset = Account.change_user_email(user)
     password_changeset = Account.change_user_password(user)
     trainer_changeset = Trainers.change_trainer(trainer)
-    cert_changeset = Trainers.change_certification(%Scopestrength.Trainers.Certification{})
 
     socket =
       socket
       |> assign(:trainer, trainer)
       |> assign(:trainer_form, to_form(trainer_changeset, as: "trainer"))
-      |> assign(:certifications, trainer.certifications)
-      |> assign(:cert_form, to_form(cert_changeset, as: "cert"))
-      |> assign(:show_cert_form, false)
       |> assign(:name, user.name)
       |> assign(:current_password, nil)
       |> assign(:email_form_current_password, nil)
@@ -111,51 +107,6 @@ defmodule ScopestrengthWeb.UserSettingsLive do
       {:error, changeset} ->
         {:noreply, assign(socket, :trainer_form, to_form(changeset, as: "trainer"))}
     end
-  end
-
-  # --- Certifications ---
-
-  def handle_event("show_cert_form", _params, socket) do
-    {:noreply, assign(socket, :show_cert_form, true)}
-  end
-
-  def handle_event("hide_cert_form", _params, socket) do
-    cert_changeset = Trainers.change_certification(%Scopestrength.Trainers.Certification{})
-    {:noreply, socket |> assign(:show_cert_form, false) |> assign(:cert_form, to_form(cert_changeset, as: "cert"))}
-  end
-
-  def handle_event("save_cert", %{"cert" => params}, socket) do
-    params = Map.put(params, "trainer_id", socket.assigns.trainer.id)
-
-    case Trainers.create_certification(params) do
-      {:ok, _cert} ->
-        trainer = Trainers.get_trainer_byUserId(socket.assigns.current_user.id) |> Repo.preload(:certifications)
-        cert_changeset = Trainers.change_certification(%Scopestrength.Trainers.Certification{})
-
-        {:noreply,
-         socket
-         |> assign(:trainer, trainer)
-         |> assign(:certifications, trainer.certifications)
-         |> assign(:cert_form, to_form(cert_changeset, as: "cert"))
-         |> assign(:show_cert_form, false)
-         |> put_flash(:info, "Certification added")}
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, :cert_form, to_form(changeset, as: "cert"))}
-    end
-  end
-
-  def handle_event("delete_cert", %{"id" => id}, socket) do
-    cert = Trainers.get_certification!(id)
-    {:ok, _} = Trainers.delete_certification(cert)
-
-    trainer = Trainers.get_trainer_byUserId(socket.assigns.current_user.id) |> Repo.preload(:certifications)
-
-    {:noreply,
-     socket
-     |> assign(:trainer, trainer)
-     |> assign(:certifications, trainer.certifications)
-     |> put_flash(:info, "Certification removed")}
   end
 
   # --- Account / Security ---
@@ -389,94 +340,6 @@ defmodule ScopestrengthWeb.UserSettingsLive do
                 placeholder="e.g. Strength & Conditioning"
                 disabled={@current_user.type == "demo"}
               />
-
-              <.input
-                field={@trainer_form[:years_experience]}
-                type="number"
-                min="0"
-                label="Years of Experience"
-                placeholder="e.g. 5"
-                disabled={@current_user.type == "demo"}
-              />
-
-              <.input
-                field={@trainer_form[:location]}
-                type="text"
-                label="Location"
-                placeholder="e.g. London, UK"
-                disabled={@current_user.type == "demo"}
-              />
-
-              <.input
-                field={@trainer_form[:style]}
-                type="text"
-                label="Training Style"
-                placeholder="e.g. High Intensity, Functional"
-                disabled={@current_user.type == "demo"}
-              />
-
-              <.input
-                field={@trainer_form[:format]}
-                type="select"
-                label="Training Format"
-                prompt="Select format"
-                options={["In-Person", "Online", "Hybrid"]}
-                disabled={@current_user.type == "demo"}
-              />
-
-              <.input
-                field={@trainer_form[:instagram_url]}
-                type="text"
-                label="Instagram URL"
-                placeholder="https://instagram.com/yourhandle"
-                disabled={@current_user.type == "demo"}
-              />
-            </div>
-
-            <div class="mt-4">
-              <h3 class="text-base font-semibold text-gray-800 mb-3">Pricing</h3>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <.input
-                  field={@trainer_form[:price_per_session]}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  label="Price per Session (£)"
-                  placeholder="e.g. 50.00"
-                  disabled={@current_user.type == "demo"}
-                />
-                <.input
-                  field={@trainer_form[:price_per_month]}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  label="Price per Month (£)"
-                  placeholder="e.g. 150.00"
-                  disabled={@current_user.type == "demo"}
-                />
-              </div>
-            </div>
-
-            <div class="mt-4">
-              <h3 class="text-base font-semibold text-gray-800 mb-3">Visibility</h3>
-              <div class="space-y-3">
-                <div class="flex items-center gap-3">
-                  <.input
-                    field={@trainer_form[:is_public]}
-                    type="checkbox"
-                    label="List me in the public marketplace"
-                    disabled={@current_user.type == "demo"}
-                  />
-                </div>
-                <div class="flex items-center gap-3">
-                  <.input
-                    field={@trainer_form[:availability]}
-                    type="checkbox"
-                    label="I am currently accepting new clients"
-                    disabled={@current_user.type == "demo"}
-                  />
-                </div>
-              </div>
             </div>
 
             <:actions>
@@ -485,83 +348,6 @@ defmodule ScopestrengthWeb.UserSettingsLive do
               </.button>
             </:actions>
           </.simple_form>
-        </div>
-      </div>
-
-      <!-- Certifications -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 class="text-xl font-semibold text-gray-900">Certifications</h2>
-            <p class="text-sm text-gray-500 mt-1">Add your professional certifications to build trust with clients</p>
-          </div>
-          <button
-            :if={!@show_cert_form && @current_user.type != "demo"}
-            phx-click="show_cert_form"
-            class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            + Add Certification
-          </button>
-        </div>
-
-        <div class="p-6">
-          <!-- Certification Form -->
-          <%= if @show_cert_form do %>
-            <div class="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
-              <h3 class="text-base font-semibold text-gray-800 mb-3">New Certification</h3>
-              <.simple_form for={@cert_form} id="cert_form" phx-submit="save_cert">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <.input field={@cert_form[:name]} type="text" label="Certification Name" placeholder="e.g. NASM CPT" required />
-                  <.input field={@cert_form[:issuing_body]} type="text" label="Issuing Organisation" placeholder="e.g. NASM" />
-                  <.input field={@cert_form[:issued_at]} type="date" label="Issue Date" />
-                  <.input field={@cert_form[:expires_at]} type="date" label="Expiry Date" />
-                </div>
-                <:actions>
-                  <div class="flex gap-3">
-                    <.button class="bg-emerald-600 hover:bg-emerald-700 text-white">Save</.button>
-                    <button type="button" phx-click="hide_cert_form" class="text-gray-600 hover:text-gray-800 text-sm font-medium px-4 py-2 rounded-lg border border-gray-300">
-                      Cancel
-                    </button>
-                  </div>
-                </:actions>
-              </.simple_form>
-            </div>
-          <% end %>
-
-          <!-- Certifications List -->
-          <%= if Enum.empty?(@certifications) do %>
-            <p class="text-gray-400 text-sm text-center py-4">No certifications added yet.</p>
-          <% else %>
-            <ul class="divide-y divide-gray-100">
-              <%= for cert <- @certifications do %>
-                <li class="py-3 flex items-start justify-between gap-4">
-                  <div>
-                    <p class="text-sm font-semibold text-gray-900"><%= cert.name %></p>
-                    <%= if cert.issuing_body do %>
-                      <p class="text-xs text-gray-500"><%= cert.issuing_body %></p>
-                    <% end %>
-                    <div class="flex gap-3 mt-1 text-xs text-gray-400">
-                      <%= if cert.issued_at do %>
-                        <span>Issued: <%= Calendar.strftime(cert.issued_at, "%b %Y") %></span>
-                      <% end %>
-                      <%= if cert.expires_at do %>
-                        <span>Expires: <%= Calendar.strftime(cert.expires_at, "%b %Y") %></span>
-                      <% end %>
-                    </div>
-                  </div>
-                  <button
-                    :if={@current_user.type != "demo"}
-                    phx-click="delete_cert"
-                    phx-value-id={cert.id}
-                    data-confirm="Remove this certification?"
-                    class="text-red-500 hover:text-red-700 text-xs flex-shrink-0"
-                  >
-                    Remove
-                  </button>
-                </li>
-              <% end %>
-            </ul>
-          <% end %>
         </div>
       </div>
 

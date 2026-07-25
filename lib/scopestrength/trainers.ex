@@ -7,7 +7,6 @@ defmodule Scopestrength.Trainers do
   alias Scopestrength.Repo
 
   alias Scopestrength.Trainers.Trainer
-  alias Scopestrength.Trainers.Certification
 
   @spec list_trainers() :: any()
   @doc """
@@ -106,31 +105,5 @@ defmodule Scopestrength.Trainers do
   """
   def change_trainer(%Trainer{} = trainer, attrs \\ %{}) do
     Trainer.changeset(trainer, attrs)
-  end
-
-  def list_certifications(trainer_id) do
-    Repo.all(from c in Certification, where: c.trainer_id == ^trainer_id, order_by: [desc: c.issued_at])
-  end
-
-  def get_certification!(id), do: Repo.get!(Certification, id)
-
-  def create_certification(attrs \\ %{}) do
-    %Certification{}
-    |> Certification.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  def update_certification(%Certification{} = cert, attrs) do
-    cert
-    |> Certification.changeset(attrs)
-    |> Repo.update()
-  end
-
-  def delete_certification(%Certification{} = cert) do
-    Repo.delete(cert)
-  end
-
-  def change_certification(%Certification{} = cert, attrs \\ %{}) do
-    Certification.changeset(cert, attrs)
   end
 end
