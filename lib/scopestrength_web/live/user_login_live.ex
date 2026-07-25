@@ -8,7 +8,7 @@ defmodule ScopestrengthWeb.UserLoginLive do
         <div class="flex items-center justify-center mb-6">
           <div class="flex items-center space-x-3">
             <div class="h-12 w-12 rounded-full bg-gradient-to-br from-brand to-indigo-600 flex items-center justify-center text-white font-extrabold text-lg shadow">CJ</div>
-            <div class="text-2xl font-extrabold text-gray-800">Scope Application</div>
+            <div class="text-2xl font-extrabold text-gray-800">Scope Strength</div>
           </div>
         </div>
 
