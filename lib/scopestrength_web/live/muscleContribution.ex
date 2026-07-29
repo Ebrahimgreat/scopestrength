@@ -116,15 +116,15 @@ defmodule ScopestrengthWeb.MuscleContribution do
     ~H"""
     <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
       <div class="mb-6">
-        <h1 class="text-2xl font-semibold text-gray-900">
+        <h1 class="text-2xl font-semibold text-foreground">
           <%= @client.user.name %> — <%= @muscle.name %> Volume
         </h1>
-        <p class="mt-1 text-sm text-gray-500">All exercises performed for this muscle group</p>
+        <p class="mt-1 text-sm text-dim">All exercises performed for this muscle group</p>
       </div>
 
       <%= if map_size(@exercises) == 0 do %>
-        <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-          <p class="text-gray-500">No exercises recorded for <%= @muscle.name %> yet.</p>
+        <div class="rounded-xl border border-dashed border-line bg-card p-8 text-center">
+          <p class="text-dim">No exercises recorded for <%= @muscle.name %> yet.</p>
         </div>
       <% else %>
         <div class="space-y-8">
@@ -133,7 +133,7 @@ defmodule ScopestrengthWeb.MuscleContribution do
               <section>
                 <h2 class={[
                   "mb-3 text-xs font-semibold uppercase tracking-wide",
-                  if(role == "primary", do: "text-emerald-700", else: "text-blue-700")
+                  if(role == "primary", do: "text-primary", else: "text-blue-700")
                 ]}>
                   <%= if role == "primary", do: "Direct (Primary)", else: "Indirect (Secondary)" %>
                 </h2>
@@ -145,23 +145,23 @@ defmodule ScopestrengthWeb.MuscleContribution do
                     <% total_pages = ceil(length(by_date) / 5) %>
                     <% page_sessions = Enum.slice(by_date, current_page * 5, 5) %>
 
-                    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-                      <div class="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-2.5">
-                        <.link navigate={~p"/trainer/clients/#{@client.id}/strengthProgress/#{exercise_id}"} class="text-sm font-semibold text-gray-900 hover:text-emerald-600 transition-colors">
+                    <div class="overflow-hidden rounded-xl border border-line bg-card">
+                      <div class="flex items-center justify-between border-b border-line bg-card px-4 py-2.5">
+                        <.link navigate={~p"/trainer/clients/#{@client.id}/strengthProgress/#{exercise_id}"} class="text-sm font-semibold text-foreground hover:text-primary transition-colors">
                           <%= exercise_name %>
                         </.link>
-                        <span class="text-xs text-gray-400"><%= length(by_date) %> sessions</span>
+                        <span class="text-xs text-faint"><%= length(by_date) %> sessions</span>
                       </div>
 
-                      <div class="divide-y divide-gray-100">
+                      <div class="divide-y divide-line">
                         <%= for {date, sets} <- page_sessions do %>
                           <div class="px-4 py-3">
-                            <p class="mb-2 text-xs font-medium text-gray-500">
+                            <p class="mb-2 text-xs font-medium text-dim">
                               <%= Calendar.strftime(date, "%b %d, %Y") %>
                             </p>
                             <div class="flex flex-wrap gap-2">
                               <%= for s <- sets do %>
-                                <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+                                <span class="inline-flex items-center rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-foreground">
                                   Set <%= s.set %>: <%= s.reps %> reps
                                   <%= if s.weight && s.weight > 0 do %>
                                     @ <%= s.weight %>kg
@@ -174,23 +174,23 @@ defmodule ScopestrengthWeb.MuscleContribution do
                       </div>
 
                       <%= if total_pages > 1 do %>
-                        <div class="flex items-center justify-between border-t border-gray-100 px-4 py-2.5">
+                        <div class="flex items-center justify-between border-t border-line px-4 py-2.5">
                           <button
                             phx-click="prev_page"
                             phx-value-key={key}
                             disabled={current_page == 0}
-                            class="text-xs font-medium text-gray-500 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed"
+                            class="text-xs font-medium text-dim hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
                           >
                             ← Previous
                           </button>
-                          <span class="text-xs text-gray-400">
+                          <span class="text-xs text-faint">
                             <%= current_page + 1 %> / <%= total_pages %>
                           </span>
                           <button
                             phx-click="next_page"
                             phx-value-key={key}
                             disabled={current_page + 1 >= total_pages}
-                            class="text-xs font-medium text-gray-500 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed"
+                            class="text-xs font-medium text-dim hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
                           >
                             Next →
                           </button>

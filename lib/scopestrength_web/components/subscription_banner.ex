@@ -37,7 +37,7 @@ defmodule ScopestrengthWeb.SubscriptionBanner do
 
         <a
           href="/upgrade"
-          class="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-md font-semibold transition-colors"
+          class="px-3 py-1 bg-card/20 hover:bg-card/30 rounded-md font-semibold transition-colors"
         >
           Upgrade Now
         </a>
@@ -45,7 +45,7 @@ defmodule ScopestrengthWeb.SubscriptionBanner do
       <!-- Paid Member Status -->
       <div
         :if={@subscription_status == :paid}
-        class="px-4 py-2 bg-green-600 text-white text-sm font-medium flex flex-wrap items-center justify-between gap-2"
+        class="px-4 py-2 bg-primary text-foreground text-sm font-medium flex flex-wrap items-center justify-between gap-2"
       >
         <div class="flex items-center gap-2">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -71,8 +71,8 @@ defmodule ScopestrengthWeb.SubscriptionBanner do
   defp trial_message(0), do: "Expires today!"
   defp trial_message(_), do: "Trial expired"
 
-  defp trial_color(days) when days >= 10, do: "bg-green-600 text-white"
-  defp trial_color(days) when days >= 4, do: "bg-yellow-500 text-white"
-  defp trial_color(days) when days >= 1, do: "bg-orange-600 text-white"
-  defp trial_color(_), do: "bg-red-600 text-white"
+  defp trial_color(days) when days >= 10, do: "bg-primary text-foreground"
+  defp trial_color(days) when days >= 4, do: "bg-warning text-foreground"
+  defp trial_color(days) when days >= 1, do: "bg-warning text-foreground"
+  defp trial_color(_), do: "bg-danger text-foreground"
 end

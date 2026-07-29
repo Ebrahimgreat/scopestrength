@@ -127,23 +127,23 @@ end
           <div class="flex items-center space-x-4">
             <.link
               navigate={~p"/trainer/programmes/#{@template.data.programme_id}"}
-              class="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
+              class="inline-flex items-center text-sm text-dim hover:text-foreground transition-colors duration-200"
             >
               <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
               </svg>
               Back to Programme
             </.link>
-            <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="w-4 h-4 text-faint" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
             </svg>
-            <h1 class="text-3xl font-bold text-gray-900">
+            <h1 class="text-3xl font-bold text-foreground">
               <%= @template.data.name %>
             </h1>
           </div>
           <.link
             navigate={~p"/trainer/programmes/#{@template.data.programme_id}/template/#{@template.data.id}/details"}
-            class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200"
+            class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-foreground font-medium rounded-lg shadow-sm transition-colors duration-200"
           >
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -156,19 +156,19 @@ end
 
       <!-- Template Settings Section -->
       <div class="mb-8">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 class="text-xl font-semibold text-gray-800 mb-4">Template Settings</h2>
+        <div class="bg-card rounded-lg shadow-sm border border-line p-6">
+          <h2 class="text-xl font-semibold text-foreground mb-4">Template Settings</h2>
           <.form phx-submit="updateForm" for={@template} class="space-y-4">
             <div class="flex items-end space-x-4">
               <div class="flex-1">
                 <.input
                   label="Template Name"
                   field={@template[:name]}
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  class="block w-full rounded-md border-line shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   placeholder="Enter template name"
                 />
               </div>
-              <.button class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200">
+              <.button class="inline-flex items-center px-4 py-2 bg-primary hover:bg-green-700 text-foreground font-medium rounded-lg shadow-sm transition-colors duration-200">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
@@ -183,18 +183,18 @@ end
         <%= for {muscle_group, volumes} <- @muscle_group_frequencies do %>
           <div class="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-lg px-3 py-2.5">
             <div class="flex flex-col gap-2">
-              <span class="text-xs font-semibold text-slate-700 truncate">
+              <span class="text-xs font-semibold text-foreground truncate">
                 <%= muscle_group %>
               </span>
 
-              <div class="flex items-center justify-between text-[11px] text-slate-500">
+              <div class="flex items-center justify-between text-[11px] text-dim">
                 <span>Direct</span>
-                <span class="inline-flex items-center justify-center px-2 py-0.5 bg-indigo-600 text-white text-xs font-semibold rounded-full">
+                <span class="inline-flex items-center justify-center px-2 py-0.5 bg-indigo-600 text-foreground text-xs font-semibold rounded-full">
                   <%= Float.round(volumes.direct)%>
                 </span>
               </div>
 
-              <div class="flex items-center justify-between text-[11px] text-slate-500">
+              <div class="flex items-center justify-between text-[11px] text-dim">
                 <span>Effective</span>
                 <span class="inline-flex items-center justify-center px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">
                   <%= Float.round(volumes.effective,1) %>
@@ -206,10 +206,10 @@ end
       </div>
 
       <!-- Programme Details Section -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div class="px-6 py-4 border-b border-gray-200">
+      <div class="bg-card rounded-lg shadow-sm border border-line">
+        <div class="px-6 py-4 border-b border-line">
           <div class="flex items-center justify-between">
-            <h2 class="text-xl font-semibold text-gray-800">Programme Details</h2>
+            <h2 class="text-xl font-semibold text-foreground">Programme Details</h2>
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               <%= length(@template.data.programmeDetails) %> exercise<%= if length(@template.data.programmeDetails) != 1, do: "s" %>
             </span>
@@ -220,7 +220,7 @@ end
           <%= if length(@template.data.programmeDetails) > 0 do %>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <%= for {programmeDetail, index} <- Enum.with_index(@template.data.programmeDetails) do %>
-                <div class="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                <div class="bg-gradient-to-br from-gray-50 to-white border border-line rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
                   <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center space-x-2">
                       <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -228,13 +228,13 @@ end
                           <%= index + 1 %>
                         </span>
                       </div>
-                      <span class="text-xs font-medium text-gray-500 uppercase tracking-wide"> <%= programmeDetail.exercise.name%>
+                      <span class="text-xs font-medium text-dim uppercase tracking-wide"> <%= programmeDetail.exercise.name%>
 
                       </span>
 
 
                     </div>
-                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    <span class="text-xs font-medium text-dim uppercase tracking-wide">
                       <%= if programmeDetail.exercise.muscle, do: programmeDetail.exercise.muscle.name, else: "N/A" %>
                       </span>
                   </div>
@@ -245,7 +245,7 @@ end
                         <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                         </svg>
-                        <span class="text-sm font-medium text-gray-600">Sets</span>
+                        <span class="text-sm font-medium text-dim">Sets</span>
                       </div>
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         <%= programmeDetail.set %>
@@ -254,12 +254,12 @@ end
 
                     <div class="flex items-center justify-between">
                       <div class="flex items-center space-x-2">
-                        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                        <span class="text-sm font-medium text-gray-600">Reps</span>
+                        <span class="text-sm font-medium text-dim">Reps</span>
                       </div>
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                         <%= programmeDetail.reps %>
                       </span>
                     </div>
@@ -270,15 +270,15 @@ end
           <% else %>
             <!-- Empty State -->
             <div class="text-center py-12">
-              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="mx-auto h-12 w-12 text-faint" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
-              <h3 class="mt-2 text-sm font-medium text-gray-900">No exercises yet</h3>
-              <p class="mt-1 text-sm text-gray-500">Add some exercises to get started with this template.</p>
+              <h3 class="mt-2 text-sm font-medium text-foreground">No exercises yet</h3>
+              <p class="mt-1 text-sm text-dim">Add some exercises to get started with this template.</p>
               <div class="mt-6">
                 <.link
                   navigate={~p"/trainer/programmes/#{@template.data.programme_id}/template/#{@template.data.id}/details"}
-                  class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200"
+                  class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-foreground font-medium rounded-lg shadow-sm transition-colors duration-200"
                 >
                   <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />

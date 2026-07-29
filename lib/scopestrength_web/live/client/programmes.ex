@@ -60,167 +60,117 @@ defmodule ScopestrengthWeb.Client.Programmes do
 
   def render(assigns) do
     ~H"""
-    <div class="w-full min-h-screen">
-    <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-4">
-        <div class="w-full px-0 sm:px-2 lg:px-4 py-8">
-          <h1 class="text-3xl font-bold tracking-tight text-slate-900">My Programmes</h1>
-          <p class="mt-2 text-slate-600 text-base lg:text-lg">
+    <div class="mx-auto max-w-5xl">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium uppercase tracking-widest text-dim">Training</p>
+          <h1 class="mt-1 font-display text-5xl font-bold uppercase tracking-wide text-foreground">
+            My Programmes
+          </h1>
+          <p class="mt-2 max-w-xl text-sm text-dim">
             Create and manage your training programmes, <%= @name %>
           </p>
         </div>
+
+        <.button type="button" phx-click="addNewProgramme" class="shrink-0">
+          <span class="inline-flex items-center gap-2">
+            <.icon name="hero-plus" class="h-4 w-4" /> New programme
+          </span>
+        </.button>
       </div>
 
-          <div class="w-full px-0 sm:px-2 lg:px-4 py-4">
-            <div class="flex items-center justify-between">
-              <h2 class="text-lg font-semibold text-gray-900 flex items-center">
-                <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                Your Training Programmes
-              </h2>
-              <.button
-                type="button"
-                phx-click="addNewProgramme"
-                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 shadow-lg shadow-slate-900/20 hover:shadow-xl hover:shadow-slate-900/25 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition"
-              >
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-                Add New Programme
-              </.button>
-            </div>
-            </div>
+      <div
+        :if={@programmes == []}
+        class="mt-8 rounded-xl border border-dashed border-line px-6 py-16 text-center"
+      >
+        <h3 class="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+          No programmes yet
+        </h3>
+        <p class="mx-auto mt-2 max-w-sm text-sm text-dim">
+          Get started by creating your first training programme.
+        </p>
+        <div class="mt-6">
+          <.button type="button" phx-click="addNewProgramme">Create your first programme</.button>
+        </div>
+      </div>
 
-      <%= if length(@programmes) > 0 do %>
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Programme Name
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  <%= for programme <- @programmes do %>
-                    <tr class="hover:bg-gray-50 transition-colors duration-150">
-                      <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex items-center">
-                          <div class="flex-shrink-0 h-10 w-10">
-                            <div class="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-blue-600 flex items-center justify-center">
-                              <span class="text-sm font-medium text-white">
-                                <%= String.first(programme.name) %>
-                              </span>
-                            </div>
-                          </div>
-                          <div class="ml-4">
-                            <div class="text-sm font-medium text-gray-900">
-                              <%= programme.name %>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900 max-w-xs">
-                          <%= if programme.description && programme.description != "" do %>
-                            <p class="truncate"><%= programme.description %></p>
-                          <% else %>
-                            <span class="text-gray-400 italic">No description provided</span>
-                          <% end %>
-                        </div>
-                      </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-center">
-                        <div class="flex items-center justify-center gap-2">
-                          <.link
-                            navigate={~p"/client/programmes/#{programme.id}"}
-                            class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 transition"
-                          >
-                            View
-                          </.link>
-                          <button
-                            type="button"
-                            phx-click="duplicateProgramme"
-                            phx-value-id={programme.id}
-                            class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 transition"
-                          >
-                            Duplicate
-                          </button>
-                          <button
-                            type="button"
-                            phx-click="deleteProgramme"
-                            phx-value-id={programme.id}
-                            class="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 shadow-sm hover:border-rose-300 hover:bg-rose-100 transition"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  <% end %>
-                </tbody>
-              </table>
-            </div>
-          <% else %>
-            <div class="text-center py-12">
-              <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-              </svg>
-              <h3 class="mt-4 text-lg font-medium text-gray-900">No programmes yet</h3>
-              <p class="mt-2 text-gray-500">Get started by creating your first training programme.</p>
-              <div class="mt-6">
-                <.button
-                  type="button"
-                  phx-click="addNewProgramme"
-                  class="inline-flex items-center gap-2 px-6 py-3 rounded-full text-base font-semibold text-white bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 shadow-lg shadow-slate-900/20 hover:shadow-xl hover:shadow-slate-900/25 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition"
-                >
-                  <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                  </svg>
-                  Create Your First Programme
-                </.button>
-              </div>
-            </div>
-          <% end %>
+      <div :if={@programmes != []} class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          :for={programme <- @programmes}
+          class="group relative flex flex-col rounded-xl border border-line bg-card p-5 transition hover:border-dim"
+        >
+          <%!-- Stretched link covers the card; the action row sits above it. --%>
+          <.link
+            navigate={~p"/client/programmes/#{programme.id}"}
+            class="after:absolute after:inset-0 after:rounded-xl"
+          >
+            <h3 class="font-semibold leading-snug text-foreground"><%= programme.name %></h3>
+          </.link>
 
-  <%= if @delete_confirm_id do %>
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div class="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4">
-          <div class="flex items-center justify-center w-12 h-12 mx-auto rounded-full bg-rose-100 mb-4">
-            <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-            </svg>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-900 text-center">Delete Programme</h3>
-          <p class="mt-2 text-sm text-gray-600 text-center">
-            Are you sure you want to delete this programme? This action cannot be undone.
+          <p class="mt-2 line-clamp-2 min-h-[2.5rem] text-sm text-dim">
+            <%= if programme.description && programme.description != "" do %>
+              <%= programme.description %>
+            <% else %>
+              No description
+            <% end %>
           </p>
-          <div class="mt-6 flex gap-3 justify-center">
+
+          <div class="relative z-10 mt-4 flex items-center gap-1 border-t border-line pt-3">
             <button
               type="button"
-              phx-click="cancel_delete"
-              class="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition"
+              phx-click="duplicateProgramme"
+              phx-value-id={programme.id}
+              class="rounded-md px-2 py-1 text-xs font-medium text-dim transition hover:bg-secondary hover:text-foreground"
             >
-              Cancel
+              Duplicate
             </button>
             <button
               type="button"
-              phx-click="confirm_delete"
-              class="inline-flex items-center rounded-full border border-rose-200 bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-700 transition"
+              phx-click="deleteProgramme"
+              phx-value-id={programme.id}
+              class="rounded-md px-2 py-1 text-xs font-medium text-dim transition hover:bg-danger/10 hover:text-danger"
             >
               Delete
             </button>
+            <.icon name="hero-chevron-right" class="ml-auto h-4 w-4 text-faint" />
           </div>
         </div>
       </div>
-      <% end %>
 
-</div>
+      <div :if={@delete_confirm_id} class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="absolute inset-0 bg-black/70" phx-click="cancel_delete" aria-hidden="true"></div>
+        <div class="relative flex min-h-full items-center justify-center p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            class="w-full max-w-sm rounded-xl border border-line bg-card p-6 shadow-2xl"
+          >
+            <h3 class="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+              Delete Programme
+            </h3>
+            <p class="mt-2 text-sm text-dim">
+              Are you sure you want to delete this programme? This action cannot be undone.
+            </p>
+            <div class="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                phx-click="cancel_delete"
+                class="rounded-md px-4 py-2 text-sm font-medium text-dim transition hover:text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                phx-click="confirm_delete"
+                class="rounded-md bg-danger px-4 py-2 text-sm font-semibold text-foreground transition hover:opacity-90"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     """
   end
 end

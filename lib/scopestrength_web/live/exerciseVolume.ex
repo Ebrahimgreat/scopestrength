@@ -33,11 +33,11 @@ defmodule ScopestrengthWeb.ExerciseVolume do
       <div class="relative px-6 py-7 sm:px-8">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+            <p class="text-xs font-semibold uppercase tracking-[0.35em] text-faint">
               Training analytics
             </p>
-            <h1 class="text-2xl font-semibold text-slate-900 sm:text-3xl">Exercise Volume</h1>
-            <p class="mt-1 max-w-2xl text-sm text-slate-600">
+            <h1 class="text-2xl font-semibold text-foreground sm:text-3xl">Exercise Volume</h1>
+            <p class="mt-1 max-w-2xl text-sm text-dim">
               Review muscle contribution multipliers for each exercise.
             </p>
           </div>
@@ -55,9 +55,9 @@ defmodule ScopestrengthWeb.ExerciseVolume do
         </div>
       </div>
 
-      <div class="relative overflow-hidden border-t border-slate-200">
+      <div class="relative overflow-hidden border-t border-line">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50/80 text-[0.7rem] uppercase tracking-[0.2em] text-slate-400">
+          <thead class="bg-card/80 text-[0.7rem] uppercase tracking-[0.2em] text-faint">
             <tr>
               <th class="text-left py-3 px-6 font-semibold">Exercise</th>
               <th class="text-left py-3 px-6 font-semibold">Muscle</th>
@@ -66,19 +66,19 @@ defmodule ScopestrengthWeb.ExerciseVolume do
               <th class="text-right py-3 px-6 font-semibold">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <tbody class="divide-y divide-line">
             <%= for emc <- @exerciseMuscleContributions do %>
-              <tr class="transition hover:bg-slate-50">
-                <td class="px-6 py-3 font-medium text-slate-900"><%= emc.exercise.name %></td>
-                <td class="px-6 py-3 text-slate-600"><%= emc.muscle.name %></td>
+              <tr class="transition hover:bg-card">
+                <td class="px-6 py-3 font-medium text-foreground"><%= emc.exercise.name %></td>
+                <td class="px-6 py-3 text-dim"><%= emc.muscle.name %></td>
                 <td class="px-6 py-3">
                   <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize">
                     <%= emc.role %>
                   </span>
                 </td>
-                <td class="px-6 py-3 text-slate-700"><%= emc.multiplier %></td>
+                <td class="px-6 py-3 text-foreground"><%= emc.multiplier %></td>
                 <td class="px-6 py-3 text-right">
-                  <span class="text-xs text-slate-400">
+                  <span class="text-xs text-faint">
                     <%= if emc.role == "primary", do: "Primary", else: "View only" %>
                   </span>
                 </td>

@@ -124,194 +124,161 @@ defmodule ScopestrengthWeb.ProgrammeShow do
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white">
-      <div class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <% template_count = length(@programme.data.programmeTemplates) %>
-        <div class="space-y-8">
-          <section class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="absolute -right-20 -top-24 h-56 w-56 rounded-full bg-emerald-100/70 blur-2xl"></div>
-            <div class="relative flex flex-col gap-6 p-6 sm:p-8">
-              <div class="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
-                <.link navigate={~p"/trainer/programmes"} class="hover:text-slate-700 transition-colors">
-                  Programmes
-                </.link>
-                <span>/</span>
-                <span class="text-slate-700">Editor</span>
-              </div>
+    <div class="mx-auto max-w-5xl">
+      <% template_count = length(@programme.data.programmeTemplates) %>
 
-              <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <h1 class="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-                    <%= @programme[:name].value %>
-                  </h1>
-                  <p class="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
-                    Refine programme details, build templates, and export a workout report when ready.
-                  </p>
-                </div>
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div class="min-w-0">
+          <.link
+            navigate={~p"/trainer/programmes"}
+            class="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-widest text-dim transition hover:text-foreground"
+          >
+            <.icon name="hero-chevron-left" class="h-3 w-3" /> Programmes
+          </.link>
+          <h1 class="mt-1 font-display text-5xl font-bold uppercase tracking-wide text-foreground">
+            <%= @programme[:name].value %>
+          </h1>
+        </div>
 
-                <div class="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    phx-click="addTemplate"
-                    class="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700"
-                  >
-                    Add template
-                  </button>
-                  <%= if @report == false do %>
-                    <button
-                      type="button"
-                      phx-click="downloadProgramme"
-                      class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
-                    >
-                      Generate report
-                    </button>
-                  <% else %>
-                    <a
-                      href="/download/workout"
-                      class="inline-flex items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
-                    >
-                      Download report
-                    </a>
-                  <% end %>
-                </div>
-              </div>
-
-              <div class="grid gap-3 sm:grid-cols-2 lg:max-w-xl">
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p class="text-xs uppercase tracking-wide text-slate-500">Templates</p>
-                  <p class="mt-1 text-2xl font-semibold text-slate-900"><%= template_count %></p>
-                </div>
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p class="text-xs uppercase tracking-wide text-slate-500">Report</p>
-                  <p class="mt-1 text-sm font-semibold text-slate-900">
-                    <%= if @report, do: "Ready to download", else: "Not generated yet" %>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Volume Tracking Section -->
-          <%= if map_size(@muscle_volume) > 0 do %>
-            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 class="text-lg font-semibold text-slate-900 mb-4">Total Programme Volume</h2>
-              <p class="text-sm text-slate-600 mb-5">Combined volume across all templates</p>
-
-              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                <%= for {muscle_group, volumes} <- @muscle_volume do %>
-                  <div class="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-lg px-3 py-2.5">
-                    <div class="flex flex-col gap-2">
-                      <span class="text-xs font-semibold text-slate-700 truncate">
-                        <%= muscle_group %>
-                      </span>
-
-                      <div class="flex items-center justify-between text-[11px] text-slate-500">
-                        <span>Direct</span>
-                        <span class="inline-flex items-center justify-center px-2 py-0.5 bg-indigo-600 text-white text-xs font-semibold rounded-full">
-                          <%= Float.round(volumes.direct) %>
-                        </span>
-                      </div>
-
-                      <div class="flex items-center justify-between text-[11px] text-slate-500">
-                        <span>Effective</span>
-                        <span class="inline-flex items-center justify-center px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">
-                          <%= Float.round(volumes.effective, 1) %>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                <% end %>
-              </div>
-            </section>
+        <div class="flex shrink-0 flex-wrap gap-2">
+          <%= if @report == false do %>
+            <button
+              type="button"
+              phx-click="downloadProgramme"
+              class="rounded-md border border-line px-3 py-2 text-sm font-medium text-dim transition hover:border-dim hover:text-foreground"
+            >
+              Generate report
+            </button>
+          <% else %>
+            <a
+              href="/download/workout"
+              class="rounded-md border border-primary/40 px-3 py-2 text-sm font-medium text-primary transition hover:opacity-80"
+            >
+              Download report
+            </a>
           <% end %>
+          <.button type="button" phx-click="addTemplate">
+            <span class="inline-flex items-center gap-2">
+              <.icon name="hero-plus" class="h-4 w-4" /> Add template
+            </span>
+          </.button>
+        </div>
+      </div>
 
-          <section class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 class="text-lg font-semibold text-slate-900">Programme Details</h2>
-              <p class="mt-1 text-sm text-slate-600">Changes are saved automatically.</p>
+      <.form phx-change="updateForm" for={@programme} class="mt-8 space-y-4">
+        <div>
+          <label class="mb-1 block text-xs uppercase tracking-widest text-dim">Programme name</label>
+          <input
+            type="text"
+            name={@programme[:name].name}
+            value={@programme[:name].value}
+            phx-debounce="600"
+            placeholder="Enter programme name"
+            class="w-full rounded-md border-line bg-muted px-3 py-2.5 text-sm text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs uppercase tracking-widest text-dim">Description</label>
+          <textarea
+            name={@programme[:description].name}
+            rows="3"
+            phx-debounce="700"
+            placeholder="Describe your programme focus, split, or progression notes"
+            class="w-full rounded-md border-line bg-muted px-3 py-2.5 text-sm text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
+          ><%= Phoenix.HTML.Form.normalize_value("textarea", @programme[:description].value) %></textarea>
+        </div>
+      </.form>
 
-              <.form phx-change="updateForm" for={@programme} class="mt-5 space-y-4">
-                <.input
-                  field={@programme[:name]}
-                  type="text"
-                  label="Programme name"
-                  phx-debounce="600"
-                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
-                  placeholder="Enter programme name"
-                />
-                <.input
-                  field={@programme[:description]}
-                  type="textarea"
-                  label="Description"
-                  phx-debounce="700"
-                  rows="4"
-                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
-                  placeholder="Describe your programme focus, split, or progression notes"
-                />
-              </.form>
-            </div>
+      <div :if={map_size(@muscle_volume) > 0} class="mt-10 border-t border-line pt-6">
+        <div class="flex items-baseline justify-between gap-3">
+          <h2 class="text-sm font-semibold text-foreground">Programme Volume</h2>
+          <span class="text-xs text-dim">Combined across all templates</span>
+        </div>
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div class="flex items-center justify-between gap-4">
-                <h2 class="text-lg font-semibold text-slate-900">Workout Templates</h2>
-                <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                  <%= template_count %> template<%= if template_count != 1, do: "s" %>
+        <% volume_max =
+          @muscle_volume |> Enum.map(fn {_m, v} -> v.effective end) |> Enum.max(fn -> 0.0 end) %>
+        <div class="mt-4 space-y-2.5">
+          <%= for {muscle_group, volumes} <- Enum.sort_by(@muscle_volume, fn {_m, v} -> v.effective end, :desc) do %>
+            <% indirect = max(volumes.effective - volumes.direct, 0.0) %>
+            <div>
+              <div class="flex items-baseline justify-between gap-3">
+                <span class="truncate text-sm text-foreground"><%= muscle_group %></span>
+                <span class="num shrink-0 text-xs text-dim">
+                  <span class="text-foreground"><%= round(volumes.direct) %></span>
+                  <span :if={indirect > 0}> + <%= round(indirect) %></span>
                 </span>
               </div>
-
-              <%= if template_count > 0 do %>
-                <div class="mt-5 space-y-3">
-                  <%= for {template, index} <- Enum.with_index(@programme.data.programmeTemplates) do %>
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                      <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div class="space-y-1">
-                          <p class="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                            Template <%= index + 1 %>
-                          </p>
-                          <p class="text-base font-semibold text-slate-900"><%= template.name %></p>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                          <.link
-                            navigate={~p"/trainer/programmes/#{@programmeId}/template/#{template.id}"}
-                            class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                          >
-                            Open
-                          </.link>
-                          <button
-                            type="button"
-                            phx-click="deleteTemplate"
-                            phx-value-id={template.id}
-                            data-confirm="Are you sure you want to delete this template?"
-                            class="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  <% end %>
-                </div>
-              <% else %>
-                <div class="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center">
-                  <p class="text-sm font-medium text-slate-700">No templates yet</p>
-                  <p class="mt-1 text-sm text-slate-500">
-                    Add your first workout template to start structuring this programme.
-                  </p>
-                  <button
-                    type="button"
-                    phx-click="addTemplate"
-                    class="mt-4 inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700"
+              <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div class="flex h-full">
+                  <div
+                    class="h-full rounded-l-full bg-primary"
+                    style={"width: #{vol_pct(volumes.direct, volume_max)}%"}
                   >
-                    Add first template
-                  </button>
+                  </div>
+                  <div
+                    class="h-full bg-primary/30"
+                    style={"width: #{vol_pct(indirect, volume_max)}%"}
+                  >
+                  </div>
                 </div>
-              <% end %>
+              </div>
             </div>
-          </section>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="mt-10 border-t border-line pt-6">
+        <div class="flex items-baseline justify-between gap-3">
+          <h2 class="text-sm font-semibold text-foreground">Templates</h2>
+          <span class="num text-xs text-dim"><%= template_count %></span>
+        </div>
+
+        <div :if={template_count > 0} class="mt-4 overflow-hidden rounded-xl border border-line bg-card">
+          <div
+            :for={{template, index} <- Enum.with_index(@programme.data.programmeTemplates)}
+            class="group relative flex items-center gap-4 border-b border-line/60 px-5 py-4 transition last:border-0 hover:bg-secondary/50"
+          >
+            <span class="num w-6 shrink-0 text-sm text-faint"><%= index + 1 %></span>
+
+            <.link
+              navigate={~p"/trainer/programmes/#{@programmeId}/template/#{template.id}"}
+              class="min-w-0 flex-1 after:absolute after:inset-0"
+            >
+              <span class="truncate font-medium text-foreground"><%= template.name %></span>
+            </.link>
+
+            <button
+              type="button"
+              phx-click="deleteTemplate"
+              phx-value-id={template.id}
+              data-confirm="Are you sure you want to delete this template?"
+              aria-label={"Delete #{template.name}"}
+              class="relative z-10 shrink-0 rounded-md p-1.5 text-dim opacity-0 transition hover:bg-danger/10 hover:text-danger focus:opacity-100 group-hover:opacity-100"
+            >
+              <.icon name="hero-trash" class="h-4 w-4" />
+            </button>
+            <.icon name="hero-chevron-right" class="h-4 w-4 shrink-0 text-faint" />
+          </div>
+        </div>
+
+        <div
+          :if={template_count == 0}
+          class="mt-4 rounded-xl border border-dashed border-line px-6 py-12 text-center"
+        >
+          <p class="text-sm font-medium text-foreground">No templates yet</p>
+          <p class="mx-auto mt-1 max-w-sm text-sm text-dim">
+            Add your first workout template to start structuring this programme.
+          </p>
+          <div class="mt-6">
+            <.button type="button" phx-click="addTemplate">Add first template</.button>
+          </div>
         </div>
       </div>
     </div>
     """
   end
+
+  # Bar segment width, guarding an empty programme.
+  defp vol_pct(_value, max) when max <= 0, do: 0
+  defp vol_pct(value, max), do: Float.round(value / max * 100, 2)
 end

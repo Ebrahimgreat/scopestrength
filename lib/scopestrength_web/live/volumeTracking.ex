@@ -265,23 +265,23 @@ defmodule ScopestrengthWeb.VolumeTracking do
   def render(assigns) do
     ~H"""
     <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-      <div class="mb-6 rounded-xl border border-gray-200 bg-white p-5 sm:flex sm:items-center sm:justify-between">
+      <div class="mb-6 rounded-xl border border-line bg-card p-5 sm:flex sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-2xl font-semibold text-gray-900">Volume Tracking</h1>
-          <p class="mt-1 text-sm text-gray-600">
+          <h1 class="text-2xl font-semibold text-foreground">Volume Tracking</h1>
+          <p class="mt-1 text-sm text-dim">
             Track training volume by muscle group over time
           </p>
         </div>
 
-        <div class="mt-4 inline-flex rounded-lg bg-gray-100 p-1 sm:mt-0">
+        <div class="mt-4 inline-flex rounded-lg bg-secondary p-1 sm:mt-0">
           <button
             phx-click="change_period"
             phx-value-period="weekly"
             class={[
               "rounded-md px-3 py-1.5 text-sm font-medium transition",
               if(@period == "weekly",
-                do: "bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-200",
-                else: "text-gray-600 hover:text-gray-900"
+                do: "bg-card text-foreground shadow-sm ring-1 ring-inset ring-gray-200",
+                else: "text-dim hover:text-foreground"
               )
             ]}
           >
@@ -293,8 +293,8 @@ defmodule ScopestrengthWeb.VolumeTracking do
             class={[
               "rounded-md px-3 py-1.5 text-sm font-medium transition",
               if(@period == "monthly",
-                do: "bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-200",
-                else: "text-gray-600 hover:text-gray-900"
+                do: "bg-card text-foreground shadow-sm ring-1 ring-inset ring-gray-200",
+                else: "text-dim hover:text-foreground"
               )
             ]}
           >
@@ -304,47 +304,47 @@ defmodule ScopestrengthWeb.VolumeTracking do
       </div>
 
       <%= if map_size(@volume_data) == 0 do %>
-        <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-          <p class="text-gray-600">No workout data available yet.</p>
+        <div class="rounded-xl border border-dashed border-line bg-card p-8 text-center">
+          <p class="text-dim">No workout data available yet.</p>
         </div>
       <% else %>
         <div class="space-y-4">
           <%= for {muscle_name, periods} <- @volume_data |> Enum.sort_by(fn {muscle, _} -> muscle end) do %>
-            <section class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-              <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
+            <section class="overflow-hidden rounded-xl border border-line bg-card">
+              <div class="flex items-center justify-between border-b border-line bg-card px-4 py-3 sm:px-6">
                 <.link
                   navigate={"/trainer/clients/#{@client_id}/volumeTracking/#{@muscle_ids[muscle_name]}"}
-                  class="text-base font-semibold text-gray-900 hover:text-emerald-600 transition-colors"
+                  class="text-base font-semibold text-foreground hover:text-primary transition-colors"
                 >
                   <%= muscle_name %>
                 </.link>
-                <span class="text-xs font-medium text-gray-500">
+                <span class="text-xs font-medium text-dim">
                   <%= if @period == "weekly", do: "Weekly breakdown", else: "Monthly breakdown" %>
                 </span>
               </div>
 
               <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                  <thead class="bg-white">
+                <table class="min-w-full divide-y divide-line">
+                  <thead class="bg-card">
                     <tr>
-                      <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
+                      <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-dim sm:px-6">
                         Period
                       </th>
-                      <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
+                      <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-dim sm:px-6">
                         Total Sets
                       </th>
-                      <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
+                      <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-dim sm:px-6">
                         Direct Sets
                       </th>
-                      <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
+                      <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-dim sm:px-6">
                         Effective Sets
                       </th>
-                      <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
+                      <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-dim sm:px-6">
                         Change
                       </th>
                     </tr>
                   </thead>
-                  <tbody class="bg-white divide-y divide-gray-200">
+                  <tbody class="bg-card divide-y divide-line">
                     <%= for {period, index} <- Enum.with_index(periods) do %>
                       <% prev_period = Enum.at(periods, index + 1) %>
                       <% change =
@@ -360,32 +360,32 @@ defmodule ScopestrengthWeb.VolumeTracking do
                           nil
                         end %>
 
-                      <tr class={if period.total_sets == 0.0, do: "bg-amber-50/50 hover:bg-amber-50", else: "hover:bg-gray-50/70"}>
-                        <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 sm:px-6">
+                      <tr class={if period.total_sets == 0.0, do: "bg-warning/5 hover:bg-warning/10", else: "hover:bg-card/70"}>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-foreground sm:px-6">
                           <div class="flex items-center gap-2">
                             <%= period.period_label %>
                             <%= if period.total_sets == 0.0 do %>
                               <span class="relative group cursor-help">
-                                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-4 h-4 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg z-10">
+                                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 px-3 py-2 text-xs text-foreground bg-card rounded-lg shadow-lg z-10">
                                   No sets recorded this <%= if @period == "weekly", do: "week", else: "month" %>
                                 </span>
                               </span>
                             <% end %>
                           </div>
                         </td>
-                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-semibold text-gray-900 sm:px-6">
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-semibold text-foreground sm:px-6">
                           <%= period.total_sets %>
                         </td>
                         <td class="whitespace-nowrap px-4 py-3 text-right text-sm sm:px-6">
-                          <span class="inline-flex items-center justify-center px-2 py-0.5 bg-emerald-600 text-white text-xs font-semibold rounded-full">
+                          <span class="inline-flex items-center justify-center px-2 py-0.5 bg-primary text-foreground text-xs font-semibold rounded-full">
                             <%= period.direct_sets %>
                           </span>
                         </td>
                         <td class="whitespace-nowrap px-4 py-3 text-right text-sm sm:px-6">
-                          <span class="inline-flex items-center justify-center px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
+                          <span class="inline-flex items-center justify-center px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded-full">
                             <%= period.effective_sets %>
                           </span>
                         </td>
@@ -394,16 +394,16 @@ defmodule ScopestrengthWeb.VolumeTracking do
                             <span class={[
                               "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset",
                               cond do
-                                change > 0 -> "bg-emerald-50 text-emerald-700 ring-emerald-200"
-                                change < 0 -> "bg-rose-50 text-rose-700 ring-rose-200"
-                                true -> "bg-gray-100 text-gray-700 ring-gray-200"
+                                change > 0 -> "bg-primary/10 text-primary ring-emerald-200"
+                                change < 0 -> "bg-danger/10 text-danger ring-rose-200"
+                                true -> "bg-secondary text-foreground ring-gray-200"
                               end
                             ]}>
                               <%= if change > 0, do: "+", else: "" %><%= change %> sets
                               <%= if change_percent, do: "(#{change_percent}%)" %>
                             </span>
                           <% else %>
-                            <span class="text-gray-400">—</span>
+                            <span class="text-faint">—</span>
                           <% end %>
                         </td>
                       </tr>

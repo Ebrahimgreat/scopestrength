@@ -7,34 +7,19 @@ defmodule Scopestrength.Training.WorkoutDetails do
     field :weight, :float
     field :set, :integer
     field :rir, :float, default: 0.0
+    field :rpe, :float
     field :side, :string, default: "both"
-    field :notes, :string
     belongs_to :exercise, Scopestrength.Exercises.Exercise
     belongs_to :workout, Scopestrength.Training.Workout
-    belongs_to :set_type, Scopestrength.Training.SetType
     timestamps(type: :utc_datetime)
   end
 
   @doc false
   def changeset(workout_details, attrs) do
     workout_details
-    |> cast(attrs, [:reps, :weight, :set, :side, :notes, :set_type_id, :workout_id, :rir, :exercise_id])
+    |> cast(attrs, [:reps, :weight, :set, :side, :workout_id, :rir, :rpe, :exercise_id])
     |> validate_required([])
     |> validate_inclusion(:side, ["both", "left", "right"])
-    |> set_default_set_type()
-  end
-
-  defp set_default_set_type(changeset) do
-    if get_field(changeset, :set_type_id) == nil do
-      # Get "Standard" set type ID from database
-      standard_type = Scopestrength.Repo.get_by(Scopestrength.Training.SetType, name: "Standard")
-      if standard_type do
-        put_change(changeset, :set_type_id, standard_type.id)
-      else
-        changeset
-      end
-    else
-      changeset
-    end
+    |> validate_number(:rpe, greater_than_or_equal_to: 1, less_than_or_equal_to: 10)
   end
 end

@@ -3,3 +3,118 @@
 @import "tailwindcss/utilities";
 
 /* This file is for your main application CSS */
+
+/* @font-face must come AFTER the @import rules above — CSS requires every
+   @import to precede all other rules, so putting these first would
+   invalidate the imports and leave the app entirely unstyled.
+
+   Files live in priv/static/fonts/ (latin subset, from Google Fonts).
+   `fonts` is already in static_paths, so no endpoint config is needed.
+
+   DM Sans and JetBrains Mono are variable fonts: one file covers the whole
+   weight range, so `font-weight` is declared as a range rather than shipping
+   a separate file per weight. Barlow Condensed is only used at 700. */
+
+@font-face {
+  font-family: "Barlow Condensed";
+  src: url("/fonts/barlow-condensed-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DM Sans";
+  src: url("/fonts/dm-sans.woff2") format("woff2");
+  font-weight: 100 1000;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono.woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* @tailwindcss/forms styles inputs for a light background — white fill,
+     grey border. Without this every field renders as a white box on
+     near-black. Phoenix's core_components rely on the plugin, so override
+     it rather than removing it. */
+  [type="text"],
+  [type="email"],
+  [type="password"],
+  [type="number"],
+  [type="search"],
+  [type="tel"],
+  [type="url"],
+  [type="date"],
+  [type="datetime-local"],
+  [type="time"],
+  select,
+  textarea {
+    @apply bg-muted border-line text-foreground rounded-md;
+  }
+
+  [type="text"]:focus,
+  [type="email"]:focus,
+  [type="password"]:focus,
+  [type="number"]:focus,
+  [type="search"]:focus,
+  [type="tel"]:focus,
+  [type="url"]:focus,
+  [type="date"]:focus,
+  select:focus,
+  textarea:focus {
+    @apply border-primary outline-none;
+    box-shadow: none;
+  }
+
+  ::placeholder {
+    @apply text-faint;
+  }
+
+  [type="checkbox"],
+  [type="radio"] {
+    @apply bg-muted border-line text-primary;
+  }
+
+  :focus-visible {
+    outline: 2px solid theme("colors.primary.DEFAULT");
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #2a2a2a transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

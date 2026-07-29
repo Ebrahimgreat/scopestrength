@@ -39,6 +39,40 @@ Hooks.AutoSave = {
   }
 }
 
+// Copies the value in data-clipboard-text and briefly swaps the button label.
+// navigator.clipboard needs a secure context, so fall back to a temporary
+// textarea + execCommand when serving plain http over LAN.
+Hooks.Copy = {
+  mounted() {
+    this.el.addEventListener("click", () => {
+      const text = this.el.dataset.clipboardText
+      const done = () => {
+        const label = this.el.querySelector("[data-copy-label]")
+        if (!label) return
+        const original = label.textContent
+        label.textContent = "Copied"
+        clearTimeout(this.timer)
+        this.timer = setTimeout(() => { label.textContent = original }, 1600)
+      }
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done)
+      } else {
+        const ta = document.createElement("textarea")
+        ta.value = text
+        ta.style.position = "fixed"
+        ta.style.opacity = "0"
+        document.body.appendChild(ta)
+        ta.select()
+        try { document.execCommand("copy"); done() } finally { ta.remove() }
+      }
+    })
+  },
+  destroyed() {
+    clearTimeout(this.timer)
+  }
+}
+
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,

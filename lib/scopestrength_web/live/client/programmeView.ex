@@ -68,42 +68,42 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
       <div class="flex items-center space-x-3">
         <.link
           navigate={~p"/client"}
-          class="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          class="inline-flex items-center text-sm text-dim hover:text-foreground transition-colors"
         >
           <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
           Back
         </.link>
-        <h1 class="text-2xl font-bold text-gray-900">My Programme</h1>
+        <h1 class="text-2xl font-bold text-foreground">My Programme</h1>
       </div>
 
       <%= if @current_programme do %>
         <!-- Programme Info -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div class="px-5 py-4 border-b border-gray-100">
-            <h2 class="text-lg font-semibold text-gray-900"><%= @current_programme.programme.name %></h2>
+        <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden">
+          <div class="px-5 py-4 border-b border-line">
+            <h2 class="text-lg font-semibold text-foreground"><%= @current_programme.programme.name %></h2>
             <%= if @current_programme.programme.description do %>
-              <p class="text-sm text-gray-500 mt-1"><%= @current_programme.programme.description %></p>
+              <p class="text-sm text-dim mt-1"><%= @current_programme.programme.description %></p>
             <% end %>
           </div>
         </div>
 
         <!-- Overall Muscle Group Volume -->
         <%= if map_size(@muscle_group_volume) > 0 do %>
-          <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div class="px-5 py-4 border-b border-gray-100">
-              <h2 class="text-lg font-semibold text-gray-900">Weekly Muscle Group Volume</h2>
-              <p class="text-sm text-gray-500 mt-1">Total sets per muscle group across all sessions</p>
+          <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden">
+            <div class="px-5 py-4 border-b border-line">
+              <h2 class="text-lg font-semibold text-foreground">Weekly Muscle Group Volume</h2>
+              <p class="text-sm text-dim mt-1">Total sets per muscle group across all sessions</p>
             </div>
             <div class="p-4">
               <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 <%= for {muscle_group, total_sets} <- @muscle_group_volume do %>
                   <div class="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 rounded-lg px-3 py-2.5">
-                    <p class="text-xs font-semibold text-slate-700 truncate"><%= muscle_group %></p>
-                    <div class="flex items-center justify-between mt-2 text-[11px] text-slate-500">
+                    <p class="text-xs font-semibold text-foreground truncate"><%= muscle_group %></p>
+                    <div class="flex items-center justify-between mt-2 text-[11px] text-dim">
                       <span>Total Sets</span>
-                      <span class="inline-flex items-center justify-center px-2 py-0.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold rounded-full">
+                      <span class="inline-flex items-center justify-center px-2 py-0.5 bg-gradient-to-r from-orange-500 to-amber-500 text-foreground text-xs font-semibold rounded-full">
                         <%= total_sets %>
                       </span>
                     </div>
@@ -117,18 +117,18 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
         <!-- Templates with Per-Template Volume -->
         <div class="space-y-4">
           <%= for template <- @current_programme.programme.programmeTemplates do %>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div class="px-5 py-4 bg-gray-50 border-b border-gray-200">
-                <h3 class="font-semibold text-gray-900"><%= template.name %></h3>
+            <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden">
+              <div class="px-5 py-4 bg-card border-b border-line">
+                <h3 class="font-semibold text-foreground"><%= template.name %></h3>
               </div>
 
               <!-- Per-Template Volume -->
               <%= if Map.has_key?(@template_volumes, template.id) and map_size(@template_volumes[template.id]) > 0 do %>
-                <div class="px-5 py-3 border-b border-gray-100 bg-orange-50/50">
-                  <p class="text-xs font-semibold text-gray-600 mb-2">Session Volume</p>
+                <div class="px-5 py-3 border-b border-line bg-warning/10">
+                  <p class="text-xs font-semibold text-dim mb-2">Session Volume</p>
                   <div class="flex flex-wrap gap-2">
                     <%= for {muscle_group, total_sets} <- @template_volumes[template.id] do %>
-                      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning">
                         <%= muscle_group %>: <%= total_sets %> sets
                       </span>
                     <% end %>
@@ -137,18 +137,18 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
               <% end %>
 
               <!-- Exercises -->
-              <div class="divide-y divide-gray-100">
+              <div class="divide-y divide-line">
                 <%= for detail <- template.programmeDetails do %>
                   <div class="px-5 py-3 flex items-center justify-between">
                     <div>
-                      <span class="font-medium text-gray-800"><%= detail.exercise.name %></span>
-                      <span class="ml-2 text-xs text-gray-400"><%= if detail.exercise.muscle, do: detail.exercise.muscle.name, else: "N/A" %></span>
+                      <span class="font-medium text-foreground"><%= detail.exercise.name %></span>
+                      <span class="ml-2 text-xs text-faint"><%= if detail.exercise.muscle, do: detail.exercise.muscle.name, else: "N/A" %></span>
                     </div>
-                    <div class="flex items-center space-x-4 text-sm text-gray-600">
+                    <div class="flex items-center space-x-4 text-sm text-dim">
                       <span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium"><%= detail.set %> sets</span>
-                      <span class="px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium"><%= detail.reps %> reps</span>
+                      <span class="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium"><%= detail.reps %> reps</span>
                       <%= if detail.rir do %>
-                        <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium">RIR <%= detail.rir %></span>
+                        <span class="px-2 py-0.5 bg-secondary text-dim rounded text-xs font-medium">RIR <%= detail.rir %></span>
                       <% end %>
                     </div>
                   </div>
@@ -159,14 +159,14 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
         </div>
 
       <% else %>
-        <div class="bg-gray-50 rounded-xl p-8 text-center border border-gray-200">
-          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-card rounded-xl p-8 text-center border border-line">
+          <div class="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg class="w-8 h-8 text-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
           </div>
-          <p class="text-gray-600 font-medium">No programme assigned yet</p>
-          <p class="text-sm text-gray-400 mt-1">Your trainer will assign a programme soon</p>
+          <p class="text-dim font-medium">No programme assigned yet</p>
+          <p class="text-sm text-faint mt-1">Your trainer will assign a programme soon</p>
         </div>
       <% end %>
     </div>

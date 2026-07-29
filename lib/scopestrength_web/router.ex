@@ -27,7 +27,8 @@ defmodule ScopestrengthWeb.Router do
     live_session :admin_session,
       on_mount: [
         {ScopestrengthWeb.UserAuth, :ensure_authenticated},
-        {ScopestrengthWeb.RequireRole, "admin"}
+        {ScopestrengthWeb.RequireRole, "admin"},
+        ScopestrengthWeb.ActivePath
       ],
       layout: {ScopestrengthWeb.Layouts, :admin}
        do
@@ -43,7 +44,9 @@ defmodule ScopestrengthWeb.Router do
       on_mount: [
         {ScopestrengthWeb.UserAuth, :ensure_authenticated},
         {ScopestrengthWeb.RequireRole, "client"},
-        ScopestrengthWeb.RequireSubscription  # Checks trainer's subscription
+        ScopestrengthWeb.RequireSubscription,  # Checks trainer's subscription
+        ScopestrengthWeb.ActivePath,
+        ScopestrengthWeb.UnreadNotifications
       ],
       layout: {ScopestrengthWeb.Layouts, :client} do
       live "/", ClientDashboard
@@ -73,7 +76,9 @@ defmodule ScopestrengthWeb.Router do
       on_mount: [
         {ScopestrengthWeb.UserAuth, :ensure_authenticated},
         {ScopestrengthWeb.RequireRole, "trainer"},
-        ScopestrengthWeb.RequireSubscription  # Checks own subscription
+        ScopestrengthWeb.RequireSubscription,  # Checks own subscription
+        ScopestrengthWeb.ActivePath,
+        ScopestrengthWeb.UnreadNotifications
       ],
       layout: {ScopestrengthWeb.Layouts, :trainer} do
       live "/chat", TrainerChat

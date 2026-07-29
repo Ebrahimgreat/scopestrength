@@ -80,94 +80,70 @@ defmodule ScopestrengthWeb.Client.Notifications do
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 py-8">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Header -->
-        <div class="mb-8">
-          <div class="bg-white rounded-xl shadow-lg border-2 border-emerald-200 p-6">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-4">
-                <div class="w-16 h-16 bg-emerald-600 rounded-full flex items-center justify-center shadow-lg">
-                  <.icon name="hero-bell-solid" class="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h1 class="text-3xl font-bold text-gray-900">Notifications</h1>
-                  <p class="text-gray-600 mt-1">Stay updated with your training activities</p>
-                </div>
-              </div>
-              <.link
-                navigate={~p"/client"}
-                class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200"
-              >
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Dashboard
-              </.link>
-            </div>
-          </div>
+    <div class="mx-auto max-w-3xl">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium uppercase tracking-widest text-dim">Activity</p>
+          <h1 class="mt-1 font-display text-5xl font-bold uppercase tracking-wide text-foreground">
+            Notifications
+          </h1>
         </div>
 
-        <!-- Actions Bar -->
-        <%= if Enum.any?(@notifications, &is_nil(&1.read_at)) do %>
-          <div class="mb-4 flex justify-end">
-            <button
-              phx-click="mark_all_read"
-              class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200"
-            >
-              <.icon name="hero-check-circle" class="w-5 h-5 mr-2" />
-              Mark All as Read
-            </button>
+        <button
+          :if={Enum.any?(@notifications, &is_nil(&1.read_at))}
+          phx-click="mark_all_read"
+          class="shrink-0 rounded-md border border-line px-3 py-2 text-sm font-medium text-dim transition hover:border-primary hover:text-primary"
+        >
+          Mark all as read
+        </button>
+      </div>
+
+      <div
+        :if={@notifications == []}
+        class="mt-8 rounded-xl border border-dashed border-line px-6 py-16 text-center"
+      >
+        <h3 class="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+          No notifications yet
+        </h3>
+        <p class="mx-auto mt-2 max-w-sm text-sm text-dim">
+          When you receive notifications, they'll appear here.
+        </p>
+      </div>
+
+      <div :if={@notifications != []} class="mt-8 overflow-hidden rounded-xl border border-line bg-card">
+        <div
+          :for={notification <- @notifications}
+          phx-click="mark_notification_read"
+          phx-value-id={notification.id}
+          class={[
+            "flex cursor-pointer items-start gap-4 border-b border-line/60 px-5 py-4 transition last:border-0 hover:bg-secondary/50",
+            is_nil(notification.read_at) && "bg-primary/5"
+          ]}
+        >
+          <div class={[
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+            is_nil(notification.read_at) && "bg-primary/15 text-primary",
+            !is_nil(notification.read_at) && "bg-muted text-faint"
+          ]}>
+            <.icon name={notification_icon(notification)} class="h-4 w-4" />
           </div>
-        <% end %>
 
-        <!-- Notifications List -->
-        <div class="bg-white rounded-xl shadow-lg border-2 border-gray-200 overflow-hidden">
-          <%= if Enum.empty?(@notifications) do %>
-            <div class="p-12 text-center">
-              <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <.icon name="hero-bell" class="w-10 h-10 text-gray-400" />
-              </div>
-              <h3 class="text-xl font-bold text-gray-900 mb-2">No notifications yet</h3>
-              <p class="text-gray-600">When you receive notifications, they'll appear here</p>
-            </div>
-          <% else %>
-            <div class="divide-y divide-gray-200">
-              <%= for notification <- @notifications do %>
-                <div class={"group relative transition-colors #{if is_nil(notification.read_at), do: "bg-emerald-50 hover:bg-emerald-100", else: "hover:bg-gray-50"}"}>
-                  <div
-                    phx-click="mark_notification_read"
-                    phx-value-id={notification.id}
-                    class="px-6 py-5 cursor-pointer"
-                  >
-                    <div class="flex items-start justify-between gap-4">
-                      <div class="flex-1">
-                        <div class="flex items-start gap-3">
-                          <div class={"w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 #{if is_nil(notification.read_at), do: "bg-emerald-600", else: "bg-gray-400"}"}>
-                            <.icon name={notification_icon(notification)} class="w-5 h-5 text-white" />
-                          </div>
-                          <div class="flex-1 min-w-0">
-                            <p class={"text-sm font-medium text-gray-900 #{if is_nil(notification.read_at), do: "font-bold"}"}>
-                              <%= notification_text(notification) %>
-                            </p>
-                            <p class="text-xs text-gray-500 mt-1">
-                              <%= notification_time(notification) %>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <%= if is_nil(notification.read_at) do %>
-                          <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
-                        <% end %>
+          <div class="min-w-0 flex-1">
+            <p class={[
+              "text-sm text-foreground",
+              is_nil(notification.read_at) && "font-medium"
+            ]}>
+              <%= notification_text(notification) %>
+            </p>
+            <p class="num mt-0.5 text-xs text-dim"><%= notification_time(notification) %></p>
+          </div>
 
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              <% end %>
-            </div>
-          <% end %>
+          <span
+            :if={is_nil(notification.read_at)}
+            class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary"
+            aria-label="Unread"
+          >
+          </span>
         </div>
       </div>
     </div>
