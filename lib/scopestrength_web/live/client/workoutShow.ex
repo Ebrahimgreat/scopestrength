@@ -15,23 +15,9 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
   alias Scopestrength.Training.WorkoutDetails
 
 
-  def handle_event("filterExercise", %{"name" => name}, socket) do
-    filter_applied = name
-
-    filtered =
-      apply_exercise_filters(socket.assigns.allExercises, filter_applied, socket.assigns.q)
-
-    {:noreply, assign(socket, exercises: filtered, filter_by_type: filter_applied)}
-  end
-
-  def handle_event("resetFilters", _params, socket) do
-    exercises = apply_exercise_filters(socket.assigns.allExercises, "ALL", "")
-    {:noreply, assign(socket, exercises: exercises, filter_by_type: "ALL", q: "")}
-  end
-
   def handle_event("addExercise", params, socket) do
     exercise_id = String.to_integer(params["id"])
-    IO.inspect(exercise_id)
+
     existing_sets = Map.get(socket.assigns.workouts, exercise_id, [])
     next_set = length(existing_sets) + 1
 
@@ -47,7 +33,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
       side: side
     }) do
       {:ok, workout_details} ->
-        workout_details = Repo.preload(workout_details, [:exercise, :set_type])
+        workout_details = Repo.preload(workout_details, [:exercise])
 
         new_form =
           workout_details
@@ -87,26 +73,23 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
         :error -> nil
       end
 
-    set_type_id =
-      case params["workout_details"]["set_type_id"] do
-        nil -> nil
-        "" -> nil
-        id -> String.to_integer(id)
-      end
-
     rir =
       case Float.parse(params["workout_details"]["rir"] || "") do
         {num, _} -> num
         :error -> 0.0
       end
 
-    notes = params["workout_details"]["notes"]
+    rpe =
+      case Float.parse(params["workout_details"]["rpe"] || "") do
+        {num, _} -> num
+        :error -> nil
+      end
 
     # Store pending changes instead of saving immediately
     pending_changes = Map.put(
       socket.assigns.pending_changes,
       workout_detail_id,
-      %{reps: reps, weight: weight, set_type_id: set_type_id, notes: notes, rir: rir}
+      %{reps: reps, weight: weight, rir: rir, rpe: rpe}
     )
 
     # Update the form display
@@ -115,7 +98,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
       |> Enum.map(fn {exercise_id, sets} ->
         updated_sets = Enum.map(sets, fn workout_form ->
           if workout_form.data.id == workout_detail_id do
-            updated_data = %{workout_form.data | reps: reps, weight: weight, set_type_id: set_type_id, notes: notes, rir: rir}
+            updated_data = %{workout_form.data | reps: reps, weight: weight, rir: rir, rpe: rpe}
             updated_data
             |> Training.change_workout_details()
             |> to_form()
@@ -153,16 +136,8 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
 
   def handle_event("searchExercises", %{"key" => _key, "value" => value}, socket) do
     q = String.trim(value || "")
-
-    filtered =
-      socket.assigns.allExercises
-      |> Enum.filter(fn ex ->
-        String.contains?(String.downcase(ex.name || ""), String.downcase(q || ""))
-      end)
-
-    {:noreply, assign(socket, exercises: filtered, q: q)}
+    {:noreply, assign(socket, exercises: search_exercises(socket.assigns.allExercises, q), q: q)}
   end
-
 
   def handle_event("deleteExercise", %{"id" => id_str}, socket) do
     case Integer.parse(id_str) do
@@ -181,7 +156,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                 |> Enum.map(fn {workout_form, new_set_number} ->
                   if workout_form.data.set != new_set_number do
                     {:ok, updated} = Training.update_workout_details(workout_form.data, %{set: new_set_number})
-                    updated |> Repo.preload([:exercise, :set_type]) |> Training.change_workout_details() |> to_form()
+                    updated |> Repo.preload([:exercise]) |> Training.change_workout_details() |> to_form()
                   else
                     workout_form
                   end
@@ -332,7 +307,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                 where: w.workout_id == ^workout_id,
                 order_by: [asc: w.set]
             )
-            |> Repo.preload([:exercise, :set_type])
+            |> Repo.preload([:exercise])
 
           {grouped_workouts, muscle_group_frequencies} = build_workout_assigns(workouts)
 
@@ -392,7 +367,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                 where: w.workout_id == ^workout_id,
                 order_by: [asc: w.set]
             )
-            |> Repo.preload([:exercise, :set_type])
+            |> Repo.preload([:exercise])
 
           {grouped_workouts, muscle_group_frequencies} = build_workout_assigns(workouts)
 
@@ -439,7 +414,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
 
     # Get muscles list for filtering
     muscles = Exercises.list_mucles()
-    set_types= Repo.all(Scopestrength.Training.SetType)
 
     case Repo.get_by(Client, user_id: user.id) do
       nil ->
@@ -479,7 +453,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                     from w in WorkoutDetails,
                       where: w.workout_id == ^workout_id_int,
                       order_by: [asc: w.set]
-                  )|>Repo.preload([:exercise, :set_type])
+                  )|>Repo.preload([:exercise])
 
                   IO.inspect(workouts)
 
@@ -515,8 +489,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                  |> assign(exercises: exercises)
                  |> assign(allExercises: exercises)
                  |> assign(muscles: muscles)
-                 |> assign(setTypes: set_types)
-                 |> assign(filter_by_type: "ALL")
                  |> assign(muscle_group_frequencies: muscle_group_frequencies)
                  |> assign(edit_mode: false)
                  |> assign(pending_changes: %{})
@@ -535,14 +507,14 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
       <div class="mb-6">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
-            <.link navigate={~p"/client"} phx-click="auto_save_on_leave" class="text-gray-500 hover:text-gray-700">
+            <.link navigate={~p"/client"} phx-click="auto_save_on_leave" class="text-dim hover:text-foreground">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
               </svg>
             </.link>
-            <h1 class="text-3xl font-bold text-gray-900">Workout Details</h1>
+            <h1 class="text-3xl font-bold text-foreground">Workout Details</h1>
             <%= if @has_unsaved_changes do %>
-              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning">
                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                 </svg>
@@ -554,7 +526,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
             <%= if @has_unsaved_changes and @edit_mode do %>
               <.button
                 phx-click="save_all_changes"
-                class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl shadow-lg transition-all duration-200"
+                class="bg-primary hover:bg-primary text-foreground px-6 py-3 rounded-xl shadow-lg transition-all duration-200"
               >
                 <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -564,7 +536,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
             <% end %>
             <.button
               phx-click="toggle_edit_mode"
-              class={"#{if @edit_mode, do: "bg-gray-600 hover:bg-gray-700", else: "bg-emerald-600 hover:bg-emerald-700"} text-white px-6 py-3 rounded-xl shadow-lg transition-all duration-200"}
+              class={"#{if @edit_mode, do: "bg-secondary hover:bg-secondary", else: "bg-primary hover:bg-primary"} text-foreground px-6 py-3 rounded-xl shadow-lg transition-all duration-200"}
             >
             <%= if @edit_mode do %>
               <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -583,26 +555,26 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
     </div>
 
       <%= if @edit_mode do %>
-        <div class="mb-8 bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-900">Update Workout</h2>
+        <div class="mb-8 bg-card rounded-xl shadow-lg p-6 border border-line">
+          <h2 class="text-lg font-semibold text-foreground">Update Workout</h2>
           <.form for={@workout_form} phx-submit="update_workout" class="mt-4 space-y-4 max-w-xl">
             <div>
-              <label class="block text-sm font-medium text-slate-700">Name</label>
+              <label class="block text-sm font-medium text-foreground">Name</label>
               <.input
                 field={@workout_form[:name]}
                 type="text"
-                class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
+                class="w-full px-3 py-2 border border-line rounded-md text-sm"
                 placeholder="Workout name"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-700">Date</label>
+              <label class="block text-sm font-medium text-foreground">Date</label>
               <.input
                 field={@workout_form[:date]}
                 type="datetime-local"
-                class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
+                class="w-full px-3 py-2 border border-line rounded-md text-sm"
               />
-              <p class="text-xs text-slate-500 mt-1">Stored in UTC.</p>
+              <p class="text-xs text-dim mt-1">Stored in UTC.</p>
             </div>
             <.button class="px-4 py-2 text-sm">
               Save
@@ -611,26 +583,24 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+          <div class="bg-card rounded-xl shadow-lg p-6 border border-line">
             <%= if @programme && @programme.programme && length(@programme.programme.programmeTemplates) > 0 do %>
-              <div class="mb-6 border border-emerald-100 bg-emerald-50/40 rounded-lg p-4">
-                <div class="flex items-center justify-between mb-3">
-                  <div>
-                    <h2 class="text-sm font-semibold text-emerald-900">Load from programme</h2>
-                    <p class="text-xs text-emerald-700">Replaces current workout with 1 set per exercise.</p>
-                  </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div class="mb-6 rounded-lg border border-line bg-muted p-4">
+                <h2 class="text-sm font-semibold text-foreground">Load from programme</h2>
+                <p class="mt-0.5 text-xs text-dim">
+                  Replaces current workout with 1 set per exercise.
+                </p>
+                <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <%= for template <- @programme.programme.programmeTemplates do %>
                     <button
                       type="button"
                       phx-click="load_from_programme"
                       phx-value-template-id={template.id}
                       data-confirm="This will replace your current workout. Continue?"
-                      class="flex items-center justify-between rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50"
+                      class="flex items-center justify-between gap-2 rounded-md border border-line px-3 py-2 text-xs font-medium text-dim transition hover:border-primary hover:text-primary"
                     >
                       <span class="truncate"><%= template.name %></span>
-                      <span class="text-[10px] text-emerald-600">Load</span>
+                      <.icon name="hero-arrow-down-tray" class="h-3.5 w-3.5 shrink-0" />
                     </button>
                   <% end %>
                 </div>
@@ -638,26 +608,26 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
             <% end %>
 
             <%= if length(@own_programmes) > 0 do %>
-              <div class="mb-6 border border-indigo-100 bg-indigo-50/40 rounded-lg p-4">
-                <div class="flex items-center justify-between mb-3">
-                  <div>
-                    <h2 class="text-sm font-semibold text-indigo-900">Load from my programmes</h2>
-                    <p class="text-xs text-indigo-700">Replaces current workout with 1 set per exercise.</p>
-                  </div>
-                </div>
+              <div class="mb-6 rounded-lg border border-line bg-muted p-4">
+                <h2 class="text-sm font-semibold text-foreground">Load from my programmes</h2>
+                <p class="mt-0.5 text-xs text-dim">
+                  Replaces current workout with 1 set per exercise.
+                </p>
                 <%= for programme <- @own_programmes do %>
-                  <p class="text-xs font-medium text-indigo-800 mb-2"><%= programme.name %></p>
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                  <p class="mb-2 mt-3 text-xs uppercase tracking-widest text-faint">
+                    <%= programme.name %>
+                  </p>
+                  <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <%= for template <- programme.programmeTemplates do %>
                       <button
                         type="button"
                         phx-click="load_from_own_programme"
                         phx-value-template-id={template.id}
                         data-confirm="This will replace your current workout. Continue?"
-                        class="flex items-center justify-between rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-800 hover:bg-indigo-50"
+                        class="flex items-center justify-between gap-2 rounded-md border border-line px-3 py-2 text-xs font-medium text-dim transition hover:border-primary hover:text-primary"
                       >
                         <span class="truncate"><%= template.name %></span>
-                        <span class="text-[10px] text-indigo-600">Load</span>
+                        <.icon name="hero-arrow-down-tray" class="h-3.5 w-3.5 shrink-0" />
                       </button>
                     <% end %>
                   </div>
@@ -665,80 +635,44 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
               </div>
             <% end %>
 
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-xl font-semibold text-gray-800">Exercise Library</h2>
-              <span class="text-sm text-gray-500">
-                <%= length(@exercises) %> available
-              </span>
+            <div class="mb-4 flex items-baseline justify-between gap-3">
+              <h2 class="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+                Exercise Library
+              </h2>
+              <span class="num text-xs text-dim">{length(@exercises)} available</span>
             </div>
 
+            <%!-- One search box instead of a muscle-chip row: the chips took a
+                  whole block of vertical space in a side panel, and the search
+                  already matches muscle and equipment names. --%>
             <div class="mb-4">
-              <.input
+              <input
                 type="search"
                 name="q"
                 id="exercise-search"
                 value={@q}
                 phx-debounce="300"
                 phx-keyup="searchExercises"
-                placeholder="Search exercises by name..."
-                class="w-full rounded-md"
+                placeholder="Search exercises or muscle groups"
+                aria-label="Search exercises"
+                class="w-full rounded-md border-line bg-muted px-4 py-2.5 text-sm text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
               />
-            </div>
-
-            <div class="mb-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                phx-click="resetFilters"
-                class="px-2 py-1 text-xs font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition"
-              >
-                Reset
-              </button>
-              <button
-                type="button"
-                phx-click="filterExercise"
-                phx-value-name="ALL"
-                class={[
-                  "px-2 py-1 text-xs font-medium rounded-lg transition",
-                  if(@filter_by_type == "ALL",
-                    do: "bg-emerald-600 text-white",
-                    else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  )
-                ]}
-              >
-                All
-              </button>
-              <%= for muscle <- @muscles do %>
-                <button
-                  type="button"
-                  phx-click="filterExercise"
-                  phx-value-name={muscle.name}
-                  class={[
-                    "px-2 py-1 text-xs font-medium rounded-full border transition",
-                    if(@filter_by_type == muscle.name,
-                      do: "bg-emerald-50 text-emerald-700 border-emerald-200",
-                      else: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-                    )
-                  ]}
-                >
-                  {muscle.name}
-                </button>
-              <% end %>
             </div>
 
             <div class="space-y-2 max-h-96 overflow-y-auto">
               <%= for exercise <- @exercises do %>
                 <%= if exercise.is_unilateral do %>
-                  <div class="bg-white px-4 py-3 rounded-lg border border-gray-200">
+                  <div class="bg-card px-4 py-3 rounded-lg border border-line">
                     <div class="flex items-center justify-between mb-2">
-                      <span class="font-medium text-gray-800"><%= exercise.name %></span>
-                      <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Unilateral</span>
+                      <span class="font-medium text-foreground"><%= exercise.name %></span>
+                      <span class="text-xs text-dim bg-secondary px-2 py-1 rounded">Unilateral</span>
                     </div>
                     <div class="flex gap-2">
                       <button
                         phx-click="addExercise"
                         phx-value-id={exercise.id}
                         phx-value-side="left"
-                        class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded text-sm font-medium transition-all"
+                        class="flex-1 bg-primary/10 hover:bg-primary/10 text-primary px-3 py-2 rounded text-sm font-medium transition-all"
                       >
                         + Left
                       </button>
@@ -746,7 +680,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                         phx-click="addExercise"
                         phx-value-id={exercise.id}
                         phx-value-side="right"
-                        class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded text-sm font-medium transition-all"
+                        class="flex-1 bg-primary/10 hover:bg-primary/10 text-primary px-3 py-2 rounded text-sm font-medium transition-all"
                       >
                         + Right
                       </button>
@@ -756,10 +690,10 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                   <button
                     phx-click="addExercise"
                     phx-value-id={exercise.id}
-                    class="w-full flex items-center justify-between bg-white hover:bg-emerald-50 px-4 py-3 rounded-lg border border-gray-200 hover:border-emerald-300 transition-all"
+                    class="w-full flex items-center justify-between bg-card hover:bg-primary/10 px-4 py-3 rounded-lg border border-line hover:border-primary transition-all"
                   >
-                    <span class="font-medium text-gray-800"><%= exercise.name %></span>
-                    <span class="text-emerald-600 font-bold text-xl">+</span>
+                    <span class="font-medium text-foreground"><%= exercise.name %></span>
+                    <span class="text-primary font-bold text-xl">+</span>
                   </button>
                 <% end %>
               <% end %>
@@ -767,181 +701,140 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
           </div>
 
           <!-- Workout Configuration (Editable) -->
-          <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Workout Configuration</h2>
+          <div class="bg-card rounded-xl shadow-lg p-6 border border-line">
+            <h2 class="text-xl font-semibold text-foreground mb-4">Workout Configuration</h2>
 
             <%= if Enum.empty?(@workouts) do %>
               <div class="text-center py-12">
-                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg class="w-8 h-8 text-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                   </svg>
                 </div>
-                <p class="text-gray-500">Add exercises from the library to start building your workout</p>
+                <p class="text-dim">Add exercises from the library to start building your workout</p>
               </div>
             <% else %>
               <div class="space-y-4">
                 <%= for {exercise_id, sets} <- @workouts do %>
-                  <div class="border border-gray-200 rounded-lg overflow-hidden">
-                    <div class="bg-gray-50 px-4 py-3 flex items-center justify-between">
-                      <h3 class="font-semibold text-gray-900">
+                  <div class="overflow-hidden rounded-lg border border-line">
+                    <div class="border-b border-line px-4 py-3">
+                      <h3 class="font-semibold text-primary">
                         <%= List.first(sets).data.exercise.name %>
                       </h3>
-                      <span class="text-xs text-gray-500"><%= length(sets) %> sets</span>
                     </div>
 
-                    <div class="divide-y divide-gray-100">
+                    <%!-- Column headers appear once for the whole exercise rather
+                          than as a label above every input. Widths here must stay
+                          in sync with the per-set grid below. --%>
+                    <div class="hidden px-4 pt-3 sm:grid sm:grid-cols-[2rem,1fr,1fr,1fr,1fr,2rem] sm:gap-3">
+                      <span class="text-[11px] uppercase tracking-widest text-faint">Set</span>
+                      <span class="text-[11px] uppercase tracking-widest text-faint">Weight (kg)</span>
+                      <span class="text-[11px] uppercase tracking-widest text-faint">Reps</span>
+                      <span class="text-[11px] uppercase tracking-widest text-faint">RIR</span>
+                      <span class="text-[11px] uppercase tracking-widest text-faint">RPE</span>
+                      <span class="sr-only">Remove</span>
+                    </div>
+
+                    <div>
                       <%= for workout <- sets do %>
                         <.form
                           phx-change="updateExercise"
                           for={workout}
                           id={"workout-form-#{workout.data.id}"}
-                          class="px-4 py-3"
+                          class="px-4 py-2"
                         >
                           <.input type="hidden" field={workout[:id]} />
-                          <div class="grid grid-cols-1 lg:grid-cols-[auto,1fr,auto] items-start gap-3">
-                            <div class="flex items-center gap-2 lg:pt-2">
-                              <%= if workout.data.side != "both" do %>
-                                <span class="text-sm font-semibold text-gray-700">Set <%= workout.data.set %> (<span class="capitalize"><%= workout.data.side %></span>)</span>
-                              <% else %>
-                                <span class="text-sm font-semibold text-gray-700">Set <%= workout.data.set %></span>
-                              <% end %>
-                            </div>
 
-                            <div class="space-y-3">
-                              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <% is_amrap = workout.data.set_type && workout.data.set_type.name == "AMRAP" %>
-                                <div class={[
-                                  "rounded-lg border px-3 py-2",
-                                  if(is_amrap, do: "border-gray-300 bg-gray-50", else: "border-gray-200 bg-white")
-                                ]}>
-                                  <p class="text-[11px] uppercase tracking-wide text-gray-400">
-                                    Reps
-                                    <%= if is_amrap do %>
-                                      <span class="text-[10px] text-emerald-600 ml-1">(Max)</span>
-                                    <% end %>
-                                  </p>
-                                  <div class="flex items-center gap-2 mt-1">
-                                    <input
-                                      type="number"
-                                      name={"workout_details[reps]"}
-                                      value={workout.data.reps}
-                                      placeholder={if is_amrap, do: "Max reps", else: "0"}
-                                      phx-debounce="500"
-                                      disabled={is_amrap}
-                                      class={[
-                                        "w-full bg-transparent text-sm font-semibold focus:outline-none",
-                                        if(is_amrap, do: "text-gray-400 cursor-not-allowed", else: "text-gray-900")
-                                      ]}
-                                    />
-                                    <span class="text-xs text-gray-400">reps</span>
-                                  </div>
-                                </div>
-                                <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
-                                  <p class="text-[11px] uppercase tracking-wide text-gray-400">Weight</p>
-                                  <div class="flex items-center gap-2 mt-1">
-                                    <input
-                                      type="text"
-                                      name={"workout_details[weight]"}
-                                      value={workout.data.weight}
-                                      placeholder="0"
-                                      phx-debounce="500"
-                                      class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none"
-                                    />
-                                    <span class="text-xs text-gray-400">kg</span>
-                                  </div>
-                                </div>
-                                <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
-                                  <p class="text-[11px] uppercase tracking-wide text-gray-400">RIR</p>
-                                  <div class="flex items-center gap-2 mt-1">
-                                    <input
-                                      type="number"
-                                      name={"workout_details[rir]"}
-                                      value={workout.data.rir}
-                                      placeholder="0"
-                                      min="0"
-                                      step="0.5"
-                                      phx-debounce="500"
-                                      class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
+                          <div class="grid grid-cols-[2rem,1fr,1fr,1fr,1fr,2rem] items-center gap-3">
+                            <span class="num text-sm text-dim">
+                              {workout.data.set}
+                            </span>
 
-                              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
-                                  <p class="text-[11px] uppercase tracking-wide text-gray-400">Type</p>
-                                  <select
-                                    name={"workout_details[set_type_id]"}
-                                    phx-debounce="500"
-                                    class="w-full bg-transparent text-sm font-semibold text-gray-900 focus:outline-none mt-1"
-                                  >
-                                    <%= for type <- @setTypes do %>
-                                      <option value={type.id} selected={workout.data.set_type_id == type.id}>
-                                        <%= type.name %>
-                                      </option>
-                                    <% end %>
-                                  </select>
-                                </div>
-                                <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
-                                  <p class="text-[11px] uppercase tracking-wide text-gray-400">Notes</p>
-                                  <input
-                                    type="text"
-                                    name={"workout_details[notes]"}
-                                    value={workout.data.notes}
-                                    placeholder="Optional notes"
-                                    phx-debounce="500"
-                                    class="w-full bg-transparent text-sm text-gray-900 focus:outline-none mt-1"
-                                  />
-                                </div>
-                              </div>
-                            </div>
+                            <input
+                              type="text"
+                              inputmode="decimal"
+                              name={"workout_details[weight]"}
+                              value={workout.data.weight}
+                              placeholder="0"
+                              aria-label="Weight in kilograms"
+                              phx-debounce="500"
+                              class="num w-full rounded-md border-0 bg-muted px-3 py-2.5 text-base text-foreground placeholder:text-faint focus:ring-2 focus:ring-inset focus:ring-primary"
+                            />
 
-                            <div class="flex items-center gap-2 justify-end lg:pt-2">
-                              <button
-                                type="button"
-                                phx-click="deleteExercise"
-                                data-confirm="Remove this set?"
-                                phx-value-id={workout.data.id}
-                                class="p-2 text-red-500 hover:bg-red-50 rounded-lg border border-red-100"
-                                title="Remove"
-                              >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                              </button>
-                            </div>
+                            <input
+                              type="number"
+                              inputmode="numeric"
+                              name={"workout_details[reps]"}
+                              value={workout.data.reps}
+                              placeholder="0"
+                              aria-label="Reps"
+                              phx-debounce="500"
+                              class="num w-full rounded-md border-0 bg-muted px-3 py-2.5 text-base text-foreground placeholder:text-faint focus:ring-2 focus:ring-inset focus:ring-primary"
+                            />
+
+                            <input
+                              type="number"
+                              inputmode="decimal"
+                              name={"workout_details[rir]"}
+                              value={workout.data.rir}
+                              placeholder="0"
+                              min="0"
+                              step="0.5"
+                              aria-label="Reps in reserve"
+                              phx-debounce="500"
+                              class="num w-full rounded-md border-0 bg-muted px-3 py-2.5 text-base text-foreground placeholder:text-faint focus:ring-2 focus:ring-inset focus:ring-primary"
+                            />
+
+                            <input
+                              type="number"
+                              inputmode="decimal"
+                              name={"workout_details[rpe]"}
+                              value={workout.data.rpe}
+                              placeholder="—"
+                              min="1"
+                              max="10"
+                              step="0.5"
+                              aria-label="Rate of perceived exertion"
+                              phx-debounce="500"
+                              class="num w-full rounded-md border-0 bg-muted px-3 py-2.5 text-base text-foreground placeholder:text-faint focus:ring-2 focus:ring-inset focus:ring-primary"
+                            />
+
+                            <button
+                              type="button"
+                              phx-click="deleteExercise"
+                              data-confirm="Remove this set?"
+                              phx-value-id={workout.data.id}
+                              aria-label={"Remove set #{workout.data.set}"}
+                              class="rounded-md p-1.5 text-faint transition hover:bg-danger/10 hover:text-danger"
+                            >
+                              <.icon name="hero-x-mark" class="h-4 w-4" />
+                            </button>
+                          </div>
+
+                          <div
+                            :if={workout.data.side != "both"}
+                            class="mt-1 grid grid-cols-[2rem,1fr] gap-3"
+                          >
+                            <span class="col-start-2 inline-flex w-fit items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-widest text-dim">
+                              {workout.data.side}
+                            </span>
                           </div>
                         </.form>
                       <% end %>
                     </div>
 
-                    <div class="px-4 py-2 bg-gray-50 border-t border-gray-100">
+                    <div class="px-4 pb-3 pt-1">
                       <%= if List.first(sets).data.exercise.is_unilateral do %>
                         <div class="flex gap-2">
                           <button
+                            :for={side <- ~w(left right)}
                             type="button"
                             phx-click="addExercise"
                             phx-value-id={exercise_id}
-                            phx-value-side="left"
-                            class="flex-1 flex items-center justify-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium py-1"
+                            phx-value-side={side}
+                            class="num flex-1 rounded-md border border-line px-3 py-2 text-xs uppercase tracking-widest text-dim transition hover:border-primary hover:text-primary"
                           >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                            </svg>
-                            Add Left
-                          </button>
-                          <button
-                            type="button"
-                            phx-click="addExercise"
-                            phx-value-id={exercise_id}
-                            phx-value-side="right"
-                            class="flex-1 flex items-center justify-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium py-1"
-                          >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                            </svg>
-                            Add Right
+                            + Add {side}
                           </button>
                         </div>
                       <% else %>
@@ -949,12 +842,9 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                           type="button"
                           phx-click="addExercise"
                           phx-value-id={exercise_id}
-                          class="w-full flex items-center justify-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium py-1"
+                          class="num rounded-md border border-line px-3 py-2 text-xs uppercase tracking-widest text-dim transition hover:border-primary hover:text-primary"
                         >
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                          </svg>
-                          Add Set
+                          + Add set
                         </button>
                       <% end %>
                     </div>
@@ -969,115 +859,101 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
 
 
       <% else %>
-        <div class="bg-white rounded-2xl shadow-lg border border-gray-200">
+        <div class="bg-card rounded-2xl shadow-lg border border-line">
           <%= if Enum.empty?(@workouts) do %>
             <div class="text-center py-16">
-              <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-10 h-10 text-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                 </svg>
               </div>
-              <h3 class="text-lg font-medium text-gray-900 mb-2">No Exercises Yet</h3>
-              <p class="text-gray-500 mb-4">Click "Edit Workout" to add exercises to this workout</p>
+              <h3 class="text-lg font-medium text-foreground mb-2">No Exercises Yet</h3>
+              <p class="text-dim mb-4">Click "Edit Workout" to add exercises to this workout</p>
             </div>
           <% else %>
             <div class="p-6">
               <%= if map_size(@muscle_group_frequencies) > 0 do %>
-                <div class="mb-6 bg-white rounded-xl border border-gray-200 p-4">
+                <div class="mb-6 bg-card rounded-xl border border-line p-4">
                   <div class="flex items-center justify-between mb-3">
                     <div>
-                      <h3 class="text-base font-semibold text-gray-900">Session Volume</h3>
-                      <p class="text-xs text-gray-500">Direct vs effective sets per muscle</p>
+                      <h3 class="text-base font-semibold text-foreground">Session Volume</h3>
+                      <p class="text-xs text-dim">Direct vs effective sets per muscle</p>
                     </div>
                   </div>
-                  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    <%= for {muscle_group, volumes} <- @muscle_group_frequencies do %>
-                      <div class="bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-lg px-3 py-2.5">
-                        <p class="text-xs font-semibold text-slate-700 truncate"><%= muscle_group %></p>
-                        <div class="flex items-center justify-between mt-2 text-[11px] text-slate-500">
-                          <span>Direct</span>
-                          <span class="inline-flex items-center justify-center px-2 py-0.5 bg-emerald-600 text-white text-xs font-semibold rounded-full">
-                            <%= round(volumes.direct) %>
+                  <%!-- Same layered direct/indirect bar as the volume page, so
+                        the two views read the same way. --%>
+                  <% session_max =
+                    @muscle_group_frequencies
+                    |> Enum.map(fn {_m, v} -> v.effective end)
+                    |> Enum.max(fn -> 0.0 end) %>
+                  <div class="space-y-2.5">
+                    <%= for {muscle_group, volumes} <- Enum.sort_by(@muscle_group_frequencies, fn {_m, v} -> v.effective end, :desc) do %>
+                      <% indirect = max(volumes.effective - volumes.direct, 0.0) %>
+                      <div>
+                        <div class="flex items-baseline justify-between gap-3">
+                          <span class="truncate text-sm text-foreground"><%= muscle_group %></span>
+                          <span class="num shrink-0 text-xs text-dim">
+                            <span class="text-foreground"><%= round(volumes.direct) %></span>
+                            <span :if={indirect > 0}> + <%= round(indirect) %></span>
                           </span>
                         </div>
-                        <div class="flex items-center justify-between mt-1 text-[11px] text-slate-500">
-                          <span>Effective</span>
-                          <span class="inline-flex items-center justify-center px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
-                            <%= round(volumes.effective) %>
-                          </span>
+                        <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                          <div class="flex h-full">
+                            <div
+                              class="h-full rounded-l-full bg-primary"
+                              style={"width: #{bar_pct(volumes.direct, session_max)}%"}
+                            >
+                            </div>
+                            <div
+                              class="h-full bg-primary/30"
+                              style={"width: #{bar_pct(indirect, session_max)}%"}
+                            >
+                            </div>
+                          </div>
                         </div>
                       </div>
                     <% end %>
                   </div>
                 </div>
               <% end %>
-              <div class="grid gap-6">
+              <%!-- Mirrors the edit-mode table exactly, minus the inputs, so
+                    toggling edit does not reshuffle the layout. --%>
+              <div class="space-y-4">
                 <%= for {_exercise_id, sets} <- @workouts do %>
-                  <div class="border border-gray-200 rounded-xl p-5 bg-gradient-to-br from-white to-gray-50">
-                    <!-- Exercise Header -->
-                    <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-                      <h3 class="text-xl font-bold text-gray-900">
+                  <div class="overflow-hidden rounded-lg border border-line">
+                    <div class="flex items-baseline justify-between gap-3 border-b border-line px-4 py-3">
+                      <h3 class="font-semibold text-primary">
                         <%= List.first(sets).data.exercise.name %>
                       </h3>
-                      <span class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">
-                        <%= length(sets) %> sets
-                      </span>
+                      <span class="num text-xs text-dim"><%= length(sets) %> sets</span>
                     </div>
 
-                    <!-- Sets Display -->
-                    <div class="space-y-2">
+                    <div class="grid grid-cols-[2rem,1fr,1fr,1fr,1fr] gap-3 px-4 pt-3">
+                      <span class="text-[11px] uppercase tracking-widest text-faint">Set</span>
+                      <span class="text-[11px] uppercase tracking-widest text-faint">Weight</span>
+                      <span class="text-[11px] uppercase tracking-widest text-faint">Reps</span>
+                      <span class="text-[11px] uppercase tracking-widest text-faint">RIR</span>
+                      <span class="text-[11px] uppercase tracking-widest text-faint">RPE</span>
+                    </div>
+
+                    <div class="px-4 pb-3">
                       <%= for workout <- sets do %>
-                        <div class="bg-white rounded-lg border border-gray-200 p-3">
-                          <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-4">
-                              <!-- Set Number -->
-                              <div class="flex flex-col">
-                                <%= if workout.data.side != "both" do %>
-                                  <span class="text-sm font-bold text-gray-900">Set <%= workout.data.set %></span>
-                                  <span class="text-xs text-gray-500 capitalize"><%= workout.data.side %></span>
-                                <% else %>
-                                  <span class="text-sm font-bold text-gray-900">Set <%= workout.data.set %></span>
-                                <% end %>
-                              </div>
-
-                              <!-- Stats -->
-                              <div class="flex-1">
-                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-2">
-                                  <div>
-                                    <p class="text-xs text-gray-500 uppercase tracking-wide">Reps</p>
-                                    <p class="text-lg font-semibold text-gray-900"><%= workout.data.reps %></p>
-                                  </div>
-                                  <div>
-                                    <p class="text-xs text-gray-500 uppercase tracking-wide">Weight</p>
-                                    <p class="text-lg font-semibold text-gray-900"><%= workout.data.weight %> kg</p>
-                                  </div>
-                                  <div>
-                                    <p class="text-xs text-gray-500 uppercase tracking-wide">RIR</p>
-                                    <p class="text-lg font-semibold text-gray-900"><%= workout.data.rir || 0 %></p>
-                                  </div>
-                                    <div>
-                                      <p class="text-xs text-gray-500 uppercase tracking-wide">Type</p>
-                                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
-                                        <%= workout.data.set_type.name %>
-                                      </span>
-                                    </div>
-
-                                </div>
-
-                                <!-- Notes on separate line if exists -->
-                                <%= if workout.data.notes && workout.data.notes != "" do %>
-                                  <div class="mt-2 pt-2 border-t border-gray-100">
-                                    <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Notes</p>
-                                    <p class="text-sm text-gray-700 italic"><%= workout.data.notes %></p>
-                                  </div>
-                                <% end %>
-                              </div>
-                            </div>
-
-                            <svg class="w-5 h-5 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                            </svg>
-                          </div>
+                        <div class="grid grid-cols-[2rem,1fr,1fr,1fr,1fr] items-baseline gap-3 border-b border-line/60 py-2.5 last:border-0">
+                          <span class="num text-sm text-dim"><%= workout.data.set %></span>
+                          <span class="num text-base text-foreground">
+                            <%= workout.data.weight %><span class="ml-1 text-xs text-faint">kg</span>
+                          </span>
+                          <span class="num text-base text-foreground"><%= workout.data.reps %></span>
+                          <span class="num text-base text-foreground"><%= workout.data.rir || 0 %></span>
+                          <span class="num text-base text-foreground">
+                            <%= if workout.data.rpe, do: workout.data.rpe, else: "—" %>
+                          </span>
+                          <span
+                            :if={workout.data.side != "both"}
+                            class="col-start-2 -mt-1 inline-flex w-fit items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-widest text-dim"
+                          >
+                            <%= workout.data.side %>
+                          </span>
                         </div>
                       <% end %>
                     </div>
@@ -1091,6 +967,10 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
     </div>
     """
   end
+
+  # Bar segment width, guarding an all-zero session.
+  defp bar_pct(_value, max) when max <= 0, do: 0
+  defp bar_pct(value, max), do: Float.round(value / max * 100, 2)
 
   defp build_workout_assigns(workouts) do
     changesets =
@@ -1187,16 +1067,17 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
     end
   end
 
-  defp apply_exercise_filters(exercises, filter_applied, search) do
-    exercises
-    |> Enum.filter(fn ex ->
-      filter_applied == "ALL" or (ex.muscle && ex.muscle.name == filter_applied)
+  # The muscle filter chips were removed, so search matches muscle and
+  # equipment names too — otherwise typing "Chest" or "Barbell" finds nothing.
+  defp search_exercises(exercises, ""), do: exercises
+
+  defp search_exercises(exercises, query) do
+    needle = String.downcase(query)
+
+    Enum.filter(exercises, fn ex ->
+      [ex.name, ex.muscle && ex.muscle.name, ex.equipment && ex.equipment.name]
+      |> Enum.any?(fn value -> value && String.contains?(String.downcase(value), needle) end)
     end)
-    |> Enum.filter(fn ex ->
-      search == "" ||
-        String.contains?(String.downcase(ex.name || ""), String.downcase(search))
-    end)
-    |> Enum.sort_by(fn ex -> String.downcase(ex.name || "") end)
   end
 
   defp save_pending_changes(pending_changes) when map_size(pending_changes) == 0, do: :ok

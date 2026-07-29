@@ -24,9 +24,10 @@ defmodule ScopestrengthWeb.Client.VolumeTracking do
        client_id: client.id,
        period: period,
        volume_data: volume_data,
-       muscle_ids: muscle_ids
+       muscle_ids: muscle_ids,
+       period_index: 0,
+       expanded: nil
      )}
-
   end
 
   def handle_event("change_period", %{"period" => period}, socket) do
@@ -35,8 +36,29 @@ defmodule ScopestrengthWeb.Client.VolumeTracking do
     {:noreply,
      assign(socket,
        period: period,
-       volume_data: volume_data
+       volume_data: volume_data,
+       period_index: 0,
+       expanded: nil
      )}
+  end
+
+  # period_index walks backwards through history: 0 is the most recent period,
+  # 1 the one before it, and so on. Bounds are clamped against the shortest
+  # muscle series so every muscle can be read at the same index.
+  def handle_event("step_period", %{"by" => by}, socket) do
+    max_index = max(period_count(socket.assigns.volume_data) - 1, 0)
+
+    index =
+      (socket.assigns.period_index + String.to_integer(by))
+      |> max(0)
+      |> min(max_index)
+
+    {:noreply, assign(socket, period_index: index)}
+  end
+
+  def handle_event("toggle_muscle", %{"muscle" => muscle}, socket) do
+    expanded = if socket.assigns.expanded == muscle, do: nil, else: muscle
+    {:noreply, assign(socket, expanded: expanded)}
   end
 
   defp get_volume_data(client_id, period) do
@@ -248,160 +270,194 @@ defmodule ScopestrengthWeb.Client.VolumeTracking do
   end
 
   def render(assigns) do
+    assigns = assign(assigns, rows: current_rows(assigns.volume_data, assigns.period_index))
+
     ~H"""
-    <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-      <div class="mb-6 rounded-xl border border-gray-200 bg-white p-5 sm:flex sm:items-center sm:justify-between">
+    <div class="mx-auto max-w-5xl">
+      <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-semibold text-gray-900">Volume Tracking</h1>
-          <p class="mt-1 text-sm text-gray-600">
-            Track your training volume by muscle group over time
-          </p>
+          <p class="text-xs font-medium uppercase tracking-widest text-dim">Training</p>
+          <h1 class="mt-1 font-display text-5xl font-bold uppercase tracking-wide text-foreground">
+            Volume
+          </h1>
         </div>
 
-        <div class="mt-4 inline-flex rounded-lg bg-gray-100 p-1 sm:mt-0">
+        <div class="inline-flex rounded-lg bg-muted p-1">
           <button
+            :for={{value, label} <- [{"weekly", "Weekly"}, {"monthly", "Monthly"}]}
             phx-click="change_period"
-            phx-value-period="weekly"
+            phx-value-period={value}
             class={[
               "rounded-md px-3 py-1.5 text-sm font-medium transition",
-              if(@period == "weekly",
-                do: "bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-200",
-                else: "text-gray-600 hover:text-gray-900"
-              )
+              @period == value && "bg-card text-foreground",
+              @period != value && "text-dim hover:text-foreground"
             ]}
           >
-            Weekly
-          </button>
-          <button
-            phx-click="change_period"
-            phx-value-period="monthly"
-            class={[
-              "rounded-md px-3 py-1.5 text-sm font-medium transition",
-              if(@period == "monthly",
-                do: "bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-200",
-                else: "text-gray-600 hover:text-gray-900"
-              )
-            ]}
-          >
-            Monthly
+            {label}
           </button>
         </div>
       </div>
 
       <%= if map_size(@volume_data) == 0 do %>
-        <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-          <p class="text-gray-600">No workout data available yet.</p>
+        <div class="mt-8 rounded-xl border border-dashed border-line px-6 py-16 text-center">
+          <h3 class="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+            No volume yet
+          </h3>
+          <p class="mx-auto mt-2 max-w-sm text-sm text-dim">
+            Log a workout and your set volume will break down by muscle here.
+          </p>
         </div>
       <% else %>
-        <div class="space-y-4">
-          <%= for {muscle_name, periods} <- @volume_data |> Enum.sort_by(fn {muscle, _} -> muscle end) do %>
-            <section class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-              <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
-                <.link
-                  navigate={"/client/volumeTracking/#{@muscle_ids[muscle_name]}"}
-                  class="text-base font-semibold text-gray-900 hover:text-emerald-600 transition-colors"
-                >
-                  <%= muscle_name %>
-                </.link>
+        <div class="mt-8 overflow-hidden rounded-xl border border-line bg-card">
+          <div class="flex items-center justify-between border-b border-line px-5 py-4">
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold text-foreground">{@rows.label}</p>
+              <p class="num mt-0.5 text-xs text-dim">
+                {format_sets(@rows.total_direct)} direct · {format_sets(@rows.total_effective)} effective
+              </p>
+            </div>
 
-                <span class="text-xs font-medium text-gray-500">
-                  <%= if @period == "weekly", do: "Weekly breakdown", else: "Monthly breakdown" %>
-                </span>
-              </div>
+            <div class="flex shrink-0 items-center gap-1">
+              <button
+                phx-click="step_period"
+                phx-value-by="1"
+                disabled={!@rows.has_older}
+                aria-label="Earlier period"
+                class="rounded-md p-1.5 text-dim transition enabled:hover:bg-secondary enabled:hover:text-foreground disabled:opacity-30"
+              >
+                <.icon name="hero-chevron-left" class="h-4 w-4" />
+              </button>
+              <button
+                phx-click="step_period"
+                phx-value-by="-1"
+                disabled={@period_index == 0}
+                aria-label="Later period"
+                class="rounded-md p-1.5 text-dim transition enabled:hover:bg-secondary enabled:hover:text-foreground disabled:opacity-30"
+              >
+                <.icon name="hero-chevron-right" class="h-4 w-4" />
+              </button>
+            </div>
+          </div>
 
-              <div class="overflow-x-auto">
-                  <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-white">
-                      <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
-                          Period
-                        </th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
-                          Total Sets
-                        </th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
-                          Direct Sets
-                        </th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
-                          Effective Sets
-                        </th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
-                          Change
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                      <%= for {period, index} <- Enum.with_index(periods) do %>
-                        <% prev_period = Enum.at(periods, index + 1) %>
-                        <% change =
-                          if prev_period do
-                            period.total_sets - prev_period.total_sets
-                          else
-                            nil
-                          end %>
-                        <% change_percent =
-                          if prev_period && prev_period.total_sets > 0 do
-                            (change / prev_period.total_sets * 100) |> Float.round(1)
-                          else
-                            nil
-                          end %>
+          <div :if={@rows.max == 0} class="px-5 py-12 text-center text-sm text-dim">
+            No sets recorded in this {if @period == "weekly", do: "week", else: "month"}.
+          </div>
 
-                        <tr class={if period.total_sets == 0.0, do: "bg-amber-50/50 hover:bg-amber-50", else: "hover:bg-gray-50/70"}>
-                          <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 sm:px-6">
-                            <div class="flex items-center gap-2">
-                              <%= period.period_label %>
-                              <%= if period.total_sets == 0.0 do %>
-                                <span class="relative group cursor-help">
-                                  <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                  </svg>
-                                  <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg z-10">
-                                    No sets recorded this <%= if @period == "weekly", do: "week", else: "month" %>
-                                  </span>
-                                </span>
-                              <% end %>
-                            </div>
-                          </td>
-                          <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-semibold text-gray-900 sm:px-6">
-                            <%= period.total_sets %>
-                          </td>
-                          <td class="whitespace-nowrap px-4 py-3 text-right text-sm sm:px-6">
-                            <span class="inline-flex items-center justify-center px-2 py-0.5 bg-emerald-600 text-white text-xs font-semibold rounded-full">
-                              <%= period.direct_sets %>
-                            </span>
-                          </td>
-                          <td class="whitespace-nowrap px-4 py-3 text-right text-sm sm:px-6">
-                            <span class="inline-flex items-center justify-center px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
-                              <%= period.effective_sets %>
-                            </span>
-                          </td>
-                          <td class="whitespace-nowrap px-4 py-3 text-right text-sm sm:px-6">
-                            <%= if change do %>
-                              <span class={[
-                                "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset",
-                                cond do
-                                  change > 0 -> "bg-emerald-50 text-emerald-700 ring-emerald-200"
-                                  change < 0 -> "bg-rose-50 text-rose-700 ring-rose-200"
-                                  true -> "bg-gray-100 text-gray-700 ring-gray-200"
-                                end
-                              ]}>
-                                <%= if change > 0, do: "+", else: "" %><%= change %> sets
-                                <%= if change_percent, do: "(#{change_percent}%)" %>
-                              </span>
-                            <% else %>
-                              <span class="text-gray-400">—</span>
-                            <% end %>
-                          </td>
-                        </tr>
-                      <% end %>
-                    </tbody>
-                  </table>
+          <div :if={@rows.max > 0} class="divide-y divide-line/60">
+            <div :for={row <- @rows.muscles} class="px-5 py-3">
+              <button
+                type="button"
+                phx-click="toggle_muscle"
+                phx-value-muscle={row.muscle_name}
+                aria-expanded={to_string(@expanded == row.muscle_name)}
+                class="group block w-full text-left"
+              >
+                <div class="flex items-baseline justify-between gap-3">
+                  <span class="truncate text-sm font-medium text-foreground">
+                    {row.muscle_name}
+                  </span>
+                  <span class="num shrink-0 text-xs text-dim">
+                    <span class="text-foreground">{format_sets(row.direct_sets)}</span>
+                    <span :if={row.indirect > 0}> + {format_sets(row.indirect)}</span>
+                  </span>
                 </div>
-            </section>
-          <% end %>
+
+                <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div class="flex h-full">
+                    <div
+                      class="h-full rounded-l-full bg-primary transition-all"
+                      style={"width: #{pct(row.direct_sets, @rows.max)}%"}
+                    >
+                    </div>
+                    <div
+                      class="h-full bg-primary/30 transition-all"
+                      style={"width: #{pct(row.indirect, @rows.max)}%"}
+                    >
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              <div :if={@expanded == row.muscle_name} class="mt-3 space-y-2 border-l border-line pl-4">
+                <p class="text-xs uppercase tracking-widest text-dim">Recent {@period} history</p>
+                <div
+                  :for={p <- Enum.take(Map.get(@volume_data, row.muscle_name, []), 8)}
+                  class="flex items-baseline justify-between gap-3 text-xs"
+                >
+                  <span class="truncate text-dim">{p.period_label}</span>
+                  <span class="num shrink-0 text-dim">
+                    <span class="text-foreground">{format_sets(p.direct_sets)}</span>
+                    / {format_sets(p.effective_sets)}
+                  </span>
+                </div>
+                <.link
+                  navigate={"/client/volumeTracking/#{@muscle_ids[row.muscle_name]}"}
+                  class="inline-block pt-1 text-xs font-medium text-primary hover:opacity-80"
+                >
+                  Exercise breakdown →
+                </.link>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4 border-t border-line px-5 py-3 text-xs text-dim">
+            <span class="inline-flex items-center gap-1.5">
+              <span class="h-2 w-4 rounded-full bg-primary"></span> Direct
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+              <span class="h-2 w-4 rounded-full bg-primary/30"></span> Indirect
+            </span>
+          </div>
         </div>
       <% end %>
     </div>
     """
   end
+
+  # Percentage width for a bar segment, guarding the empty-period case.
+  defp pct(_value, 0), do: 0
+  defp pct(_value, max) when max <= 0, do: 0
+  defp pct(value, max), do: Float.round(value / max * 100, 2)
+
+  # Trailing ".0" is noise on set counts; halves are meaningful (unilateral).
+  defp format_sets(value) do
+    rounded = Float.round(value * 1.0, 1)
+    if rounded == Float.round(rounded, 0), do: trunc(rounded), else: rounded
+  end
+
+  defp period_count(volume_data) do
+    volume_data
+    |> Map.values()
+    |> Enum.map(&length/1)
+    |> Enum.min(fn -> 0 end)
+  end
+
+  # Slices every muscle's series at the same index so the bars are comparable,
+  # and sorts descending by effective sets so the biggest movers read first.
+  defp current_rows(volume_data, index) do
+    muscles =
+      volume_data
+      |> Enum.map(fn {muscle_name, periods} ->
+        p = Enum.at(periods, index)
+
+        %{
+          muscle_name: muscle_name,
+          period_label: p && p.period_label,
+          direct_sets: (p && p.direct_sets) || 0.0,
+          effective_sets: (p && p.effective_sets) || 0.0,
+          indirect: max(((p && p.effective_sets) || 0.0) - ((p && p.direct_sets) || 0.0), 0.0)
+        }
+      end)
+      |> Enum.sort_by(& &1.effective_sets, :desc)
+
+    %{
+      muscles: muscles,
+      label: muscles |> Enum.find_value(& &1.period_label) || "—",
+      max: muscles |> Enum.map(& &1.effective_sets) |> Enum.max(fn -> 0.0 end),
+      total_direct: muscles |> Enum.map(& &1.direct_sets) |> Enum.sum(),
+      total_effective: muscles |> Enum.map(& &1.effective_sets) |> Enum.sum(),
+      has_older: index + 1 < period_count(volume_data)
+    }
+  end
+
 end

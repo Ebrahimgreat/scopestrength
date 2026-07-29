@@ -1,171 +1,42 @@
-<div class="min-h-screen flex bg-gradient-to-br from-slate-100 via-white to-slate-50">
-  <!-- Mobile Top Bar -->
-  <div class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-slate-900 px-4 py-3 md:hidden">
-    <.link href={~p"/trainer"} class="inline-flex items-center gap-2 text-base font-semibold text-white">
-      <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-300 text-xs font-bold">
-        TP
-      </span>
-      Trainer Portal
-    </.link>
-    <button id="mobile-menu-btn" onclick="document.getElementById('mobile-sidebar').classList.toggle('hidden')" class="text-white p-2">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-      </svg>
-    </button>
+<ScopestrengthWeb.Sidebar.app_shell
+  id="mobile-sidebar"
+  label=""
+  short="TP"
+  home={~p"/trainer"}
+  role="Trainer"
+  user_name={@current_user.name}
+  active_path={assigns[:active_path]}
+  notifications_path={~p"/trainer/notifications"}
+  unread_count={assigns[:unread_count] || 0}
+  items={[
+    %{label: "Dashboard", path: ~p"/trainer", icon: "hero-squares-2x2", exact: true},
+    %{label: "Clients", path: ~p"/trainer/clients", icon: "hero-users"},
+    %{label: "Programmes", path: ~p"/trainer/programmes", icon: "hero-clipboard-document-list"},
+    %{label: "Volume", path: ~p"/trainer/exercises/contribution", icon: "hero-chart-bar"},
+    %{label: "Exercises", path: ~p"/trainer/exercises", icon: "hero-bars-3-bottom-left", exact: true},
+    %{label: "Invites", path: ~p"/trainer/invites", icon: "hero-envelope"},
+    %{label: "Chat", path: ~p"/trainer/chat", icon: "hero-chat-bubble-left"}
+  ]}
+  footer_items={[
+    %{label: "Settings", path: ~p"/trainer/settings", icon: "hero-cog-6-tooth"}
+  ]}
+>
+  <div
+    :if={@current_user.type == "demo"}
+    class="flex items-center gap-3 border-b border-warning/30 bg-warning/10 px-4 py-3 text-warning md:px-6"
+  >
+    <.icon name="hero-information-circle" class="h-5 w-5 shrink-0" />
+    <span class="text-sm font-medium">You're exploring a demo account with sample data</span>
   </div>
 
-  <!-- Mobile Sidebar Overlay -->
-  <div id="mobile-sidebar" class="hidden fixed inset-0 z-50 md:hidden">
-    <div onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="absolute inset-0 bg-black/50"></div>
-    <aside class="relative w-72 h-full bg-slate-900 text-slate-100 flex flex-col overflow-y-auto">
-      <div class="px-6 py-6 border-b border-slate-800 flex items-center justify-between">
-        <.link href={~p"/trainer"} class="inline-flex items-center gap-2 text-lg font-semibold tracking-tight text-white">
-          <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 text-sm font-bold">
-            TP
-          </span>
-          Trainer Portal
-        </.link>
-        <button onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      <div class="px-6 py-4">
-        <div class="flex items-center gap-3">
-          <div class="h-9 w-9 rounded-full bg-gradient-to-br from-emerald-400/30 to-emerald-600/30 border border-emerald-400/30"></div>
-          <div>
-            <p class="text-sm font-medium text-slate-100">{@current_user.name}</p>
-            <p class="text-xs text-slate-400">Trainer</p>
-          </div>
-        </div>
-      </div>
-      <nav class="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-        <.link href={~p"/trainer"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">D</span>
-          Dashboard
-        </.link>
-        <.link href={~p"/trainer/clients"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">C</span>
-          Clients
-        </.link>
-        <.link href={~p"/trainer/programmes"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">P</span>
-          Programmes
-        </.link>
-        <.link href={~p"/trainer/exercises/contribution"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">Ev</span>
-          Volume
-        </.link>
-        <.link href={~p"/trainer/exercises"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">E</span>
-          Exercises
-        </.link>
-        <.link href={~p"/trainer/invites"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">I</span>
-          Invites
-        </.link>
-        <.link href={~p"/trainer/chat"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">H</span>
-          Chat
-        </.link>
-      </nav>
-      <div class="mt-auto px-4 py-5 border-t border-slate-800 space-y-2">
-        <.link href={~p"/trainer/settings"} onclick="document.getElementById('mobile-sidebar').classList.add('hidden')" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">S</span>
-          Settings
-        </.link>
-        <.link href={~p"/users/log_out"} method="delete" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-rose-200 hover:bg-rose-500/10 hover:text-rose-100 transition">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-200 group-hover:bg-rose-500/20">L</span>
-          Log out
-        </.link>
-      </div>
-    </aside>
+  <ScopestrengthWeb.SubscriptionBanner.subscription_banner
+    subscription_status={assigns[:subscription_status] || :trial}
+    trial_days_remaining={assigns[:trial_days_remaining] || 0}
+    current_user={@current_user}
+  />
+
+  <div class="flex-1 p-4 md:p-6 lg:p-8">
+    <.flash_group flash={@flash} />
+    {@inner_content}
   </div>
-
-  <!-- Desktop Sidebar -->
-  <aside class="hidden md:flex w-72 bg-slate-900 text-slate-100 flex-col border-r border-slate-800 sticky top-0 h-screen">
-    <div class="px-6 py-6 border-b border-slate-800">
-      <.link href={~p"/trainer"} class="inline-flex items-center gap-2 text-lg font-semibold tracking-tight text-white hover:text-emerald-200">
-        <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 text-sm font-bold">
-          TP
-        </span>
-        Trainer Portal
-      </.link>
-      <div class="mt-4 flex items-center gap-3">
-        <div class="h-9 w-9 rounded-full bg-gradient-to-br from-emerald-400/30 to-emerald-600/30 border border-emerald-400/30"></div>
-        <div>
-          <p class="text-sm font-medium text-slate-100">{@current_user.name}</p>
-          <p class="text-xs text-slate-400">Trainer</p>
-        </div>
-      </div>
-    </div>
-
-    <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-      <.link href={~p"/trainer"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">D</span>
-        Dashboard
-      </.link>
-      <.link href={~p"/trainer/clients"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">C</span>
-        Clients
-      </.link>
-      <.link href={~p"/trainer/programmes"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">P</span>
-        Programmes
-      </.link>
-      <.link href={~p"/trainer/exercises/contribution"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">Ev</span>
-        Volume
-      </.link>
-      <.link href={~p"/trainer/exercises"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">E</span>
-        Exercises
-      </.link>
-      <.link href={~p"/trainer/invites"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">I</span>
-        Invites
-      </.link>
-      <.link href={~p"/trainer/chat"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">H</span>
-        Chat
-      </.link>
-    </nav>
-
-    <div class="mt-auto px-4 py-5 border-t border-slate-800 space-y-2">
-      <.link href={~p"/trainer/settings"} class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 hover:text-white transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-slate-300 group-hover:bg-emerald-500/20 group-hover:text-emerald-200">S</span>
-        Settings
-      </.link>
-      <.link href={~p"/users/log_out"} method="delete" class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-rose-200 hover:bg-rose-500/10 hover:text-rose-100 transition">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-200 group-hover:bg-rose-500/20">L</span>
-        Log out
-      </.link>
-    </div>
-  </aside>
-
-  <main class="flex-1 flex flex-col min-w-0 pt-14 md:pt-0">
-    <!-- Demo Account Banner -->
-    <div :if={@current_user.type == "demo"} class="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 md:px-6 flex items-center justify-between gap-4 shadow-md">
-      <div class="flex items-center gap-3">
-        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span class="text-sm md:text-base font-medium">You're exploring a demo account with sample data</span>
-      </div>
-     
-    </div>
-
-    <!-- Subscription Status Banner -->
-    <ScopestrengthWeb.SubscriptionBanner.subscription_banner
-      subscription_status={assigns[:subscription_status] || :trial}
-      trial_days_remaining={assigns[:trial_days_remaining] || 0}
-      current_user={@current_user}
-    />
-
-    <div class="flex-1 p-4 md:p-6 lg:p-8">
-      <.flash_group flash={@flash} />
-      {@inner_content}
-    </div>
-  </main>
-</div>
+</ScopestrengthWeb.Sidebar.app_shell>

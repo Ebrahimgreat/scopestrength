@@ -288,455 +288,287 @@ defmodule ScopestrengthWeb.Exercises do
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
-  <div class="w-full min-h-screen">
-  <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-4">
-  <div class="max-w-6xl mx-auto py-8">
-          <% custom_count = Enum.count(@allExercises, & &1.is_custom) %>
-          <% library_count = length(@allExercises) - custom_count %>
-          <div class="flex items-start justify-between gap-6">
+    <div class="mx-auto max-w-6xl">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium uppercase tracking-widest text-dim">Library</p>
+          <h1 class="mt-1 font-display text-5xl font-bold uppercase tracking-wide text-foreground">
+            Exercises
+          </h1>
+        </div>
+
+        <.button phx-click="openModal" class="shrink-0">
+          <span class="inline-flex items-center gap-2">
+            <.icon name="hero-plus" class="h-4 w-4" /> Add exercise
+          </span>
+        </.button>
+      </div>
+
+      <form phx-change="searching" phx-debounce="250" class="mt-8">
+        <input
+          type="search"
+          name="searchExercise"
+          value={@searchExercise}
+          placeholder="Search exercises or muscle groups"
+          aria-label="Search exercises"
+          class="w-full rounded-xl border-line bg-card px-5 py-4 text-base text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
+        />
+      </form>
+
+      <div :if={@exercises == []} class="mt-6 rounded-xl border border-dashed border-line px-6 py-16 text-center">
+        <h3 class="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+          {if @allExercises == [], do: "No exercises yet", else: "No matches"}
+        </h3>
+        <p class="mx-auto mt-2 max-w-sm text-sm text-dim">
+          {if @allExercises == [],
+            do: "Create your first exercise to start building programmes.",
+            else: "Try a different name or muscle group."}
+        </p>
+        <div class="mt-6">
+          <.button :if={@allExercises == []} phx-click="openModal">Add your first exercise</.button>
+          <button
+            :if={@allExercises != []}
+            type="button"
+            phx-click="resetFilters"
+            class="text-sm font-medium text-primary transition hover:opacity-80"
+          >
+            Clear search
+          </button>
+        </div>
+      </div>
+
+      <div :if={@exercises != []} class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          :for={exercise <- @exercises}
+          class="group relative flex flex-col rounded-xl border border-line bg-card p-5 transition hover:border-dim"
+        >
+          <h3 class="pr-8 font-semibold leading-snug text-foreground">{exercise.name}</h3>
+
+          <div class="mt-3 flex flex-wrap gap-2">
+            <.tag :if={exercise.muscle}>{exercise.muscle.name}</.tag>
+            <.tag :if={exercise.equipment}>{exercise.equipment.name}</.tag>
+            <.tag :if={exercise.is_unilateral}>Unilateral</.tag>
+            <.tag :if={exercise.is_custom} tone="custom">Custom</.tag>
+          </div>
+
+          <div
+            :if={exercise.is_custom}
+            class="absolute right-3 top-3 flex items-center gap-1 opacity-0 transition focus-within:opacity-100 group-hover:opacity-100"
+          >
+            <button
+              type="button"
+              phx-click="editExercise"
+              phx-value-id={exercise.id}
+              aria-label={"Edit #{exercise.name}"}
+              class="rounded-md p-1.5 text-dim transition hover:bg-secondary hover:text-foreground"
+            >
+              <.icon name="hero-pencil-square" class="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              phx-click="deleteExercise"
+              phx-value-id={exercise.id}
+              data-confirm="Delete this exercise?"
+              aria-label={"Delete #{exercise.name}"}
+              class="rounded-md p-1.5 text-dim transition hover:bg-danger/10 hover:text-danger"
+            >
+              <.icon name="hero-trash" class="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <.exercise_modal
+        :if={@show_modal}
+        eyebrow="Create"
+        title="New exercise"
+        subtitle="Add a custom movement to your trainer library."
+        submit="addExercise"
+        close="openModal"
+        form={@newExerciseForm}
+        muscles={@muscles}
+        equipment_list={@equipment_list}
+        secondary_muscles={@secondary_muscles}
+        selected_primary_muscle_id={@selected_primary_muscle_id}
+        action_label="Create exercise"
+      />
+
+      <.exercise_modal
+        :if={@show_edit_exercise}
+        eyebrow="Edit"
+        title="Update exercise"
+        subtitle="Adjust naming, muscle, or equipment for this move."
+        submit="saveExercise"
+        close="closeEditExercise"
+        form={@editExerciseForm}
+        muscles={@muscles}
+        equipment_list={@equipment_list}
+        secondary_muscles={@secondary_muscles}
+        selected_primary_muscle_id={@selected_primary_muscle_id}
+        action_label="Save changes"
+        editing
+      />
+    </div>
+    """
+  end
+
+  attr :tone, :string, default: "default", values: ~w(default custom)
+  slot :inner_block, required: true
+
+  defp tag(assigns) do
+    ~H"""
+    <span class={[
+      "num inline-flex items-center rounded-full border px-2.5 py-1 text-xs",
+      @tone == "default" && "border-line text-dim",
+      @tone == "custom" && "border-primary/40 text-primary"
+    ]}>
+      {render_slot(@inner_block)}
+    </span>
+    """
+  end
+
+  attr :eyebrow, :string, required: true
+  attr :title, :string, required: true
+  attr :subtitle, :string, required: true
+  attr :submit, :string, required: true
+  attr :close, :string, required: true
+  attr :form, :any, required: true
+  attr :muscles, :list, required: true
+  attr :equipment_list, :list, required: true
+  attr :secondary_muscles, :list, required: true
+  attr :selected_primary_muscle_id, :any, default: nil
+  attr :action_label, :string, required: true
+  attr :editing, :boolean, default: false
+
+  defp exercise_modal(assigns) do
+    ~H"""
+    <div class="fixed inset-0 z-50 overflow-y-auto">
+      <div class="absolute inset-0 bg-black/70" phx-click={@close} aria-hidden="true"></div>
+      <div class="relative flex min-h-full items-center justify-center p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          class="w-full max-w-lg rounded-xl border border-line bg-card p-6 shadow-2xl"
+        >
+          <div class="flex items-start justify-between gap-3">
             <div>
-
-              <h1 class="text-3xl font-bold leading-tight">Exercise Library</h1>
-              <p class="mt-2 text-slate-600 text-base lg:text-lg">
-                Update, filter, and manage every movement in one place.
-              </p>
-              <div class="mt-4 flex flex-wrap gap-3 text-sm">
-                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full border">
-                  <span class="w-2 h-2 rounded-full bg-white"></span> Total {length(@allExercises)}
-                </span>
-                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full border">
-                  <span class="w-2 h-2 rounded-full bg-amber-300"></span> Custom {custom_count}
-                </span>
-                <span class="inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full border">
-                  <span class="w-2 h-2 rounded-full bg-emerald-300"></span> Library {library_count}
-                </span>
-              </div>
+              <p class="text-xs font-medium uppercase tracking-widest text-dim">{@eyebrow}</p>
+              <h2 class="mt-1 font-display text-2xl font-bold uppercase tracking-wide text-foreground">
+                {@title}
+              </h2>
+              <p class="mt-1 text-sm text-dim">{@subtitle}</p>
             </div>
-            <div class="flex flex-col gap-3 items-end">
-              <.button
-                phx-click="openModal"
-                class="bg-emerald-600 text-white hover:bg-emerald-700 px-5 py-2.5 rounded-lg font-medium transition"
-              >
-                + Add exercise
-              </.button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="max-w-6xl mx-auto py-8 space-y-6">
-        <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 space-y-4">
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="w-full lg:w-1/2">
-              <form phx-change="searching" phx-debounce="250" class="space-y-1">
-                <label class="text-sm font-medium text-slate-600">Search exercises</label>
-                <div class="relative">
-                  <span
-                    class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    aria-hidden="true"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 103.5 10.5a7.5 7.5 0 0013.15 6.15z"
-                      />
-                    </svg>
-                  </span>
-                  <input
-                    type="search"
-                    name="searchExercise"
-                    value={@searchExercise}
-                    placeholder="Search by name"
-                    class="w-full rounded-lg border border-slate-200 bg-slate-50 focus:bg-white pl-10 pr-3 py-2 text-sm shadow-inner focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
-                  />
-                </div>
-              </form>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-              <.button
-                phx-click="resetFilters"
-                class="border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 px-3 py-2 rounded-lg text-sm font-medium transition"
-              >
-                Reset filters
-              </.button>
-              <.button
-                phx-click="filterExercise"
-                phx-value-name="All"
-                class={[
-                  "px-3 py-2 rounded-lg text-sm font-medium transition",
-                  if(@filterApplied == "All",
-                    do: "bg-emerald-600 text-white shadow-sm",
-                    else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  )
-                ]}
-              >
-                All types
-              </.button>
-            </div>
+            <button
+              type="button"
+              phx-click={@close}
+              aria-label="Close"
+              class="rounded-md p-1 text-dim transition hover:bg-secondary hover:text-foreground"
+            >
+              <.icon name="hero-x-mark" class="h-5 w-5" />
+            </button>
           </div>
 
-          <div class="flex flex-wrap gap-2">
-            <%= for muscle <- @muscles do %>
-              <button
-                type="button"
-                phx-click="filterExercise"
-                phx-value-name={muscle.name}
-                class={[
-                  "px-3 py-1.5 rounded-full text-xs font-semibold border transition",
-                  if(@filterApplied == muscle.name,
-                    do: "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm",
-                    else: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-                  )
-                ]}
-              >
-                {muscle.name}
-              </button>
-            <% end %>
-          </div>
+          <.form phx-submit={@submit} for={@form} class="mt-6 space-y-4">
+            <input
+              :if={@editing}
+              type="hidden"
+              name={@form[:id].name}
+              value={Phoenix.HTML.Form.normalize_value("hidden", @form[:id].value)}
+            />
+            <.input
+              type="text"
+              required
+              label="Exercise name"
+              field={@form[:name]}
+              placeholder="e.g. Single arm cable row"
+            />
 
-          <div class="flex items-center justify-between text-sm text-slate-600 pt-2">
-            <span>
-              Showing {length(@exercises)} exercise{if length(@exercises) != 1, do: "s"}
-              <%= if @filterApplied != "All" do %>
-                for "{@filterApplied}"
-              <% end %>
-            </span>
-            <%= if length(@exercises) == 0 do %>
-              <span class="text-amber-600 font-medium">No exercises match the current filters</span>
-            <% end %>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <%= if length(@exercises) > 0 do %>
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead class="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th class="text-left py-3 px-6 font-semibold text-slate-800">Exercise</th>
-                    <th class="text-left py-3 px-6 font-semibold text-slate-800">Type</th>
-                    <th class="text-left py-3 px-6 font-semibold text-slate-800">Equipment</th>
-                    <th class="text-left py-3 px-6 font-semibold text-slate-800">Source</th>
-                    <th class="text-right py-3 px-6 font-semibold text-slate-800">Actions</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200">
-                  <%= for exercise <- @exercises do %>
-                    <tr class="hover:bg-slate-50 transition">
-                      <td class="py-4 px-6">
-                        <div class="font-semibold text-slate-900">{exercise.name}</div>
-                      </td>
-                      <td class="py-4 px-6">
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                          {if exercise.muscle, do: exercise.muscle.name, else: "N/A"}
-                        </span>
-                      </td>
-                      <td class="py-4 px-6 text-slate-700">
-                        {if exercise.equipment, do: exercise.equipment.name, else: "None"}
-                      </td>
-                      <td class="py-4 px-6">
-                        <span class={[
-                          "inline-flex items-center gap-2 text-xs font-semibold px-2.5 py-1 rounded-full border",
-                          if(exercise.is_custom,
-                            do: "bg-amber-50 text-amber-700 border-amber-100",
-                            else: "bg-slate-100 text-slate-700 border-slate-200"
-                          )
-                        ]}>
-                          <span class={[
-                            "w-2 h-2 rounded-full",
-                            if(exercise.is_custom, do: "bg-amber-500", else: "bg-slate-400")
-                          ]}>
-                          </span>
-                          {if exercise.is_custom, do: "Custom", else: "Library"}
-                        </span>
-                      </td>
-                      <td class="py-4 px-6 text-right">
-                        <%= if exercise.is_custom do %>
-                          <div class="flex items-center gap-2 justify-end">
-                            <button
-                              type="button"
-                              phx-click="editExercise"
-                              phx-value-id={exercise.id}
-                              class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              phx-click="deleteExercise"
-                              phx-value-id={exercise.id}
-                              class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        <% else %>
-                          <span class="text-xs text-slate-400">Read only</span>
-                        <% end %>
-                      </td>
-                    </tr>
-                  <% end %>
-                </tbody>
-              </table>
-            </div>
-          <% else %>
-            <div class="text-center py-12">
-              <svg
-                class="w-16 h-16 mx-auto text-slate-300 mb-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                >
-                </path>
-              </svg>
-              <h3 class="text-lg font-semibold text-slate-900 mb-1">No exercises yet</h3>
-              <p class="text-slate-500 mb-4">
-                Create your first exercise to start building programmes.
-              </p>
-              <.button
-                type="button"
-                phx-click="openModal"
-                class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium transition"
-              >
-                Add your first exercise
-              </.button>
-            </div>
-          <% end %>
-        </div>
-      </div>
-
-      <%= if @show_modal do %>
-        <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div class="absolute inset-0 bg-slate-900/60" aria-hidden="true"></div>
-          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
-            <div class="flex items-start justify-between gap-3">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Create</p>
-                <h2 class="text-xl font-semibold text-slate-900">New exercise</h2>
-                <p class="text-sm text-slate-500">Add a custom movement to your trainer library.</p>
-              </div>
-              <button
-                phx-click="openModal"
-                aria-label="Close"
-                class="text-slate-400 hover:text-slate-600"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <.form phx-submit="addExercise" for={@newExerciseForm} class="mt-5 space-y-4">
-              <.input
-                type="text"
-                required
-                label="Exercise name"
-                field={@newExerciseForm[:name]}
-                placeholder="e.g. Single arm cable row"
-              />
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1">Primary muscle</label>
-                  <select
-                    phx-change="update_primary_muscle"
-                    name="muscle_id"
-                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
-                  >
-                    <option value="">Select muscle</option>
-                    <%= for muscle <- @muscles do %>
-                      <option value={muscle.id} selected={@selected_primary_muscle_id == muscle.id}>{muscle.name}</option>
-                    <% end %>
-                  </select>
-                </div>
-                <.input
-                  type="select"
-                  options={Enum.map(@equipment_list, &{&1.name, &1.id})}
-                  field={@newExerciseForm[:equipment_id]}
-                  label="Equipment"
-                />
-              </div>
-
-              <div class="flex items-center gap-2 py-2">
-                <input
-                  type="checkbox"
-                  name="exercise[is_unilateral]"
-                  id="is_unilateral_new"
-                  value="true"
-                  class="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
-                />
-                <label for="is_unilateral_new" class="text-sm font-medium text-slate-700">
-                  Unilateral exercise (performed one side at a time)
+                <label for="primary-muscle" class="mb-1 block text-sm font-medium text-foreground">
+                  Primary muscle
                 </label>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Secondary muscles</label>
-                <div class="flex flex-wrap gap-2">
-                  <%= for muscle <- @muscles do %>
-                    <%= unless muscle.id == @selected_primary_muscle_id do %>
-                      <button
-                        type="button"
-                        phx-click="toggle_secondary_muscle"
-                        phx-value-id={muscle.id}
-                        class={[
-                          "px-3 py-1.5 rounded-full text-xs font-semibold border transition",
-                          if(muscle.id in @secondary_muscles,
-                            do: "bg-emerald-50 text-emerald-700 border-emerald-200",
-                            else: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-                          )
-                        ]}
-                      >
-                        {muscle.name}
-                      </button>
-                    <% end %>
-                  <% end %>
-                </div>
-              </div>
-
-              <div class="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  phx-click="openModal"
-                  class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
+                <select
+                  id="primary-muscle"
+                  phx-change="update_primary_muscle"
+                  name="muscle_id"
+                  class="w-full rounded-md border-line bg-muted px-3 py-2 text-sm text-foreground focus:border-primary focus:ring-0"
                 >
-                  Cancel
-                </button>
-                <.button class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg">
-                  Create exercise
-                </.button>
+                  <option value="">Select muscle</option>
+                  <option
+                    :for={muscle <- @muscles}
+                    value={muscle.id}
+                    selected={@selected_primary_muscle_id == muscle.id}
+                  >
+                    {muscle.name}
+                  </option>
+                </select>
               </div>
-            </.form>
-          </div>
-        </div>
-      <% end %>
-
-      <%= if @show_edit_exercise do %>
-        <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div class="absolute inset-0 bg-slate-900/60" aria-hidden="true"></div>
-          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Edit</p>
-                <h2 class="text-xl font-semibold text-slate-900">Update exercise</h2>
-                <p class="text-sm text-slate-500">Adjust naming, type, or equipment for this move.</p>
-              </div>
-              <button
-                phx-click="closeEditExercise"
-                aria-label="Close"
-                class="text-slate-400 hover:text-slate-600"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </button>
+              <.input
+                type="select"
+                options={Enum.map(@equipment_list, &{&1.name, &1.id})}
+                field={@form[:equipment_id]}
+                label="Equipment"
+              />
             </div>
 
-            <.form phx-submit="saveExercise" for={@editExerciseForm} class="mt-5 space-y-4">
-              <.input type="hidden" field={@editExerciseForm[:id]} />
-              <.input type="text" required label="Exercise name" field={@editExerciseForm[:name]} />
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1">Primary muscle</label>
-                  <select
-                    phx-change="update_primary_muscle"
-                    name="muscle_id"
-                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+            <div :if={@editing}>
+              <.input
+                type="checkbox"
+                field={@form[:is_unilateral]}
+                label="Unilateral exercise (performed one side at a time)"
+              />
+            </div>
+            <div :if={!@editing} class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="exercise[is_unilateral]"
+                id="is_unilateral_new"
+                value="true"
+                class="h-4 w-4 rounded border-line bg-muted text-primary focus:ring-0"
+              />
+              <label for="is_unilateral_new" class="text-sm text-foreground">
+                Unilateral exercise (performed one side at a time)
+              </label>
+            </div>
+
+            <div>
+              <label class="mb-2 block text-sm font-medium text-foreground">Secondary muscles</label>
+              <p :if={is_nil(@selected_primary_muscle_id)} class="text-sm text-faint">
+                Select a primary muscle first.
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <%= for muscle <- @muscles, muscle.id != @selected_primary_muscle_id do %>
+                  <button
+                    type="button"
+                    phx-click="toggle_secondary_muscle"
+                    phx-value-id={muscle.id}
+                    aria-pressed={to_string(muscle.id in @secondary_muscles)}
+                    class={[
+                      "rounded-full px-3 py-1.5 text-xs font-medium transition",
+                      muscle.id in @secondary_muscles && "bg-primary/15 text-primary",
+                      muscle.id not in @secondary_muscles && "bg-muted text-dim hover:text-foreground"
+                    ]}
                   >
-                    <option value="">Select muscle</option>
-                    <%= for muscle <- @muscles do %>
-                      <option value={muscle.id} selected={@selected_primary_muscle_id == muscle.id}>{muscle.name}</option>
-                    <% end %>
-                  </select>
-                </div>
-                <.input
-                  type="select"
-                  options={Enum.map(@equipment_list, &{&1.name, &1.id})}
-                  field={@editExerciseForm[:equipment_id]}
-                  label="Equipment"
-                />
+                    {muscle.name}
+                  </button>
+                <% end %>
               </div>
+            </div>
 
-              <div class="flex items-center gap-2 py-2">
-                <.input
-                  type="checkbox"
-                  field={@editExerciseForm[:is_unilateral]}
-                  label="Unilateral exercise (performed one side at a time)"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Secondary muscles</label>
-                <div class="flex flex-wrap gap-2">
-                  <%= for muscle <- @muscles do %>
-                    <%= unless muscle.id == @selected_primary_muscle_id do %>
-                      <button
-                        type="button"
-                        phx-click="toggle_secondary_muscle"
-                        phx-value-id={muscle.id}
-                        class={[
-                          "px-3 py-1.5 rounded-full text-xs font-semibold border transition",
-                          if(muscle.id in @secondary_muscles,
-                            do: "bg-emerald-50 text-emerald-700 border-emerald-200",
-                            else: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-                          )
-                        ]}
-                      >
-                        {muscle.name}
-                      </button>
-                    <% end %>
-                  <% end %>
-                </div>
-              </div>
-
-              <div class="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  phx-click="closeEditExercise"
-                  class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
-                >
-                  Cancel
-                </button>
-                <.button class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg">
-                  Save changes
-                </.button>
-              </div>
-            </.form>
-          </div>
+            <div class="flex items-center justify-end gap-3 border-t border-line pt-4">
+              <button
+                type="button"
+                phx-click={@close}
+                class="rounded-md px-4 py-2 text-sm font-medium text-dim transition hover:text-foreground"
+              >
+                Cancel
+              </button>
+              <.button>{@action_label}</.button>
+            </div>
+          </.form>
         </div>
-      <% end %>
+      </div>
     </div>
     """
   end
@@ -746,11 +578,22 @@ defmodule ScopestrengthWeb.Exercises do
     |> Enum.filter(fn ex ->
       filter_applied == "All" or (ex.muscle && ex.muscle.name == filter_applied)
     end)
-    |> Enum.filter(fn ex ->
-      search == "" ||
-        String.contains?(String.downcase(ex.name || ""), String.downcase(search))
-    end)
+    |> Enum.filter(&matches_search?(&1, search))
     |> Enum.sort_by(fn ex -> String.downcase(ex.name || "") end)
+  end
+
+  # The single search box replaced the muscle filter chips, so it matches on
+  # muscle and equipment as well as name — otherwise typing "Chest" or
+  # "Barbell" would return nothing.
+  defp matches_search?(_exercise, ""), do: true
+
+  defp matches_search?(exercise, search) do
+    needle = String.downcase(search)
+
+    [exercise.name, exercise.muscle && exercise.muscle.name, exercise.equipment && exercise.equipment.name]
+    |> Enum.any?(fn value ->
+      value && String.contains?(String.downcase(value), needle)
+    end)
   end
 
 end

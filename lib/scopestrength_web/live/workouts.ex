@@ -34,15 +34,15 @@ alias Scopestrength.Repo
             <div>
               <div class="flex items-center gap-4 mb-3">
                 <%= if @client.profile_picture_url do %>
-                  <img src={@client.profile_picture_url} alt={@client.user.name} class="w-16 h-16 rounded-full object-cover border-2 border-emerald-200 shadow-sm" />
+                  <img src={@client.profile_picture_url} alt={@client.user.name} class="w-16 h-16 rounded-full object-cover border-2 border-primary shadow-sm" />
                 <% else %>
-                  <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xl border-2 border-emerald-200 shadow-sm">
+                  <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl border-2 border-primary shadow-sm">
                     <%= String.slice(@client.user.name, 0, 1) |> String.upcase() %>
                   </div>
                 <% end %>
                 <div>
-                  <h1 class="text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">Client Workouts</h1>
-                  <p class="mt-1 text-slate-600 text-base lg:text-lg">
+                  <h1 class="text-3xl lg:text-4xl font-semibold tracking-tight text-foreground">Client Workouts</h1>
+                  <p class="mt-1 text-dim text-base lg:text-lg">
                     Monitor the workouts of <b>{@client.user.name}</b>
                   </p>
                 </div>
@@ -53,21 +53,21 @@ alias Scopestrength.Repo
       </div>
 
       <div class="max-w-6xl mx-auto py-8 space-y-6">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden">
           <%= if length(@workouts) > 0 do %>
             <div class="overflow-x-auto">
               <table class="w-full text-sm">
-                <thead class="bg-slate-50 border-b border-slate-200">
+                <thead class="bg-card border-b border-line">
                   <tr>
-                    <th class="text-left py-3 px-6 font-semibold text-slate-800">Workout</th>
-                    <th class="text-left py-3 px-6 font-semibold text-slate-800">
+                    <th class="text-left py-3 px-6 font-semibold text-foreground">Workout</th>
+                    <th class="text-left py-3 px-6 font-semibold text-foreground">
                     Date</th>
 
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-200">
+                <tbody class="divide-y divide-line">
                 <%= for workout <- @workouts do %>
-                <tr class="hover:bg-slate-50 transition">
+                <tr class="hover:bg-card transition">
                 <td class="py-4 px-6">
                 <.link navigate={~p"/trainer/clients/#{@client_id}/workouts/#{workout.id}"}>
                 {workout.name}

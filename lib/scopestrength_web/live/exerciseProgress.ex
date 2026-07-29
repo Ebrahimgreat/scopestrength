@@ -96,76 +96,76 @@ defmodule ScopestrengthWeb.ExerciseProgress do
       <!-- Header -->
       <div class="mb-6 flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-semibold text-gray-900"><%= @exercise_name %></h1>
-          <p class="mt-1 text-sm text-gray-500">Strength Progress</p>
+          <h1 class="text-2xl font-semibold text-foreground"><%= @exercise_name %></h1>
+          <p class="mt-1 text-sm text-dim">Strength Progress</p>
         </div>
-        <.link navigate={~p"/trainer/clients/#{@client_id}"} class="text-sm font-medium text-gray-500 hover:text-gray-900">
+        <.link navigate={~p"/trainer/clients/#{@client_id}"} class="text-sm font-medium text-dim hover:text-foreground">
           ← Back
         </.link>
       </div>
 
       <%= if length(@grouped_workouts) == 0 do %>
-        <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-          <p class="text-gray-500">No workout data available for this exercise yet.</p>
+        <div class="rounded-xl border border-dashed border-line bg-card p-8 text-center">
+          <p class="text-dim">No workout data available for this exercise yet.</p>
         </div>
       <% else %>
 
         <!-- PR Card -->
         <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div class="rounded-xl border border-gray-200 bg-white p-4">
-            <p class="text-xs font-medium text-gray-500">Personal Record</p>
-            <p class="mt-1 text-2xl font-bold text-gray-900">
+          <div class="rounded-xl border border-line bg-card p-4">
+            <p class="text-xs font-medium text-dim">Personal Record</p>
+            <p class="mt-1 text-2xl font-bold text-foreground">
               <%= if @pr.weight, do: @pr.weight, else: "—" %>
-              <%= if @pr.weight do %><span class="text-sm font-normal text-gray-500">kg</span><% end %>
+              <%= if @pr.weight do %><span class="text-sm font-normal text-dim">kg</span><% end %>
             </p>
           </div>
-          <div class="rounded-xl border border-gray-200 bg-white p-4">
-            <p class="text-xs font-medium text-gray-500">PR Reps</p>
-            <p class="mt-1 text-2xl font-bold text-gray-900">
+          <div class="rounded-xl border border-line bg-card p-4">
+            <p class="text-xs font-medium text-dim">PR Reps</p>
+            <p class="mt-1 text-2xl font-bold text-foreground">
               <%= if @pr.reps, do: @pr.reps, else: "—" %>
-              <%= if @pr.reps do %><span class="text-sm font-normal text-gray-500">reps</span><% end %>
+              <%= if @pr.reps do %><span class="text-sm font-normal text-dim">reps</span><% end %>
             </p>
           </div>
-          <div class="rounded-xl border border-gray-200 bg-white p-4">
-            <p class="text-xs font-medium text-gray-500">Avg Reps</p>
-            <p class="mt-1 text-2xl font-bold text-gray-900"><%= @overall_avg_reps %> <span class="text-sm font-normal text-gray-500">reps</span></p>
+          <div class="rounded-xl border border-line bg-card p-4">
+            <p class="text-xs font-medium text-dim">Avg Reps</p>
+            <p class="mt-1 text-2xl font-bold text-foreground"><%= @overall_avg_reps %> <span class="text-sm font-normal text-dim">reps</span></p>
           </div>
-          <div class="rounded-xl border border-gray-200 bg-white p-4">
-            <p class="text-xs font-medium text-gray-500">Sessions</p>
-            <p class="mt-1 text-2xl font-bold text-gray-900"><%= length(@grouped_workouts) %></p>
+          <div class="rounded-xl border border-line bg-card p-4">
+            <p class="text-xs font-medium text-dim">Sessions</p>
+            <p class="mt-1 text-2xl font-bold text-foreground"><%= length(@grouped_workouts) %></p>
           </div>
         </div>
 
         <!-- Session Table -->
-        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-          <div class="border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
-            <h2 class="text-sm font-semibold text-gray-700">Session History</h2>
+        <div class="overflow-hidden rounded-xl border border-line bg-card">
+          <div class="border-b border-line bg-card px-4 py-3 sm:px-6">
+            <h2 class="text-sm font-semibold text-foreground">Session History</h2>
           </div>
           <div class="overflow-x-auto">
             <% max_sets = @grouped_workouts |> Enum.map(fn g -> length(g.sets) end) |> Enum.max() %>
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-line">
               <thead>
-                <tr class="bg-white">
-                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:px-6">
+                <tr class="bg-card">
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-dim sm:px-6">
                     Date
                   </th>
-                  <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-dim">
                     Trend
                   </th>
-                  <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-dim">
                     Avg Reps
                   </th>
                   <%= for set_num <- 1..max_sets do %>
-                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-dim">
                       Set <%= set_num %>
                     </th>
                   <% end %>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-100 bg-white">
+              <tbody class="divide-y divide-line bg-card">
                 <%= for session <- @grouped_workouts do %>
-                  <tr class="hover:bg-gray-50/70">
-                    <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 sm:px-6">
+                  <tr class="hover:bg-card/70">
+                    <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-foreground sm:px-6">
                       <%= Calendar.strftime(session.date, "%d %b %Y") %>
                     </td>
                     <td class="whitespace-nowrap px-4 py-3 text-center text-sm">
@@ -173,41 +173,41 @@ defmodule ScopestrengthWeb.ExerciseProgress do
                         <% session.prev == nil -> %>
                           <span class="text-gray-300 text-xs">—</span>
                         <% session.top_weight > session.prev.top_weight -> %>
-                          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+                          <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-emerald-200">
                             ▲ +<%= Float.round(session.top_weight - session.prev.top_weight, 1) %>kg
                           </span>
                         <% session.top_weight < session.prev.top_weight -> %>
-                          <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-rose-200">
+                          <span class="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger ring-1 ring-rose-200">
                             ▼ <%= Float.round(session.top_weight - session.prev.top_weight, 1) %>kg
                           </span>
                         <% session.top_reps > session.prev.top_reps -> %>
-                          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+                          <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-emerald-200">
                             ▲ +<%= session.top_reps - session.prev.top_reps %> reps
                           </span>
                         <% session.top_reps < session.prev.top_reps -> %>
-                          <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-rose-200">
+                          <span class="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger ring-1 ring-rose-200">
                             ▼ <%= session.top_reps - session.prev.top_reps %> reps
                           </span>
                         <% true -> %>
-                          <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                          <span class="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-dim">
                             = same
                           </span>
                       <% end %>
                     </td>
-                    <td class="whitespace-nowrap px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                    <td class="whitespace-nowrap px-4 py-3 text-center text-sm font-semibold text-foreground">
                       <%= session.avg_reps %>
                     </td>
                     <%= for set_num <- 1..max_sets do %>
-                      <td class="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-700">
+                      <td class="whitespace-nowrap px-4 py-3 text-center text-sm text-foreground">
                         <%= case Enum.find(session.sets, &(&1.set == set_num)) do %>
                           <% nil -> %>
                             <span class="text-gray-200">—</span>
                           <% s -> %>
                             <span class="font-semibold"><%= s.weight || "BW" %><%= if s.weight do %>kg<% end %></span>
-                            <span class="text-gray-400"> × </span>
+                            <span class="text-faint"> × </span>
                             <span><%= s.reps || "—" %></span>
                             <%= if s.side != "both" do %>
-                              <div class="text-xs text-gray-400 capitalize"><%= s.side %></div>
+                              <div class="text-xs text-faint capitalize"><%= s.side %></div>
                             <% end %>
                         <% end %>
                       </td>

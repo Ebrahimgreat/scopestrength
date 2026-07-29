@@ -1,5 +1,4 @@
 defmodule ScopestrengthWeb.ClientDashboard do
-alias Scopestrength.Notifications.Notification
 alias Scopestrength.Programmes.ProgrammeUser
 alias Scopestrength.Programmes
 alias Scopestrength.Programmes.Programme
@@ -13,14 +12,13 @@ import Ecto.Query
   use ScopestrengthWeb, :live_view
 
 
-  def handle_event("filterExercise", %{"id" => id}, socket) do
-    muscle_id = String.to_integer(id)
-    filtered = Enum.filter(socket.assigns.all_exercise_progress, &(&1.muscle_id == muscle_id))
-    {:noreply, assign(socket, exercise_progress: filtered, filterApplied: muscle_id)}
-  end
-
-  def handle_event("resetFilters", _, socket) do
-    {:noreply, assign(socket, exercise_progress: socket.assigns.all_exercise_progress, filterApplied: nil)}
+  def handle_event("searchProgress", %{"q" => query}, socket) do
+    query = String.trim(query || "")
+    {:noreply,
+     assign(socket,
+       progress_query: query,
+       exercise_progress: filter_progress(socket.assigns.all_exercise_progress, query)
+     )}
   end
 
   def handle_event("submit_invite_code", %{"code" => code}, socket) do
@@ -58,47 +56,10 @@ import Ecto.Query
     {:noreply, assign(socket, invite_code: code)}
   end
 
-  def handle_event("mark_notification_read", %{"id" => notification_id}, socket) do
-    notification = Notifications.get_notification!(notification_id)
-
-    {:ok, _updated} = Notifications.update_notification(notification, %{
-      read_at: DateTime.utc_now()
-    })
-
-    # Update the notifications list
-    notifications =
-      Enum.map(socket.assigns.notifications, fn n ->
-        if n.id == String.to_integer(notification_id) do
-          %{n | read_at: DateTime.utc_now()}
-        else
-          n
-        end
-      end)
-
-    {:noreply, assign(socket, notifications: notifications)}
-  end
-
-  def handle_event("mark_all_read", _params, socket) do
-    client = socket.assigns.client
-    from(n in Notification,
-      where: n.recipient_type == "client" and
-             n.recipient_id == ^client.id and
-             is_nil(n.read_at)
-    )
-    |> Repo.update_all(set: [read_at: DateTime.utc_now()])
-    notifications =
-      Enum.map(socket.assigns.notifications, fn n ->
-        %{n | read_at: DateTime.utc_now()}
-      end)
-
-    {:noreply, assign(socket, notifications: notifications)}
-  end
-
   def handle_event("downloadProgramme", _, socket) do
     programme =
     Repo.get!(Programme, socket.assigns.current_programme.programme_id)
     |> Repo.preload(programmeTemplates: [programmeDetails: :exercise])
-    IO.inspect(programme.id)
     DownloadProgramme.downloadProgramme(%{programme: programme})
      {:noreply, assign(socket, report: true)}
     end
@@ -119,21 +80,6 @@ import Ecto.Query
         pu -> Repo.preload(pu, [programme: [programmeTemplates: [programmeDetails: :exercise]]])
       end
 
-    if connected?(socket) do
-      Phoenix.PubSub.subscribe(
-        Scopestrength.PubSub,
-        "notifications:client:#{client.id}"
-      )
-    end
-
-    notifications =
-      Repo.all(
-        from n in Notification,
-          where: n.recipient_type == "client" and n.recipient_id == ^client.id and is_nil(n.read_at),
-          order_by: [desc: n.inserted_at],
-          limit: 10
-      )
-
 
     # Get recent workouts
     recent_workouts =
@@ -151,346 +97,316 @@ import Ecto.Query
         join: w in Workout, on: wd.workout_id == w.id,
         where: w.client_id == ^client.id,
         join: e in assoc(wd, :exercise),
-        group_by: [e.id, e.name],
-        select: %{exercise_id: e.id, name: e.name, muscle_id: e.muscle_id, total_sets: count(wd.id)}
+        left_join: m in assoc(e, :muscle),
+        group_by: [e.id, e.name, m.name],
+        order_by: [desc: count(wd.id)],
+        select: %{
+          exercise_id: e.id,
+          name: e.name,
+          muscle_name: m.name,
+          total_sets: count(wd.id)
+        }
       )
       |> Repo.all()
 
 
-      #Get Muscles
-
-      muscles = Scopestrength.Exercises.list_mucles()
+    templates =
+      case currentProgramme do
+        nil -> []
+        pu -> pu.programme.programmeTemplates
+      end
 
     {:ok, assign(socket,
       report: false,
       client: client,
-      filterApplied: nil,
       current_programme: currentProgramme,
+      template_count: length(templates),
+      programme_progress: programme_progress(templates, recent_workouts),
       invite_code: "",
       recent_workouts: recent_workouts,
       exercise_progress: exercise_progress,
       all_exercise_progress: exercise_progress,
-      notifications: notifications,
-      notification_count: length(notifications),
-      muscles: muscles
+      progress_query: ""
     )}
   end
-  def handle_info({:notification, %Notification{} = notification}, socket) do
-    notifications = [notification | socket.assigns.notifications] |> Enum.take(10)
 
-    {:noreply,
-     socket
-     |> assign(:notifications, notifications)
-     |> assign(:notification_count, length(notifications))}
+  # The schema has no week count or duration, so "progress" is the share of the
+  # programme's templates the client has actually trained, matched by name.
+  defp programme_progress([], _workouts), do: 0
+
+  defp programme_progress(templates, workouts) do
+    trained =
+      workouts
+      |> Enum.map(&String.downcase(&1.name || ""))
+      |> MapSet.new()
+
+    matched =
+      Enum.count(templates, fn template ->
+        MapSet.member?(trained, String.downcase(template.name || ""))
+      end)
+
+    round(matched / length(templates) * 100)
   end
 
+  defp workout_volume(workout) do
+    workout.workoutDetails
+    |> Enum.map(fn d -> (d.reps || 0.0) * (d.weight || 0.0) end)
+    |> Enum.sum()
+    |> then(fn total ->
+      if total >= 1000, do: "#{Float.round(total / 1000, 1)}k", else: round(total)
+    end)
+  end
   def handle_info(_, socket), do: {:noreply, socket}
+
+  # Matches exercise and muscle name, so the removed muscle chips are not missed.
+  defp filter_progress(entries, ""), do: entries
+
+  defp filter_progress(entries, query) do
+    needle = String.downcase(query)
+
+    Enum.filter(entries, fn entry ->
+      [entry.name, entry.muscle_name]
+      |> Enum.any?(fn value -> value && String.contains?(String.downcase(value), needle) end)
+    end)
+  end
 
   def render(assigns) do
     ~H"""
-    <div class="max-w-4xl mx-auto px-4 py-6 space-y-6">
-      <!-- Header with Date and Profile -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <.link navigate={~p"/client/settings"} class="flex-shrink-0 group">
-            <%= if @client.profile_picture_url do %>
-              <img
-                src={@client.profile_picture_url}
-                alt="Profile"
-                class="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-emerald-200 group-hover:border-emerald-400 transition-colors"
-              />
-            <% else %>
-              <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-lg sm:text-xl font-bold border-2 border-emerald-200 group-hover:border-emerald-400 transition-colors">
-                <%= get_user_initials(@client) %>
-              </div>
-            <% end %>
-          </.link>
-          <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p class="text-gray-500 text-xs sm:text-sm mt-1">
-              <%= Calendar.strftime(DateTime.utc_now(), "%A, %B %d, %Y") %>
-            </p>
-          </div>
+    <div class="mx-auto max-w-5xl">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="num text-xs font-medium uppercase tracking-widest text-dim">
+            <%= Calendar.strftime(DateTime.utc_now(), "%A, %B %d") %>
+          </p>
+          <h1 class="mt-1 font-display text-5xl font-bold uppercase tracking-wide text-foreground">
+            Dashboard
+          </h1>
         </div>
-        <div class="flex items-center gap-3">
-          <div class="text-left sm:text-right">
+
+        <.link
+          navigate={~p"/client/settings"}
+          class="flex shrink-0 items-center gap-3 rounded-lg border border-line px-3 py-2 transition hover:border-dim"
+        >
+          <%= if @client.profile_picture_url do %>
+            <img
+              src={@client.profile_picture_url}
+              alt=""
+              class="h-9 w-9 rounded-full border border-line object-cover"
+            />
+          <% else %>
+            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-sm font-bold text-primary">
+              <%= get_user_initials(@client) %>
+            </span>
+          <% end %>
+          <span class="text-left">
             <%= if @client.trainer do %>
-              <p class="text-sm text-gray-500">Your Trainer</p>
-              <p class="font-semibold text-gray-900 text-sm sm:text-base"><%= @client.trainer.user.name %></p>
+              <span class="block text-xs text-dim">Trainer</span>
+              <span class="block text-sm font-medium text-foreground">
+                <%= @client.trainer.user.name %>
+              </span>
             <% else %>
-              <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">No trainer assigned</span>
+              <span class="block text-sm text-warning">No trainer</span>
             <% end %>
-          </div>
-          <.link
-            navigate={~p"/client/settings"}
-            class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            title="Settings"
-          >
-            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-            </svg>
-          </.link>
-        </div>
+          </span>
+        </.link>
       </div>
 
-      <!-- Notifications -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <.icon name="hero-bell-solid" class="h-5 w-5 text-emerald-600" />
-            <h2 class="text-lg font-semibold text-gray-900">Latest Activities</h2>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="text-sm text-gray-500"><%= length(@notifications) %> recent</span>
-            <%= if Enum.any?(@notifications, &is_nil(&1.read_at)) do %>
-              <button
-                phx-click="mark_all_read"
-                class="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-              >
-                Mark all read
-              </button>
-            <% end %>
+      <div :if={@client.trainer == nil} class="mt-8 rounded-xl border border-line bg-card p-5">
+        <h2 class="text-sm font-semibold text-foreground">Have an invite code?</h2>
+        <p class="mt-1 text-sm text-dim">
+          Enter the code from your trainer to connect with them.
+        </p>
+        <form phx-submit="submit_invite_code" class="mt-4 flex flex-wrap gap-3">
+          <input
+            type="text"
+            name="code"
+            value={@invite_code}
+            phx-change="update_invite_code"
+            placeholder="ABC12345"
+            aria-label="Invite code"
+            class="num min-w-0 flex-1 rounded-md border-line bg-muted px-3 py-2.5 text-sm uppercase tracking-widest text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
+          />
+          <.button type="submit">Connect</.button>
+        </form>
+      </div>
+
+      <div class="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr,1fr]">
+        <div class="overflow-hidden rounded-xl border border-line bg-card">
+          <div class="flex items-baseline justify-between gap-3 border-b border-line px-5 py-4">
+            <h2 class="font-semibold text-foreground">Recent Sessions</h2>
             <.link
-              navigate={~p"/client/notifications"}
-              class="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+              navigate={~p"/client/workouts"}
+              class="num text-xs uppercase tracking-widest text-dim transition hover:text-foreground"
             >
-              View all
+              View all →
             </.link>
           </div>
+
+          <div
+            :if={@recent_workouts == []}
+            class="px-5 py-12 text-center text-sm text-dim"
+          >
+            No workouts logged yet.
+          </div>
+
+          <div :if={@recent_workouts != []} class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-line text-left">
+                  <th class="num px-5 py-3 text-xs uppercase tracking-widest text-faint">Date</th>
+                  <th class="num px-5 py-3 text-xs uppercase tracking-widest text-faint">Session</th>
+                  <th class="num px-5 py-3 text-right text-xs uppercase tracking-widest text-faint">
+                    Sets
+                  </th>
+                  <th class="num px-5 py-3 text-right text-xs uppercase tracking-widest text-faint">
+                    Volume
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  :for={workout <- @recent_workouts}
+                  class="border-b border-line/60 transition last:border-0 hover:bg-secondary/50"
+                >
+                  <td class="num whitespace-nowrap px-5 py-4 text-sm text-dim">
+                    <%= Calendar.strftime(workout.date || workout.inserted_at, "%b %d") %>
+                  </td>
+                  <td class="px-5 py-4">
+                    <.link
+                      navigate={~p"/client/workouts/#{workout.id}"}
+                      class="font-medium text-primary transition hover:opacity-80"
+                    >
+                      <%= workout.name || "Training Session" %>
+                    </.link>
+                  </td>
+                  <td class="num px-5 py-4 text-right text-sm text-foreground">
+                    <%= length(workout.workoutDetails) %>
+                  </td>
+                  <td class="num whitespace-nowrap px-5 py-4 text-right text-sm text-foreground">
+                    <%= workout_volume(workout) %><span class="ml-1 text-xs text-faint">kg</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <%= if Enum.empty?(@notifications) do %>
-          <div class="p-6 text-sm text-gray-500">No notifications yet.</div>
-        <% else %>
-          <div class="divide-y divide-gray-100">
-            <%= for notification <- @notifications do %>
-              <div class="px-5 py-4 flex items-start justify-between gap-4">
-                <div>
-                  <p class="text-sm font-medium text-gray-900">
-                    <%= notification_text(notification) %>
-                  </p>
-                  <p class="text-xs text-gray-500 mt-1">
-                    <%= notification_time(notification) %>
-                  </p>
-                </div>
-                <%= if is_nil(notification.read_at) do %>
-                  <span class="mt-1 h-2 w-2 rounded-full bg-emerald-500"></span>
-                <% end %>
+        <div class="rounded-xl border border-line bg-card p-5">
+          <p class="num text-xs uppercase tracking-widest text-dim">Current Programme</p>
+
+          <%= if @current_programme do %>
+            <h2 class="mt-3 font-display text-2xl font-bold uppercase tracking-wide text-foreground">
+              <%= @current_programme.programme.name %>
+            </h2>
+            <p class="mt-2 text-sm text-dim">
+              <%= if @client.trainer do %>
+                Assigned by <%= @client.trainer.user.name %>
+              <% else %>
+                Self-assigned
+              <% end %>
+              · <%= @template_count %> template<%= if @template_count != 1, do: "s" %>
+            </p>
+
+            <%!-- No week/duration exists on the schema, so progress is measured
+                  as distinct templates trained rather than an invented week count. --%>
+            <div class="mt-5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div class="h-full rounded-full bg-primary" style={"width: #{@programme_progress}%"}>
               </div>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-
-      <!-- Recent Workouts Section -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-gray-900">Recent Workouts</h2>
-          <span class="text-sm text-gray-500"><%= length(@recent_workouts) %> workouts</span>
-        </div>
-
-        <%= if Enum.empty?(@recent_workouts) do %>
-          <div class="p-8 text-center">
-            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-              </svg>
             </div>
-            <p class="text-gray-500">No workouts logged yet</p>
-            <p class="text-sm text-gray-400 mt-1">Start tracking your progress!</p>
-          </div>
-        <% else %>
-          <div class="divide-y divide-gray-100">
-            <%= for workout <- @recent_workouts do %>
-              <.link navigate={~p"/client/workouts/#{workout.id}"} class="block hover:bg-gray-50 transition-colors">
-                <div class="px-5 py-4 flex items-center justify-between">
-                  <div class="flex items-center space-x-4">
+            <p class="num mt-2 text-xs text-dim">
+              <%= @programme_progress %>% of templates trained
+            </p>
 
-                    <div>
-                      <p class="font-medium text-gray-900"><%= workout.name || "Training Session" %></p>
-                      <p class="text-sm text-gray-500">
-                        <%= if workout.date do %>
-                          <%= Calendar.strftime(workout.date, "%b %d at %I:%M %p") %>
-                        <% else %>
-                          <%= Calendar.strftime(workout.inserted_at, "%b %d at %I:%M %p") %>
-                        <% end %>
-                      </p>
-                    </div>
-                  </div>
-                  <div class="flex items-center space-x-3">
-                    <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm">
-                      <%= length(workout.workoutDetails) %> sets
-                    </span>
-                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                  </div>
-                </div>
+            <div class="mt-5 flex items-center gap-4 border-t border-line pt-4">
+              <.link
+                navigate={~p"/client/programmes"}
+                class="text-xs font-medium text-dim transition hover:text-foreground"
+              >
+                View programme
               </.link>
-            <% end %>
-          </div>
-        <% end %>
+              <%= if @report == false do %>
+                <button
+                  phx-click="downloadProgramme"
+                  class="text-xs font-medium text-dim transition hover:text-foreground"
+                >
+                  Download PDF
+                </button>
+              <% else %>
+                <a
+                  href="/download/workout"
+                  class="text-xs font-medium text-primary transition hover:opacity-80"
+                >
+                  Download now →
+                </a>
+              <% end %>
+            </div>
+          <% else %>
+            <p class="mt-3 text-sm font-medium text-foreground">No programme assigned</p>
+            <p class="mt-1 text-sm text-dim">Your trainer will assign a programme soon.</p>
+          <% end %>
+        </div>
       </div>
 
       <!-- Exercise Progress Section -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-5 py-4 border-b border-gray-100">
-          <h2 class="text-lg font-semibold text-gray-900">Your Exercise Progress</h2>
-          <p class="text-sm text-gray-500 mt-1">Track your strength gains over time</p>
+      <div class="mt-10 border-t border-line pt-6">
+        <div class="flex items-baseline justify-between gap-3">
+          <h2 class="text-sm font-semibold text-foreground">Exercise Progress</h2>
+          <span class="num text-xs text-dim">
+            <%= length(@exercise_progress) %> of <%= length(@all_exercise_progress) %>
+          </span>
         </div>
 
-        <!-- Muscle Filters -->
-        <div class="px-5 py-3 flex flex-wrap gap-2 border-b border-gray-100">
-          <button
-            type="button"
-            phx-click="resetFilters"
-            class="px-3 py-1.5 rounded-full text-xs font-semibold border transition bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-          >
-            All
-          </button>
-          <%= for muscle <- @muscles do %>
-            <button
-              type="button"
-              phx-click="filterExercise"
-              phx-value-id={muscle.id}
-              class={[
-                "px-3 py-1.5 rounded-full text-xs font-semibold border transition",
-                if(@filterApplied == muscle.id,
-                  do: "bg-emerald-600 text-white border-emerald-600",
-                  else: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-                )
-              ]}
-            >
-              <%= muscle.name %>
-            </button>
-          <% end %>
-        </div>
+        <%!-- One search box instead of a muscle-chip row, matching the exercise
+              library. Search covers the muscle name, so the chips were redundant. --%>
+        <form phx-change="searchProgress" phx-debounce="250" class="mt-4">
+          <input
+            type="search"
+            name="q"
+            value={@progress_query}
+            placeholder="Search exercises or muscle groups"
+            aria-label="Search your exercises"
+            class="w-full rounded-md border-line bg-muted px-4 py-2.5 text-sm text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
+          />
+        </form>
 
-
-        <%= if Enum.empty?(@exercise_progress) do %>
-          <div class="p-8 text-center">
-            <p class="text-gray-500">No exercises tracked yet</p>
-          </div>
-        <% else %>
-          <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <%= for exercise <- @exercise_progress do %>
-              <.link
-                navigate={~p"/client/strengthProgress/#{exercise.exercise_id}"}
-                class="p-4 bg-gray-50 hover:bg-emerald-50 rounded-xl border border-gray-200 hover:border-emerald-300 transition-all"
-              >
-                <p class="font-medium text-gray-900 text-sm truncate"><%= exercise.name %></p>
-              </.link>
+        <div
+          :if={@exercise_progress == []}
+          class="mt-4 rounded-xl border border-dashed border-line px-6 py-12 text-center"
+        >
+          <p class="text-sm font-medium text-foreground">
+            <%= if @all_exercise_progress == [], do: "No exercises tracked yet", else: "No matches" %>
+          </p>
+          <p class="mx-auto mt-1 max-w-sm text-sm text-dim">
+            <%= if @all_exercise_progress == [] do %>
+              Log a workout and your tracked lifts will appear here.
+            <% else %>
+              Try a different name or muscle group.
             <% end %>
-          </div>
-        <% end %>
+          </p>
+        </div>
+
+        <div :if={@exercise_progress != []} class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <.link
+            :for={exercise <- @exercise_progress}
+            navigate={~p"/client/strengthProgress/#{exercise.exercise_id}"}
+            class="group flex flex-col rounded-xl border border-line bg-card p-5 transition hover:border-dim"
+          >
+            <h3 class="font-semibold leading-snug text-foreground"><%= exercise.name %></h3>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <span
+                :if={exercise.muscle_name}
+                class="num inline-flex items-center rounded-full border border-line px-2.5 py-1 text-xs text-dim"
+              >
+                <%= exercise.muscle_name %>
+              </span>
+              <span class="num inline-flex items-center rounded-full border border-line px-2.5 py-1 text-xs text-dim">
+                <%= exercise.total_sets %> sets
+              </span>
+            </div>
+          </.link>
+        </div>
       </div>
 
-      <%= if @client.trainer == nil do %>
-        <!-- Invite Code Entry -->
-        <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-          <div class="flex items-center space-x-3 mb-4">
-            <div class="p-2 bg-emerald-100 rounded-lg">
-              <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
-              </svg>
-            </div>
-            <h2 class="text-xl font-bold text-gray-900">Have an invite code?</h2>
-          </div>
-          <p class="text-gray-600 mb-4">Enter the invite code from your trainer to connect with them.</p>
-          <form phx-submit="submit_invite_code" class="space-y-4">
-            <div>
-              <input
-                type="text"
-                name="code"
-                value={@invite_code}
-                phx-change="update_invite_code"
-                placeholder="Enter invite code (e.g., ABC12345)"
-                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 font-mono text-lg tracking-wider uppercase"
-              />
-            </div>
-            <.button
-              type="submit"
-              class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"
-            >
-              Connect with Trainer
-            </.button>
-          </form>
-        </div>
-      <% end %>
-
-      <!-- Current Programme Section -->
-      <%= if @current_programme do %>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <div>
-              <h2 class="text-lg font-semibold text-gray-900">Current Programme</h2>
-              <p class="text-sm text-gray-500"><%= @current_programme.programme.name %></p>
-            </div>
-            <%= if @report == false do %>
-              <.button
-                phx-click="downloadProgramme"
-                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                <span>Download PDF</span>
-              </.button>
-            <% else %>
-              <a
-                href="/download/workout"
-                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                <span>Download Now</span>
-              </a>
-            <% end %>
-          </div>
-
-          <%= if @current_programme.programme.description do %>
-            <div class="px-5 py-3 bg-gray-50 border-b border-gray-100">
-              <p class="text-sm text-gray-600"><%= @current_programme.programme.description %></p>
-            </div>
-          <% end %>
-
-          <div class="p-5 space-y-4">
-            <%= for template <- @current_programme.programme.programmeTemplates do %>
-              <div class="border border-gray-200 rounded-lg overflow-hidden">
-                <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                  <h3 class="font-medium text-gray-900"><%= template.name %></h3>
-                </div>
-                <div class="divide-y divide-gray-100">
-                  <%= for detail <- template.programmeDetails do %>
-                    <div class="px-4 py-3 flex items-center justify-between gap-2">
-                      <span class="font-medium text-gray-800 min-w-0 truncate"><%= detail.exercise.name %></span>
-                      <div class="flex items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-gray-600 flex-shrink-0">
-                        <span><%= detail.set %> sets</span>
-                        <span><%= detail.reps %> reps</span>
-                        <%= if detail.rir do %>
-                          <span class="text-gray-400">RIR <%= detail.rir %></span>
-                        <% end %>
-                      </div>
-                    </div>
-                  <% end %>
-                </div>
-              </div>
-            <% end %>
-          </div>
-        </div>
-      <% else %>
-        <div class="bg-gray-50 rounded-xl p-8 text-center border border-gray-200">
-          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-          </div>
-          <p class="text-gray-600 font-medium">No programme assigned yet</p>
-          <p class="text-sm text-gray-400 mt-1">Your trainer will assign a programme soon</p>
-        </div>
-      <% end %>
     </div>
     """
   end
@@ -510,14 +426,4 @@ import Ecto.Query
     end
   end
 
-  defp notification_text(%Notification{data: %{"message" => message}}) when is_binary(message), do: message
-  defp notification_text(%Notification{data: %{"title" => title}}) when is_binary(title), do: title
-  defp notification_text(%Notification{type: type}) when is_binary(type), do: String.replace(type, "_", " ") |> String.capitalize()
-  defp notification_text(_), do: "New activity"
-
-  defp notification_time(%Notification{inserted_at: %DateTime{} = inserted_at}) do
-    Calendar.strftime(inserted_at, "%b %d, %Y at %I:%M %p")
-  end
-
-  defp notification_time(_), do: "Just now"
 end

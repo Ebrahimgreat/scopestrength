@@ -229,24 +229,24 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gray-50 py-10">
+    <div class="min-h-screen bg-card py-10">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900 mb-2">Template Exercise Builder</h1>
-          <p class="text-gray-600">Add exercises and configure sets and reps for your workout template.</p>
+          <h1 class="text-3xl font-bold text-foreground mb-2">Template Exercise Builder</h1>
+          <p class="text-dim">Add exercises and configure sets and reps for your workout template.</p>
         </div>
 
         <%= if @show_modal do %>
         <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div class="absolute inset-0 bg-slate-900/60" aria-hidden="true"></div>
-          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+          <div class="absolute inset-0 bg-card/60" aria-hidden="true"></div>
+          <div class="relative bg-card rounded-2xl shadow-2xl w-full max-w-lg p-6">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Create</p>
-                <h2 class="text-xl font-semibold text-slate-900">New exercise</h2>
-                <p class="text-sm text-slate-500">Add a custom movement to your library.</p>
+                <p class="text-xs uppercase tracking-[0.2em] text-faint">Create</p>
+                <h2 class="text-xl font-semibold text-foreground">New exercise</h2>
+                <p class="text-sm text-dim">Add a custom movement to your library.</p>
               </div>
-              <button phx-click="openModal" aria-label="Close" class="text-slate-400 hover:text-slate-600">
+              <button phx-click="openModal" aria-label="Close" class="text-faint hover:text-dim">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                 </svg>
@@ -257,8 +257,8 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
               <.input type="text" required label="Exercise name" field={@newExerciseForm[:name]} placeholder="e.g. Single arm cable row" />
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1">Primary muscle</label>
-                  <select phx-change="update_primary_muscle" name="muscle_id" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                  <label class="block text-sm font-medium text-foreground mb-1">Primary muscle</label>
+                  <select phx-change="update_primary_muscle" name="muscle_id" class="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-primary transition">
                     <option value="">Select muscle</option>
                     <%= for muscle <- @muscles do %>
                       <option value={muscle.id} selected={@selected_primary_muscle_id == muscle.id}>{muscle.name}</option>
@@ -269,14 +269,14 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
               </div>
 
               <div class="flex items-center gap-2 py-2">
-                <input type="checkbox" name="exercise[is_unilateral]" id="is_unilateral_new" value="true" class="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500" />
-                <label for="is_unilateral_new" class="text-sm font-medium text-slate-700">
+                <input type="checkbox" name="exercise[is_unilateral]" id="is_unilateral_new" value="true" class="w-4 h-4 text-primary border-line rounded focus:ring-emerald-500" />
+                <label for="is_unilateral_new" class="text-sm font-medium text-foreground">
                   Unilateral exercise (performed one side at a time)
                 </label>
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Secondary muscles</label>
+                <label class="block text-sm font-medium text-foreground mb-2">Secondary muscles</label>
                 <div class="flex flex-wrap gap-2">
                   <%= for muscle <- @muscles do %>
                     <%= unless muscle.id == @selected_primary_muscle_id do %>
@@ -287,8 +287,8 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
                         class={[
                           "px-3 py-1.5 rounded-full text-xs font-semibold border transition",
                           if(muscle.id in @secondary_muscles,
-                            do: "bg-emerald-50 text-emerald-700 border-emerald-200",
-                            else: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                            do: "bg-primary/10 text-primary border-primary",
+                            else: "bg-card text-foreground border-line hover:bg-card"
                           )
                         ]}
                       >
@@ -300,10 +300,10 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
               </div>
 
               <div class="flex items-center justify-end gap-3 pt-2">
-                <button type="button" phx-click="openModal" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">
+                <button type="button" phx-click="openModal" class="px-4 py-2 rounded-lg bg-secondary text-foreground hover:bg-secondary">
                   Cancel
                 </button>
-                <.button class="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg">
+                <.button class="bg-primary hover:bg-emerald-700 px-4 py-2 rounded-lg">
                   Create exercise
                 </.button>
               </div>
@@ -312,21 +312,21 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
         </div>
         <% end %>
 
-        <button phx-click="openModal" class="bg-green-600 text-white px-4 py-2 rounded">Create Exercise</button>
+        <button phx-click="openModal" class="bg-primary text-foreground px-4 py-2 rounded">Create Exercise</button>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
-            <h3 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
-              <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h3 class="text-sm font-medium text-foreground mb-3 flex items-center">
+              <svg class="w-4 h-4 mr-2 text-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
               </svg>
               Filter By Type
             </h3>
 
-            <p class="text-sm text-gray-700 mb-2 flex items-center gap-2">
+            <p class="text-sm text-foreground mb-2 flex items-center gap-2">
               Applied: <span class="inline-block bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded"><%= if @filter_by_type == "ALL", do: "All types", else: @filter_by_type %></span>
               <%= if @filter_by_type != "ALL" do %>
-                <button phx-click="filterByType" phx-value-name="ALL" class="text-sm text-red-600 font-medium hover:underline">
+                <button phx-click="filterByType" phx-value-name="ALL" class="text-sm text-danger font-medium hover:underline">
                   Reset
                 </button>
               <% end %>
@@ -338,8 +338,8 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
                 class={[
                   "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
                   if(@filter_by_type == "ALL",
-                    do: "bg-blue-600 text-white shadow-md",
-                    else: "bg-white border border-gray-300 text-gray-800 hover:bg-gray-100 hover:shadow-sm"
+                    do: "bg-blue-600 text-foreground shadow-md",
+                    else: "bg-card border border-line text-foreground hover:bg-secondary hover:shadow-sm"
                   )
                 ]}
               >
@@ -353,8 +353,8 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
                   class={[
                     "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
                     if(@filter_by_type == muscle.name,
-                      do: "bg-blue-600 text-white shadow-md",
-                      else: "bg-white border border-gray-300 text-gray-800 hover:bg-gray-100 hover:shadow-sm"
+                      do: "bg-blue-600 text-foreground shadow-md",
+                      else: "bg-card border border-line text-foreground hover:bg-secondary hover:shadow-sm"
                     )
                   ]}
                 >
@@ -366,30 +366,30 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div class="bg-white rounded-xl shadow p-6 border">
+          <div class="bg-card rounded-xl shadow p-6 border">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-xl font-semibold text-gray-800">Exercise Library</h2>
-              <span class="text-sm text-gray-500"><%= length(@exercises) %> available</span>
+              <h2 class="text-xl font-semibold text-foreground">Exercise Library</h2>
+              <span class="text-sm text-dim"><%= length(@exercises) %> available</span>
             </div>
 
             <div class="mb-4">
               <.input type="search" name="q" id="exercise-search" value={@q} phx-debounce="300" phx-keyup="searchExercises" placeholder="Search exercises by name..." class="w-full rounded-md" />
             </div>
 
-            <div class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+            <div class="divide-y divide-line max-h-96 overflow-y-auto">
               <%= for exercise <- @exercises do %>
-                <button phx-click="addExercise" phx-value-id={exercise.id} class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-100 transition">
-                  <span class="font-medium text-gray-800"><%= exercise.name %></span>
-                  <span class="text-green-600 font-bold text-lg">+</span>
+                <button phx-click="addExercise" phx-value-id={exercise.id} class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-secondary transition">
+                  <span class="font-medium text-foreground"><%= exercise.name %></span>
+                  <span class="text-primary font-bold text-lg">+</span>
                 </button>
               <% end %>
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow p-6 border">
+          <div class="bg-card rounded-xl shadow p-6 border">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-xl font-semibold text-gray-800">Template Configuration</h2>
-              <span class="text-sm text-gray-500">
+              <h2 class="text-xl font-semibold text-foreground">Template Configuration</h2>
+              <span class="text-sm text-dim">
                 <%= length(@programmeDetails) %> exercise<%= if length(@programmeDetails) != 1, do: "s" %>
               </span>
             </div>
@@ -397,12 +397,12 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
             <%= if length(@programmeDetails) > 0 do %>
               <div class="space-y-6 max-h-96 overflow-y-auto">
                 <%= for {template, index} <- Enum.with_index(@programmeDetails) do %>
-                  <div class="p-4 bg-gray-50 rounded-lg border">
+                  <div class="p-4 bg-card rounded-lg border">
                     <div class="flex items-center justify-between mb-3">
-                      <h3 class="font-semibold text-gray-900">
+                      <h3 class="font-semibold text-foreground">
                         <%= index + 1 %>. <%= template.data.exercise.name %>
                       </h3>
-                      <.button phx-click="deleteExercise" phx-value-id={template.data.id} data-confirm="Are you sure you want to remove this exercise?" class="text-red-600 hover:underline text-sm">
+                      <.button phx-click="deleteExercise" phx-value-id={template.data.id} data-confirm="Are you sure you want to remove this exercise?" class="text-danger hover:underline text-sm">
                         Remove
                       </.button>
                     </div>
@@ -411,17 +411,17 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
                       <.input type="hidden" field={template[:id]} />
                       <div class="grid grid-cols-2 gap-4">
                         <div>
-                          <label class="block text-sm font-medium text-gray-700">Sets</label>
+                          <label class="block text-sm font-medium text-foreground">Sets</label>
                           <.input field={template[:set]} id={"set-#{template.data.id}"} type="number" min="1" />
                         </div>
                         <div>
-                          <label class="block text-sm font-medium text-gray-700">Reps</label>
+                          <label class="block text-sm font-medium text-foreground">Reps</label>
                           <.input field={template[:reps]} id={"reps-#{template.data.id}"} type="text" placeholder="e.g., 10, 8-12, AMRAP" />
                         </div>
                       </div>
 
                       <div class="flex justify-end">
-                        <.button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow-sm">
+                        <.button class="bg-indigo-600 hover:bg-indigo-700 text-foreground px-4 py-2 rounded-md text-sm font-medium shadow-sm">
                           Update
                         </.button>
                       </div>
@@ -430,9 +430,9 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
                 <% end %>
               </div>
             <% else %>
-              <div class="text-center py-12 bg-gray-50 rounded-lg border">
-                <h3 class="text-lg font-medium text-gray-900 mb-2">No exercises added yet</h3>
-                <p class="text-gray-600">Start building your template by adding exercises from the library.</p>
+              <div class="text-center py-12 bg-card rounded-lg border">
+                <h3 class="text-lg font-medium text-foreground mb-2">No exercises added yet</h3>
+                <p class="text-dim">Start building your template by adding exercises from the library.</p>
               </div>
             <% end %>
           </div>

@@ -161,12 +161,12 @@ defmodule ScopestrengthWeb.ChangeProgramme do
       <div class="mb-6">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-semibold text-slate-900">Programme Management</h1>
-            <p class="text-sm text-slate-600 mt-1">Assign or change client's programme enrollment</p>
+            <h1 class="text-2xl font-semibold text-foreground">Programme Management</h1>
+            <p class="text-sm text-dim mt-1">Assign or change client's programme enrollment</p>
           </div>
           <.link
             navigate={~p"/clients/#{@client_id}"}
-            class="inline-flex items-center px-3 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50"
+            class="inline-flex items-center px-3 py-2 border border-line text-sm font-medium rounded-md text-foreground bg-card hover:bg-card"
           >
             Back to Client
           </.link>
@@ -176,24 +176,24 @@ defmodule ScopestrengthWeb.ChangeProgramme do
       <!-- Current Programme Section -->
       <%= if @clientProgramme != nil do %>
         <div class="mb-6">
-          <div class="bg-white border border-slate-200 rounded-lg p-6">
+          <div class="bg-card border border-line rounded-lg p-6">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-semibold text-slate-900">Current Programme</h2>
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+              <h2 class="text-lg font-semibold text-foreground">Current Programme</h2>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
                 Active
               </span>
             </div>
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm font-medium text-slate-900"><%= @clientProgramme.programme.name %></p>
-                <p class="text-sm text-slate-500 mt-1">Currently assigned programme</p>
+                <p class="text-sm font-medium text-foreground"><%= @clientProgramme.programme.name %></p>
+                <p class="text-sm text-dim mt-1">Currently assigned programme</p>
               </div>
               <.button
                 phx-click="unroll"
                 phx-value-id={@clientProgramme.programme_id}
                 data-confirm="Are you sure you want to unenroll this client from the programme?"
-                class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+                class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-foreground bg-danger hover:bg-red-700"
               >
                 Unenroll Client
               </.button>
@@ -202,14 +202,14 @@ defmodule ScopestrengthWeb.ChangeProgramme do
         </div>
       <% else %>
         <div class="mb-6">
-          <div class="text-center py-12 bg-slate-50/50 rounded-lg border border-slate-200">
-            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 mb-3">
-              <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="text-center py-12 bg-card/50 rounded-lg border border-line">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-secondary mb-3">
+              <svg class="w-6 h-6 text-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.768 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h3 class="text-base font-medium text-slate-900 mb-1">No Active Programme</h3>
-            <p class="text-sm text-slate-500">This client is not currently enrolled in any programme</p>
+            <h3 class="text-base font-medium text-foreground mb-1">No Active Programme</h3>
+            <p class="text-sm text-dim">This client is not currently enrolled in any programme</p>
           </div>
         </div>
       <% end %>
@@ -217,50 +217,50 @@ defmodule ScopestrengthWeb.ChangeProgramme do
       <!-- Available Programmes Section -->
       <div>
         <div class="mb-4">
-          <h2 class="text-lg font-semibold text-slate-900">Available Programmes</h2>
-          <p class="text-sm text-slate-600 mt-1"><%= length(@programmes) %> total</p>
+          <h2 class="text-lg font-semibold text-foreground">Available Programmes</h2>
+          <p class="text-sm text-dim mt-1"><%= length(@programmes) %> total</p>
         </div>
 
         <%= if length(@programmes) > 0 do %>
-          <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+          <div class="bg-card border border-line rounded-lg overflow-hidden">
             <table class="w-full">
-              <thead class="bg-slate-50 border-b border-slate-200">
+              <thead class="bg-card border-b border-line">
                 <tr>
-                  <th class="text-left px-6 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th class="text-left px-6 py-3 text-xs font-medium text-dim uppercase tracking-wider">
                     Programme
                   </th>
-                  <th class="text-left px-6 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th class="text-left px-6 py-3 text-xs font-medium text-dim uppercase tracking-wider">
                     Status
                   </th>
-                  <th class="text-right px-6 py-3 text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th class="text-right px-6 py-3 text-xs font-medium text-dim uppercase tracking-wider">
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-200">
+              <tbody class="divide-y divide-line">
                 <%= for programme <- @programmes do %>
-                  <tr class="hover:bg-slate-50 transition-colors">
+                  <tr class="hover:bg-card transition-colors">
                     <td class="px-6 py-4">
-                      <div class="text-sm font-medium text-slate-900"><%= programme.name %></div>
+                      <div class="text-sm font-medium text-foreground"><%= programme.name %></div>
                     </td>
                     <td class="px-6 py-4">
                       <%= if @clientProgramme && @clientProgramme.programme_id == programme.id do %>
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                          <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                          <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
                           Enrolled
                         </span>
                       <% else %>
-                        <span class="text-sm text-slate-500">Available</span>
+                        <span class="text-sm text-dim">Available</span>
                       <% end %>
                     </td>
                     <td class="px-6 py-4 text-right">
                       <%= if @clientProgramme && @clientProgramme.programme_id == programme.id do %>
-                        <span class="text-sm text-slate-400">Already assigned</span>
+                        <span class="text-sm text-faint">Already assigned</span>
                       <% else %>
                         <.button
                           phx-click="assignProgramme"
                           phx-value-id={programme.id}
-                          class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
+                          class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-foreground bg-purple-600 hover:bg-purple-700"
                         >
                           Assign Programme
                         </.button>
@@ -273,14 +273,14 @@ defmodule ScopestrengthWeb.ChangeProgramme do
           </div>
         <% else %>
           <!-- Empty State -->
-          <div class="text-center py-16 bg-slate-50/50 rounded-lg border border-slate-200">
-            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 mb-3">
-              <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="text-center py-16 bg-card/50 rounded-lg border border-line">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-secondary mb-3">
+              <svg class="w-6 h-6 text-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 class="text-base font-medium text-slate-900 mb-1">No programmes yet</h3>
-            <p class="text-sm text-slate-500">Create programmes first to assign them to clients</p>
+            <h3 class="text-base font-medium text-foreground mb-1">No programmes yet</h3>
+            <p class="text-sm text-dim">Create programmes first to assign them to clients</p>
           </div>
         <% end %>
       </div>

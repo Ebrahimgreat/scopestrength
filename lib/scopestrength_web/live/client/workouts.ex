@@ -8,53 +8,101 @@ defmodule ScopestrengthWeb.Client.Workouts do
   use ScopestrengthWeb, :live_view
 
   @per_page 12
+  @visible_tags 4
 
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
     client = Repo.get_by(Client, user_id: user.id)
-    workouts = Repo.all(from w in Workout, where: w.client_id == ^client.id, order_by: [desc: w.date])
+    workouts =
+      Repo.all(from w in Workout, where: w.client_id == ^client.id, order_by: [desc: w.date])
+      |> Repo.preload(workoutDetails: :exercise)
 
     {:ok,
      socket
      |> assign(:all_workouts, workouts)
-     |> assign(:search, "")
      |> assign(:page, 1)
-     |> apply_filters()}
+     |> assign(:expanded, nil)
+     |> paginate()}
   end
 
-  defp apply_filters(socket) do
-    search = socket.assigns.search |> String.downcase()
+  defp paginate(socket) do
     all = socket.assigns.all_workouts
+    total_pages = max(ceil(length(all) / @per_page), 1)
+    page = min(socket.assigns.page, total_pages)
 
-    filtered =
-      if search == "" do
-        all
-      else
-        Enum.filter(all, fn w ->
-          (w.name || "") |> String.downcase() |> String.contains?(search)
-        end)
-      end
-
-    page = socket.assigns.page
-    total_pages = max(ceil(length(filtered) / @per_page), 1)
-    page = min(page, total_pages)
-    paginated = filtered |> Enum.drop((page - 1) * @per_page) |> Enum.take(@per_page)
+    workouts =
+      all
+      |> Enum.drop((page - 1) * @per_page)
+      |> Enum.take(@per_page)
+      |> Enum.map(&summarize/1)
 
     socket
-    |> assign(:workouts, paginated)
-    |> assign(:filtered_count, length(filtered))
-    |> assign(:total_count, length(all))
+    |> assign(:workouts, workouts)
     |> assign(:page, page)
     |> assign(:total_pages, total_pages)
   end
 
+  # Derives the card's display data once per workout rather than recomputing it
+  # inside the template. A freshly created workout has no details loaded, so
+  # treat a missing association as empty rather than crashing.
+  defp summarize(workout) do
+    details = loaded_details(workout)
 
-  def handle_event("search", %{"search" => search}, socket) do
-    {:noreply, socket |> assign(:search, search) |> assign(:page, 1) |> apply_filters()}
+    names =
+      details
+      |> Enum.map(fn d -> d.exercise && d.exercise.name end)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.uniq()
+
+    volume =
+      details
+      |> Enum.map(fn d -> (d.reps || 0.0) * (d.weight || 0.0) end)
+      |> Enum.sum()
+
+    %{
+      id: workout.id,
+      name: workout.name,
+      date: workout.date,
+      exercise_names: names,
+      hidden_count: max(length(names) - @visible_tags, 0),
+      set_count: length(details),
+      volume: volume
+    }
+  end
+
+  # Cards sit in a grid, so an 8-exercise leg day would otherwise stretch its
+  # row far taller than its neighbours. Cap the tags and let the card expand
+  # on demand instead.
+  defp visible_names(workout, expanded_id) do
+    if expanded_id == workout.id do
+      workout.exercise_names
+    else
+      Enum.take(workout.exercise_names, @visible_tags)
+    end
+  end
+
+  defp loaded_details(%{workoutDetails: %Ecto.Association.NotLoaded{}}), do: []
+  defp loaded_details(%{workoutDetails: details}) when is_list(details), do: details
+  defp loaded_details(_), do: []
+
+  # Volume reads better abbreviated once it runs to five digits.
+  defp format_volume(volume) when volume >= 1000 do
+    "#{Float.round(volume / 1000, 1)}k"
+  end
+
+  defp format_volume(volume), do: round(volume)
+
+  def handle_event("expand", %{"id" => id}, socket) do
+    id = String.to_integer(id)
+    {:noreply, assign(socket, :expanded, if(socket.assigns.expanded == id, do: nil, else: id))}
   end
 
   def handle_event("page", %{"page" => page}, socket) do
-    {:noreply, socket |> assign(:page, String.to_integer(page)) |> apply_filters()}
+    {:noreply,
+     socket
+     |> assign(:page, String.to_integer(page))
+     |> assign(:expanded, nil)
+     |> paginate()}
   end
 
   def handle_event("createWorkout", _params, socket) do
@@ -102,7 +150,7 @@ defmodule ScopestrengthWeb.Client.Workouts do
         {:noreply,
          socket
          |> assign(:all_workouts, [workout | socket.assigns.all_workouts])
-         |> apply_filters()}
+         |> paginate()}
 
       {:error, _reason} ->
         {:noreply, socket |> put_flash(:error, "Unable To create workout")}
@@ -111,11 +159,10 @@ defmodule ScopestrengthWeb.Client.Workouts do
   def handle_event("deleteWorkout", %{"id"=>id}, socket) do
     id= String.to_integer(id)
     workout= Training.get_workout!(id)
-    IO.inspect(workout)
     case Training.delete_workout(workout) do
       {:ok, _deleted}->
         all_workouts = Enum.reject(socket.assigns.all_workouts, &(&1.id == id))
-        {:noreply, socket |> assign(:all_workouts, all_workouts) |> apply_filters()}
+        {:noreply, socket |> assign(:all_workouts, all_workouts) |> paginate()}
         _->{:noreply,socket|>put_flash(:error, "Cannot delete")}
 
     end
@@ -127,155 +174,145 @@ defmodule ScopestrengthWeb.Client.Workouts do
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen">
-      <!-- Header Section -->
-      <div class="">
-        <div class="w-full px-0 sm:px-2 lg:px-4 py-8">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">My Workouts</h1>
-              <p class="text-gray-600 mt-1">Track your training progress</p>
-            </div>
-            <.button phx-click="createWorkout">
-            Create Workout
-            </.button>
-          </div>
+    <div class="mx-auto max-w-5xl">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium uppercase tracking-widest text-dim">Training</p>
+          <h1 class="mt-1 font-display text-5xl font-bold uppercase tracking-wide text-foreground">
+            Workouts
+          </h1>
+        </div>
+
+        <.button phx-click="createWorkout" class="shrink-0">
+          <span class="inline-flex items-center gap-2">
+            <.icon name="hero-plus" class="h-4 w-4" /> Create workout
+          </span>
+        </.button>
+      </div>
+
+      <div :if={@workouts == []} class="mt-8 rounded-xl border border-dashed border-line px-6 py-16 text-center">
+        <h3 class="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+          No workouts yet
+        </h3>
+        <p class="mx-auto mt-2 max-w-sm text-sm text-dim">
+          Create a workout to start logging your sets.
+        </p>
+        <div class="mt-6">
+          <.button phx-click="createWorkout">Create your first workout</.button>
         </div>
       </div>
 
-    <!-- Stats Section -->
-      <div class="w-full px-0 sm:px-2 lg:px-4 py-8">
-        <div class="mb-8">
-          <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300 max-w-sm">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-600 uppercase tracking-wider">
-                  Total Workouts
-                </p>
-                <p class="text-3xl font-bold text-gray-900 mt-2">{@total_count}</p>
-              </div>
-              <div class="p-3 bg-emerald-100 rounded-full">
-                <svg
-                  class="w-8 h-8 text-emerald-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                  >
-                  </path>
-                </svg>
-              </div>
-            </div>
+      <div :if={@workouts != []} class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          :for={workout <- @workouts}
+          class="group relative flex flex-col rounded-xl border border-line bg-card p-5 transition hover:border-dim"
+        >
+          <%!-- Stretched link: the pseudo-element covers the whole card so it is
+                clickable, while the delete button sits above it via z-index.
+                Nesting the button inside the link would fire navigation too. --%>
+          <.link
+            navigate={~p"/client/workouts/#{workout.id}"}
+            class="after:absolute after:inset-0 after:rounded-xl"
+          >
+            <h3 class="pr-8 font-semibold leading-snug text-foreground">
+              {workout.name || "Untitled"}
+            </h3>
+          </.link>
+
+          <p class="num mt-1 text-xs text-dim">
+            {if workout.date, do: Calendar.strftime(workout.date, "%a, %b %d, %Y"), else: "No date"}
+          </p>
+
+          <div :if={workout.exercise_names != []} class="mt-3 flex flex-wrap gap-2">
+            <span
+              :for={name <- visible_names(workout, @expanded)}
+              class="num inline-flex items-center rounded-full border border-line px-2.5 py-1 text-xs text-dim"
+            >
+              {name}
+            </span>
+            <%!-- Sits above the stretched link so it toggles instead of navigating. --%>
+            <button
+              :if={workout.hidden_count > 0 and @expanded != workout.id}
+              type="button"
+              phx-click="expand"
+              phx-value-id={workout.id}
+              class="num relative z-10 inline-flex items-center rounded-full border border-line px-2.5 py-1 text-xs text-faint transition hover:border-dim hover:text-foreground"
+            >
+              +{workout.hidden_count}
+            </button>
+            <button
+              :if={@expanded == workout.id}
+              type="button"
+              phx-click="expand"
+              phx-value-id={workout.id}
+              class="num relative z-10 inline-flex items-center rounded-full border border-line px-2.5 py-1 text-xs text-faint transition hover:border-dim hover:text-foreground"
+            >
+              Less
+            </button>
           </div>
+
+          <p :if={workout.exercise_names == []} class="mt-3 text-xs text-faint">
+            No exercises logged
+          </p>
+
+          <div class="mt-4 flex items-center gap-3 border-t border-line pt-3 text-xs text-dim">
+            <span class="num inline-flex items-center gap-1.5">
+              <.icon name="hero-squares-2x2" class="h-3.5 w-3.5 text-faint" />
+              {workout.set_count} sets
+            </span>
+            <span :if={workout.volume > 0} class="num inline-flex items-center gap-1.5">
+              <.icon name="hero-scale" class="h-3.5 w-3.5 text-faint" />
+              {format_volume(workout.volume)} kg
+            </span>
+          </div>
+
+          <button
+            type="button"
+            phx-click="deleteWorkout"
+            phx-value-id={workout.id}
+            data-confirm="Are you sure you want to delete this workout?"
+            aria-label={"Delete #{workout.name || "workout"}"}
+            class="absolute right-3 top-3 z-10 rounded-md p-1.5 text-dim opacity-0 transition hover:bg-danger/10 hover:text-danger focus:opacity-100 group-hover:opacity-100"
+          >
+            <.icon name="hero-trash" class="h-4 w-4" />
+          </button>
         </div>
+      </div>
 
-        <%= if @workouts == [] do %>
-          <div class="text-center py-16">
-            <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-              <svg
-                class="w-12 h-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                >
-                </path>
-              </svg>
-            </div>
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">No workouts yet</h3>
-            <.button phx-click="createWorkout">
-            Create
-            </.button>
+      <div :if={@total_pages > 1} class="mt-6 flex items-center justify-center gap-1">
+        <button
+          phx-click="page"
+          phx-value-page={@page - 1}
+          disabled={@page == 1}
+          class="rounded-md p-2 text-dim transition enabled:hover:bg-secondary enabled:hover:text-foreground disabled:opacity-30"
+          aria-label="Previous page"
+        >
+          <.icon name="hero-chevron-left" class="h-4 w-4" />
+        </button>
 
-          </div>
-        <% else %>
-          <div class="mb-6">
-            <form phx-change="search" class="flex items-center gap-3">
-              <div class="relative flex-1 max-w-md">
-                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-                <input type="text" name="search" value={@search} placeholder="Search workouts..." phx-debounce="300" class="w-full pl-10 pr-4 py-2.5 rounded-lg border-gray-300 shadow-sm focus:ring-emerald-500 focus:border-emerald-500" />
-              </div>
-              <%= if @search != "" do %>
-                <span class="text-sm text-gray-500">{@filtered_count} of {@total_count} workouts</span>
-              <% end %>
-            </form>
-          </div>
+        <button
+          :for={p <- max(1, @page - 2)..min(@total_pages, @page + 2)//1}
+          phx-click="page"
+          phx-value-page={p}
+          aria-current={p == @page && "page"}
+          class={[
+            "num rounded-md px-3 py-1.5 text-sm font-medium transition",
+            p == @page && "bg-primary text-primary-foreground",
+            p != @page && "text-dim hover:bg-secondary hover:text-foreground"
+          ]}
+        >
+          {p}
+        </button>
 
-          <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <th class="px-4 py-3">Name</th>
-                  <th class="px-4 py-3">Date</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100">
-                <%= for workout <- @workouts do %>
-                  <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-4 py-3">
-                      <div class="flex items-center gap-3">
-                        <.link navigate={~p"/client/workouts/#{workout.id}"} class="font-medium text-gray-900 hover:text-emerald-600">
-                          <%= workout.name || "Untitled" %>
-                        </.link>
-                        <button
-                          phx-click="deleteWorkout"
-                          phx-value-id={workout.id}
-                          data-confirm="Are you sure you want to delete this workout?"
-                          class="text-xs text-red-400 hover:text-red-600 transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                    <td class="px-4 py-3 text-gray-500">
-                      <%= if workout.date do %>
-                        <%= Calendar.strftime(workout.date, "%b %d, %Y") %>
-                      <% else %>
-                        —
-                      <% end %>
-                    </td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          </div>
-
-          <%= if @total_pages > 1 do %>
-            <div class="flex items-center justify-center gap-2 mt-8">
-              <%= if @page > 1 do %>
-                <button phx-click="page" phx-value-page={@page - 1} class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                  Previous
-                </button>
-              <% end %>
-              <%= for p <- max(1, @page - 2)..min(@total_pages, @page + 2)//1 do %>
-                <button
-                  phx-click="page"
-                  phx-value-page={p}
-                  class={"px-3 py-2 text-sm font-medium rounded-lg border #{if p == @page, do: "bg-emerald-600 text-white border-emerald-600", else: "text-gray-700 bg-white border-gray-300 hover:bg-gray-50"}"}
-                >
-                  {p}
-                </button>
-              <% end %>
-              <%= if @page < @total_pages do %>
-                <button phx-click="page" phx-value-page={@page + 1} class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                  Next
-                </button>
-              <% end %>
-            </div>
-          <% end %>
-        <% end %>
+        <button
+          phx-click="page"
+          phx-value-page={@page + 1}
+          disabled={@page == @total_pages}
+          class="rounded-md p-2 text-dim transition enabled:hover:bg-secondary enabled:hover:text-foreground disabled:opacity-30"
+          aria-label="Next page"
+        >
+          <.icon name="hero-chevron-right" class="h-4 w-4" />
+        </button>
       </div>
     </div>
     """

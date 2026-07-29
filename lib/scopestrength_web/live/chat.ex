@@ -61,10 +61,10 @@ defmodule ScopestrengthWeb.Chat do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-slate-50">
+    <div class="min-h-screen bg-card">
       <div class="max-w-5xl mx-auto px-4 py-6">
         <div class="flex items-center mb-4">
-          <.link navigate={@back_path} class="text-sm text-slate-600 hover:text-slate-900 transition">
+          <.link navigate={@back_path} class="text-sm text-dim hover:text-foreground transition">
             &larr; Back
           </.link>
         </div>
@@ -72,59 +72,59 @@ defmodule ScopestrengthWeb.Chat do
         <div class="flex gap-4 items-start">
           <%!-- Chat column --%>
           <div class="flex-1 min-w-0">
-            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div class="bg-card border border-line rounded-xl overflow-hidden shadow-sm">
 
               <%!-- Header --%>
-              <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-3">
+              <div class="px-4 py-3 border-b border-line flex items-center gap-3">
                 <%= if @other_user do %>
                   <%= if @other_user.profile_picture_url do %>
                     <img src={@other_user.profile_picture_url} class="w-9 h-9 rounded-full object-cover" />
                   <% else %>
-                    <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-sm font-semibold text-slate-600">
+                    <div class="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold text-dim">
                       <%= String.first(@other_user.name || "?") |> String.upcase() %>
                     </div>
                   <% end %>
                   <div>
-                    <p class="text-sm font-semibold text-slate-900"><%= @other_user.name %></p>
-                    <p class="text-xs text-slate-400"><%= String.capitalize(@other_user.role) %></p>
+                    <p class="text-sm font-semibold text-foreground"><%= @other_user.name %></p>
+                    <p class="text-xs text-faint"><%= String.capitalize(@other_user.role) %></p>
                   </div>
                 <% else %>
-                  <p class="text-sm font-semibold text-slate-900">Chat</p>
+                  <p class="text-sm font-semibold text-foreground">Chat</p>
                 <% end %>
               </div>
 
               <%!-- Messages --%>
-              <div class="h-[calc(100vh-230px)] overflow-y-auto p-4 bg-slate-50" id="messages-container" phx-hook="ScrollBottom">
+              <div class="h-[calc(100vh-230px)] overflow-y-auto p-4 bg-card" id="messages-container" phx-hook="ScrollBottom">
                 <%= if length(@messages) == 0 do %>
                   <div class="flex flex-col items-center justify-center h-full">
-                    <div class="w-14 h-14 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-3">
-                      <svg class="w-6 h-6 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="w-14 h-14 rounded-full bg-card border border-line flex items-center justify-center mb-3">
+                      <svg class="w-6 h-6 text-faint" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                       </svg>
                     </div>
-                    <p class="text-sm font-medium text-slate-600">No messages yet</p>
-                    <p class="text-xs text-slate-400 mt-0.5">Start the conversation</p>
+                    <p class="text-sm font-medium text-dim">No messages yet</p>
+                    <p class="text-xs text-faint mt-0.5">Start the conversation</p>
                   </div>
                 <% else %>
                   <div class="space-y-3">
                     <%= for msg <- @messages do %>
                       <%= if msg.user_id == @user.id do %>
                         <div class="flex flex-col items-end">
-                          <div class="max-w-[70%] bg-slate-900 text-white px-4 py-2.5 rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl rounded-br-sm">
+                          <div class="max-w-[70%] bg-card text-foreground px-4 py-2.5 rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl rounded-br-sm">
                             <p class="text-sm leading-relaxed"><%= msg.text %></p>
                           </div>
-                          <span class="text-xs text-slate-400 mt-1"><%= format_time(msg.inserted_at) %></span>
+                          <span class="text-xs text-faint mt-1"><%= format_time(msg.inserted_at) %></span>
                         </div>
                       <% else %>
                         <div class="flex items-start gap-2">
-                          <div class="w-8 h-8 rounded-full bg-white border border-slate-200 flex-shrink-0 flex items-center justify-center text-xs font-semibold text-slate-600 mt-0.5">
+                          <div class="w-8 h-8 rounded-full bg-card border border-line flex-shrink-0 flex items-center justify-center text-xs font-semibold text-dim mt-0.5">
                             <%= sender_initial(msg) %>
                           </div>
                           <div class="max-w-[65%]">
-                            <div class="bg-white border border-slate-200 px-4 py-2.5 rounded-tl-2xl rounded-tr-2xl rounded-bl-sm rounded-br-2xl">
-                              <p class="text-sm text-slate-900 leading-relaxed"><%= msg.text %></p>
+                            <div class="bg-card border border-line px-4 py-2.5 rounded-tl-2xl rounded-tr-2xl rounded-bl-sm rounded-br-2xl">
+                              <p class="text-sm text-foreground leading-relaxed"><%= msg.text %></p>
                             </div>
-                            <span class="text-xs text-slate-400 mt-1 ml-1"><%= format_time(msg.inserted_at) %></span>
+                            <span class="text-xs text-faint mt-1 ml-1"><%= format_time(msg.inserted_at) %></span>
                           </div>
                         </div>
                       <% end %>
@@ -134,7 +134,7 @@ defmodule ScopestrengthWeb.Chat do
               </div>
 
               <%!-- Input --%>
-              <div class="p-3 bg-white border-t border-slate-100">
+              <div class="p-3 bg-card border-t border-line">
                 <form phx-submit="send" class="flex items-center gap-2">
                   <input
                     type="text"
@@ -142,10 +142,10 @@ defmodule ScopestrengthWeb.Chat do
                     value={@text}
                     autocomplete="off"
                     placeholder="Type a message…"
-                    class="flex-1 bg-slate-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 focus:bg-white transition"
+                    class="flex-1 bg-secondary rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 focus:bg-card transition"
                   />
-                  <button type="submit" class="w-9 h-9 bg-slate-900 rounded-full flex items-center justify-center hover:bg-slate-700 transition flex-shrink-0">
-                    <svg class="w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <button type="submit" class="w-9 h-9 bg-card rounded-full flex items-center justify-center hover:bg-slate-700 transition flex-shrink-0">
+                    <svg class="w-4 h-4 text-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <line x1="22" y1="2" x2="11" y2="13"></line>
                       <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                     </svg>
@@ -158,43 +158,43 @@ defmodule ScopestrengthWeb.Chat do
           <%!-- Right sidebar --%>
           <%= if @other_user do %>
             <div class="w-72 flex-shrink-0 hidden md:block">
-              <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 sticky top-6">
+              <div class="bg-card border border-line rounded-xl shadow-sm p-5 sticky top-6">
                 <div class="flex flex-col items-center mb-4">
                   <%= if @other_user.profile_picture_url do %>
                     <img src={@other_user.profile_picture_url} class="w-16 h-16 rounded-full object-cover mb-2" />
                   <% else %>
-                    <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-xl font-semibold text-slate-600 mb-2">
+                    <div class="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-xl font-semibold text-dim mb-2">
                       <%= String.first(@other_user.name || "?") |> String.upcase() %>
                     </div>
                   <% end %>
-                  <h2 class="text-sm font-semibold text-slate-900"><%= @other_user.name %></h2>
-                  <span class="text-xs text-slate-400"><%= String.capitalize(@other_user.role) %></span>
+                  <h2 class="text-sm font-semibold text-foreground"><%= @other_user.name %></h2>
+                  <span class="text-xs text-faint"><%= String.capitalize(@other_user.role) %></span>
                 </div>
 
-                <div class="border-t border-slate-100 pt-3 space-y-2.5">
+                <div class="border-t border-line pt-3 space-y-2.5">
                   <%= if @other_user.role == "client" do %>
                     <%= if @other_user.age do %>
                       <div class="flex justify-between items-center">
-                        <span class="text-xs text-slate-400">Age</span>
-                        <span class="text-xs font-semibold text-slate-900"><%= @other_user.age %></span>
+                        <span class="text-xs text-faint">Age</span>
+                        <span class="text-xs font-semibold text-foreground"><%= @other_user.age %></span>
                       </div>
                     <% end %>
                     <%= if @other_user.height do %>
                       <div class="flex justify-between items-center">
-                        <span class="text-xs text-slate-400">Height</span>
-                        <span class="text-xs font-semibold text-slate-900"><%= format_number(@other_user.height) %> cm</span>
+                        <span class="text-xs text-faint">Height</span>
+                        <span class="text-xs font-semibold text-foreground"><%= format_number(@other_user.height) %> cm</span>
                       </div>
                     <% end %>
                     <%= if @other_user.sex do %>
                       <div class="flex justify-between items-center">
-                        <span class="text-xs text-slate-400">Sex</span>
-                        <span class="text-xs font-semibold text-slate-900"><%= String.capitalize(@other_user.sex) %></span>
+                        <span class="text-xs text-faint">Sex</span>
+                        <span class="text-xs font-semibold text-foreground"><%= String.capitalize(@other_user.sex) %></span>
                       </div>
                     <% end %>
                     <%= if @other_user.notes && @other_user.notes != "" do %>
-                      <div class="pt-2.5 border-t border-slate-100">
-                        <span class="text-xs text-slate-400">Notes</span>
-                        <p class="text-xs text-slate-600 mt-1 leading-relaxed"><%= @other_user.notes %></p>
+                      <div class="pt-2.5 border-t border-line">
+                        <span class="text-xs text-faint">Notes</span>
+                        <p class="text-xs text-dim mt-1 leading-relaxed"><%= @other_user.notes %></p>
                       </div>
                     <% end %>
                   <% end %>
@@ -202,14 +202,14 @@ defmodule ScopestrengthWeb.Chat do
                   <%= if @other_user.role == "trainer" do %>
                     <%= if @other_user.specialization && @other_user.specialization != "" do %>
                       <div class="flex justify-between items-center">
-                        <span class="text-xs text-slate-400">Specialization</span>
-                        <span class="text-xs font-semibold text-slate-900"><%= @other_user.specialization %></span>
+                        <span class="text-xs text-faint">Specialization</span>
+                        <span class="text-xs font-semibold text-foreground"><%= @other_user.specialization %></span>
                       </div>
                     <% end %>
                     <%= if @other_user.bio && @other_user.bio != "" do %>
-                      <div class="pt-2.5 border-t border-slate-100">
-                        <span class="text-xs text-slate-400">About</span>
-                        <p class="text-xs text-slate-600 mt-1 leading-relaxed"><%= @other_user.bio %></p>
+                      <div class="pt-2.5 border-t border-line">
+                        <span class="text-xs text-faint">About</span>
+                        <p class="text-xs text-dim mt-1 leading-relaxed"><%= @other_user.bio %></p>
                       </div>
                     <% end %>
                   <% end %>

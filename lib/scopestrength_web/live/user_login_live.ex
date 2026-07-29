@@ -3,69 +3,110 @@ defmodule ScopestrengthWeb.UserLoginLive do
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-50 to-white py-12 px-4">
-      <div class="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl rounded-3xl p-8 border border-gray-100">
-        <div class="flex items-center justify-center mb-6">
-          <div class="flex items-center space-x-3">
-            <div class="h-12 w-12 rounded-full bg-gradient-to-br from-brand to-indigo-600 flex items-center justify-center text-white font-extrabold text-lg shadow">CJ</div>
-            <div class="text-2xl font-extrabold text-gray-800">Scope Strength</div>
-          </div>
+    <div class="flex min-h-screen items-center justify-center px-4 py-12">
+      <div class="w-full max-w-sm">
+        <div class="text-center">
+          <p class="text-xs font-medium uppercase tracking-widest text-dim">Scope Strength</p>
+          <h1 class="mt-2 font-display text-5xl font-bold uppercase tracking-wide text-foreground">
+            Sign in
+          </h1>
         </div>
 
-        <.header class="text-center mb-4">
-          Sign in to your account
-          <:subtitle>
-            Welcome to ScopeStrength
-          </:subtitle>
-        </.header>
+        <.form
+          for={@form}
+          id="login_form"
+          action={~p"/users/log_in"}
+          phx-update="ignore"
+          class="mt-8 space-y-4"
+        >
+          <div>
+            <label for="user_email" class="mb-1 block text-xs uppercase tracking-widest text-dim">
+              Email
+            </label>
+            <input
+              type="email"
+              name={@form[:email].name}
+              id="user_email"
+              value={Phoenix.HTML.Form.normalize_value("email", @form[:email].value)}
+              placeholder="you@company.com"
+              required
+              autocomplete="email"
+              class="w-full rounded-md border-line bg-muted px-3 py-2.5 text-sm text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
+            />
+          </div>
 
-        <div class="space-y-4">
-          <.simple_form for={@form} id="login_form" action={~p"/users/log_in"} phx-update="ignore">
-            <.input field={@form[:email]} type="email" label="Email" placeholder="you@company.com" required class="rounded-md" />
-            <.input field={@form[:password]} type="password" label="Password" placeholder="Enter your password" required class="rounded-md" />
+          <div>
+            <label for="user_password" class="mb-1 block text-xs uppercase tracking-widest text-dim">
+              Password
+            </label>
+            <input
+              type="password"
+              name={@form[:password].name}
+              id="user_password"
+              placeholder="Enter your password"
+              required
+              autocomplete="current-password"
+              class="w-full rounded-md border-line bg-muted px-3 py-2.5 text-sm text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
+            />
+          </div>
 
-            <:actions class="flex items-center justify-between mt-2">
-              <div class="flex items-center space-x-2">
-                <.input field={@form[:remember_me]} type="checkbox" label="" />
-                <label for="user_remember_me" class="text-sm text-gray-600">Keep me logged in</label>
-              </div>
-
-              <.link href={~p"/users/reset_password"} class="text-sm font-medium text-gray-700 hover:underline">
-                Forgot password?
-              </.link>
-            </:actions>
-
-            <:actions class="mt-4">
-              <.button phx-disable-with="Logging in..." class="w-full bg-gradient-to-r from-brand to-indigo-600 text-white font-medium shadow-md hover:opacity-95 py-2.5">
-                Log in
-              </.button>
-            </:actions>
-
-            <p class="mt-6 text-center text-xs text-gray-500">
-              By signing in you agree to our <a href="#" class="underline">Terms</a> and <a href="#" class="underline">Privacy Policy</a>.
-            </p>
-          </.simple_form>
-
-          <div class="mt-6 pt-6 border-t border-gray-200 text-center">
-            <p class="text-sm text-gray-600 mb-3">Want to explore first?</p>
-            <form action={~p"/demo"} method="post" class="space-y-3">
-              <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+          <div class="flex items-center justify-between gap-3">
+            <label class="inline-flex items-center gap-2 text-sm text-dim">
               <input
-                type="email"
-                name="email"
-                placeholder="Enter your email for instant demo access"
-                required
-                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none"
-              />
-              <button type="submit" class="w-full px-4 py-2.5 border-2 border-brand text-brand font-semibold rounded-lg hover:bg-brand hover:text-white transition-all duration-200">
-                Try Demo
-              </button>
-            </form>
-            <p class="mt-2 text-xs text-gray-400">
-              Instant access with sample clients, programmes &amp; workouts
-            </p>
+                type="checkbox"
+                name={@form[:remember_me].name}
+                id="user_remember_me"
+                value="true"
+                class="h-4 w-4 rounded border-line bg-muted text-primary focus:ring-0"
+              /> Keep me logged in
+            </label>
+
+            <.link
+              href={~p"/users/reset_password"}
+              class="text-sm text-dim transition hover:text-foreground"
+            >
+              Forgot password?
+            </.link>
           </div>
+
+          <button
+            type="submit"
+            phx-disable-with="Logging in..."
+            class="w-full rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+          >
+            Log in
+          </button>
+        </.form>
+
+        <div class="mt-8 border-t border-line pt-6">
+          <p class="text-center text-sm text-dim">Want to explore first?</p>
+          <form action={~p"/demo"} method="post" class="mt-3 space-y-3">
+            <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email for instant demo access"
+              required
+              aria-label="Email for demo access"
+              class="w-full rounded-md border-line bg-muted px-3 py-2.5 text-sm text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
+            />
+            <button
+              type="submit"
+              class="w-full rounded-md border border-line py-2.5 text-sm font-medium text-dim transition hover:border-primary hover:text-primary"
+            >
+              Try demo
+            </button>
+          </form>
+          <p class="mt-3 text-center text-xs text-faint">
+            Sample clients, programmes &amp; workouts included
+          </p>
         </div>
+
+        <p class="mt-8 text-center text-xs text-faint">
+          By signing in you agree to our
+          <a href="#" class="underline transition hover:text-dim">Terms</a>
+          and <a href="#" class="underline transition hover:text-dim">Privacy Policy</a>.
+        </p>
       </div>
     </div>
     """  end

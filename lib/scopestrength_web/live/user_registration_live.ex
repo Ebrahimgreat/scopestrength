@@ -11,7 +11,7 @@ alias Scopestrength.Clients
   def render(assigns) do
     ~H"""
     <div class="mx-auto max-w-md mt-12">
-      <div class="bg-white rounded-2xl p-6 shadow ring-1 ring-black/5">
+      <div class="bg-card rounded-2xl p-6 shadow ring-1 ring-black/5">
         <.header class="text-center">
           Register for an account
           <:subtitle>
@@ -49,7 +49,7 @@ alias Scopestrength.Clients
 
           <!-- Invite Code Field (only for clients) -->
           <div :if={@selected_role == "client"}>
-            <label for="user_invite_code" class="block text-sm font-semibold leading-6 text-zinc-800">
+            <label for="user_invite_code" class="block text-sm font-semibold leading-6 text-foreground">
               Invite Code
             </label>
             <input
@@ -57,35 +57,35 @@ alias Scopestrength.Clients
               name="user[invite_code]"
               id="user_invite_code"
               value={@invite_code}
-              class="mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6 phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400 border-zinc-300 focus:border-zinc-400"
+              class="mt-2 block w-full rounded-lg text-foreground focus:ring-0 sm:text-sm sm:leading-6 phx-no-feedback:border-line phx-no-feedback:focus:border-zinc-400 border-line focus:border-zinc-400"
               placeholder="Enter the code from your trainer"
               required
               phx-blur="validate_invite_code"
             />
 
             <!-- Invite validation feedback -->
-            <div :if={@invite_status == :valid} class="mt-1 text-sm text-green-600 flex items-center gap-1">
+            <div :if={@invite_status == :valid} class="mt-1 text-sm text-primary flex items-center gap-1">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
               </svg>
               <span>Valid invite from trainer: <%= @trainer_name %></span>
             </div>
 
-            <div :if={@invite_status == :invalid} class="mt-1 text-sm text-red-600 flex items-center gap-1">
+            <div :if={@invite_status == :invalid} class="mt-1 text-sm text-danger flex items-center gap-1">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
               </svg>
               <span>Invalid or expired invite code</span>
             </div>
 
-            <div :if={@invite_status == :already_used} class="mt-1 text-sm text-red-600 flex items-center gap-1">
+            <div :if={@invite_status == :already_used} class="mt-1 text-sm text-danger flex items-center gap-1">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
               </svg>
               <span>This invite code has already been used</span>
             </div>
 
-            <div :if={@invite_status == :email_mismatch} class="mt-1 text-sm text-red-600 flex items-center gap-1">
+            <div :if={@invite_status == :email_mismatch} class="mt-1 text-sm text-danger flex items-center gap-1">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
               </svg>
@@ -93,7 +93,7 @@ alias Scopestrength.Clients
             </div>
           </div>
 
-          <p class="text-sm text-zinc-500 mt-2">By creating an account you agree to our <.link href="#" class="underline">terms</.link> and <.link href="#" class="underline">privacy policy</.link>.</p>
+          <p class="text-sm text-dim mt-2">By creating an account you agree to our <.link href="#" class="underline">terms</.link> and <.link href="#" class="underline">privacy policy</.link>.</p>
 
           <:actions>
             <.button phx-disable-with="Creating account..." class="w-full">Create an account</.button>
@@ -101,7 +101,7 @@ alias Scopestrength.Clients
         </.simple_form>
       </div>
 
-      <p class="text-center text-sm mt-4 text-zinc-500">
+      <p class="text-center text-sm mt-4 text-dim">
         Or <.link navigate={~p"/users/log_in"} class="font-semibold hover:underline">Log in Instead</.link>
       </p>
     </div>

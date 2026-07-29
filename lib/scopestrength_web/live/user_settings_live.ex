@@ -215,26 +215,26 @@ defmodule ScopestrengthWeb.UserSettingsLive do
   def render(assigns) do
     ~H"""
     <div class="max-w-4xl mx-auto px-4 py-6">
-      <h1 class="text-3xl font-bold text-gray-900 mb-8">Profile Settings</h1>
+      <h1 class="text-3xl font-bold text-foreground mb-8">Profile Settings</h1>
 
       <!-- Demo Account Notice -->
-      <div :if={@current_user.type == "demo"} class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+      <div :if={@current_user.type == "demo"} class="mb-6 p-4 bg-warning/10 border border-warning rounded-lg">
         <div class="flex items-start gap-3">
-          <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+          <svg class="w-5 h-5 text-warning flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
           </svg>
           <div>
             <h3 class="text-sm font-semibold text-amber-900">Demo Account</h3>
-            <p class="mt-1 text-sm text-amber-700">Settings are view-only in demo mode. Upgrade to a full account to make changes.</p>
+            <p class="mt-1 text-sm text-warning">Settings are view-only in demo mode. Upgrade to a full account to make changes.</p>
           </div>
         </div>
       </div>
 
       <!-- Profile Picture -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-        <div class="px-6 py-4 border-b border-gray-100">
-          <h2 class="text-xl font-semibold text-gray-900">Profile Picture</h2>
-          <p class="text-sm text-gray-500 mt-1">Upload a photo to personalize your public profile</p>
+      <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-line">
+          <h2 class="text-xl font-semibold text-foreground">Profile Picture</h2>
+          <p class="text-sm text-dim mt-1">Upload a photo to personalize your public profile</p>
         </div>
         <div class="p-6">
           <div class="flex flex-col md:flex-row gap-6 items-start">
@@ -249,7 +249,7 @@ defmodule ScopestrengthWeb.UserSettingsLive do
                   <button
                     phx-click="remove_profile_picture"
                     data-confirm="Remove your profile picture?"
-                    class="absolute top-0 right-0 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    class="absolute top-0 right-0 bg-danger hover:bg-danger text-foreground rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -257,7 +257,7 @@ defmodule ScopestrengthWeb.UserSettingsLive do
                   </button>
                 </div>
               <% else %>
-                <div class="w-32 h-32 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-4xl font-bold border-4 border-emerald-100">
+                <div class="w-32 h-32 rounded-full bg-primary flex items-center justify-center text-foreground text-4xl font-bold border-4 border-emerald-100">
                   <%= get_initials(@trainer) %>
                 </div>
               <% end %>
@@ -265,15 +265,15 @@ defmodule ScopestrengthWeb.UserSettingsLive do
 
             <div class="flex-1">
               <form phx-submit="save_profile_picture" phx-change="validate" class="space-y-4">
-                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-emerald-400 transition-colors">
+                <div class="border-2 border-dashed border-line rounded-lg p-6 hover:border-primary transition-colors">
                   <div class="text-center">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <svg class="mx-auto h-12 w-12 text-faint" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                       <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                     <div class="mt-4">
                       <label class="cursor-pointer">
-                        <span class="mt-2 block text-sm font-medium text-gray-900">Click to upload or drag and drop</span>
-                        <span class="mt-1 block text-xs text-gray-500">PNG, JPG, GIF up to 5MB</span>
+                        <span class="mt-2 block text-sm font-medium text-foreground">Click to upload or drag and drop</span>
+                        <span class="mt-1 block text-xs text-dim">PNG, JPG, GIF up to 5MB</span>
                         <.live_file_input upload={@uploads.profile_picture} class="sr-only" />
                       </label>
                     </div>
@@ -282,27 +282,27 @@ defmodule ScopestrengthWeb.UserSettingsLive do
                   <%= for entry <- @uploads.profile_picture.entries do %>
                     <div class="mt-4">
                       <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-700"><%= entry.client_name %></span>
-                        <button type="button" phx-click="cancel_upload" phx-value-ref={entry.ref} class="text-red-600 hover:text-red-800">Cancel</button>
+                        <span class="text-foreground"><%= entry.client_name %></span>
+                        <button type="button" phx-click="cancel_upload" phx-value-ref={entry.ref} class="text-danger hover:text-danger">Cancel</button>
                       </div>
-                      <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-emerald-600 h-2 rounded-full transition-all" style={"width: #{entry.progress}%"}></div>
+                      <div class="mt-2 w-full bg-secondary rounded-full h-2">
+                        <div class="bg-primary h-2 rounded-full transition-all" style={"width: #{entry.progress}%"}></div>
                       </div>
                       <%= for err <- upload_errors(@uploads.profile_picture, entry) do %>
-                        <p class="mt-2 text-sm text-red-600"><%= error_to_string(err) %></p>
+                        <p class="mt-2 text-sm text-danger"><%= error_to_string(err) %></p>
                       <% end %>
                     </div>
                   <% end %>
                 </div>
 
                 <%= if length(@uploads.profile_picture.entries) > 0 do %>
-                  <.button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-lg transition-colors">
+                  <.button type="submit" class="w-full bg-primary hover:bg-emerald-700 text-foreground font-semibold py-3 rounded-lg transition-colors">
                     Upload Profile Picture
                   </.button>
                 <% end %>
               </form>
               <%= for err <- upload_errors(@uploads.profile_picture) do %>
-                <p class="mt-2 text-sm text-red-600"><%= error_to_string(err) %></p>
+                <p class="mt-2 text-sm text-danger"><%= error_to_string(err) %></p>
               <% end %>
             </div>
           </div>
@@ -310,10 +310,10 @@ defmodule ScopestrengthWeb.UserSettingsLive do
       </div>
 
       <!-- Trainer Profile Info -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-        <div class="px-6 py-4 border-b border-gray-100">
-          <h2 class="text-xl font-semibold text-gray-900">Trainer Profile</h2>
-          <p class="text-sm text-gray-500 mt-1">This information is shown on your public profile</p>
+      <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-line">
+          <h2 class="text-xl font-semibold text-foreground">Trainer Profile</h2>
+          <p class="text-sm text-dim mt-1">This information is shown on your public profile</p>
         </div>
         <div class="p-6">
           <.simple_form
@@ -343,7 +343,7 @@ defmodule ScopestrengthWeb.UserSettingsLive do
             </div>
 
             <:actions>
-              <.button class="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={@current_user.type == "demo"}>
+              <.button class="bg-primary hover:bg-emerald-700 text-foreground" disabled={@current_user.type == "demo"}>
                 Save Profile
               </.button>
             </:actions>
@@ -352,17 +352,17 @@ defmodule ScopestrengthWeb.UserSettingsLive do
       </div>
 
       <!-- Login & Security -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100">
-          <h2 class="text-xl font-semibold text-gray-900">Login & Security</h2>
+      <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden">
+        <div class="px-6 py-4 border-b border-line">
+          <h2 class="text-xl font-semibold text-foreground">Login & Security</h2>
         </div>
         <div class="p-6 space-y-8">
           <!-- Name -->
           <div>
-            <h3 class="text-base font-semibold text-gray-800 mb-3">Display Name</h3>
+            <h3 class="text-base font-semibold text-foreground mb-3">Display Name</h3>
             <.form id="name_form" phx-submit="update_name" class="space-y-4">
               <.input type="text" name="name" label="Name" value={@name} disabled={@current_user.type == "demo"} />
-              <.button class="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={@current_user.type == "demo"}>
+              <.button class="bg-primary hover:bg-emerald-700 text-foreground" disabled={@current_user.type == "demo"}>
                 Update Name
               </.button>
             </.form>
@@ -370,7 +370,7 @@ defmodule ScopestrengthWeb.UserSettingsLive do
 
           <!-- Email -->
           <div>
-            <h3 class="text-base font-semibold text-gray-800 mb-3">Email</h3>
+            <h3 class="text-base font-semibold text-foreground mb-3">Email</h3>
             <.simple_form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
               <.input field={@email_form[:email]} type="email" label="Email" required disabled={@current_user.type == "demo"} />
               <.input
@@ -391,7 +391,7 @@ defmodule ScopestrengthWeb.UserSettingsLive do
 
           <!-- Password -->
           <div>
-            <h3 class="text-base font-semibold text-gray-800 mb-3">Password</h3>
+            <h3 class="text-base font-semibold text-foreground mb-3">Password</h3>
             <.simple_form
               for={@password_form}
               id="password_form"

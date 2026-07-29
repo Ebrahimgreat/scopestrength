@@ -119,19 +119,7 @@ defmodule ScopestrengthWeb.Dashboard do
                 select: count(w.id)
             )
 
-            most_active_clients =
-              Repo.all(
-                from w in Scopestrength.Training.Workout,
-                  join: c in Client, on: w.client_id == c.id,
-                  join: u in assoc(c, :user),
-                  where: c.trainer_id == ^trainer.id and w.inserted_at >= ^start_of_week and w.inserted_at <= ^end_of_week,
-                  group_by: [c.id, u.name],
-                  order_by: [desc: count(w.id)],
-
-                  select: %{client: c, name: u.name, workout_count: count(w.id)}
-              )
-
-              IO.inspect(most_active_clients)
+            clients= Repo.all(from c in Scopestrength.Clients.Client, where: c.trainer_id == ^trainer.id)
 
 
 
@@ -143,19 +131,11 @@ defmodule ScopestrengthWeb.Dashboard do
           Repo.get(Trainer, trainer.id)
           |> Repo.preload([clients: [:user]])
 
-         clients=data.clients
-         active_client_ids= Enum.map(most_active_clients, fn%{client: c}-> c.id end)
-         IO.inspect(active_client_ids)
-         inactive_clients= clients|>Enum.reject(fn c-> c.id in active_client_ids end )
-
-
         {:ok,
          socket
          |> assign(:role, :trainer)
          |> assign(:name, user.name)
          |> assign(:message, "Trainer Dashboard")
-         |> assign(:most_active_clients, most_active_clients)
-         |> assign(:inactive_clients, inactive_clients)
          |> assign(:data, data)
          |> assign(:programmes, programmes)
          |> assign(:activities, notifications_with_client)
@@ -198,141 +178,76 @@ defmodule ScopestrengthWeb.Dashboard do
   <div class="w-full min-h-screen">
     <!-- Header -->
     <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-4">
-      <h1 class="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">
-        Welcome back, <span class="text-emerald-700"><%= @name %></span>.
+      <h1 class="text-2xl uppercase sm:text-3xl lg:text-4xl font-semibold tracking-tight text-foreground">
+        Trainer overview
       </h1>
-      <p class="mt-2 text-slate-600 text-sm sm:text-base lg:text-lg">Here's your trainer overview.</p>
+      <p class="mt-2 text-dim text-sm sm:text-base lg:text-lg">Monitor client progress and track programmes.</p>
     </div>
 
     <!-- Main Content -->
     <div class="w-full px-0 sm:px-2 lg:px-4 py-8">
 
 
-      <div class="mb-6 text-sm text-slate-600">
-        <span class="font-medium text-slate-800"><%= length(@data.clients) %></span> clients ·
-        <span class="font-medium text-slate-800"><%= length(@programmes) %></span> programmes ·
+      <div class="mb-6 text-sm text-dim">
+        <span class="font-medium text-foreground"><%= length(@data.clients) %></span> clients ·
+        <span class="font-medium text-foreground"><%= length(@programmes) %></span> programmes ·
 
       </div>
 
-      <!-- Most Active Clients This Week -->
-      <div class="mb-8 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
-          <.icon name="hero-trophy" class="w-5 h-5 text-amber-500" />
-          <h2 class="text-base font-semibold text-slate-900">Most Active This Week</h2>
-        </div>
-        <%= if Enum.empty?(@most_active_clients) do %>
-          <div class="px-5 py-6 text-sm text-slate-500">No workouts logged this week yet.</div>
-        <% else %>
-          <div class="divide-y divide-slate-100">
-            <%= for {client_data, index} <- Enum.with_index(@most_active_clients) do %>
-              <.link navigate={~p"/trainer/clients/#{client_data.client.id}"} class="flex items-center justify-between px-5 py-3 hover:bg-slate-50 transition-colors">
-                <div class="flex items-center gap-3">
-                  <span class={"w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold #{if index < 3, do: "bg-amber-100 text-amber-700", else: "bg-slate-100 text-slate-600"}"}><%= index + 1 %></span>
-                  <%= if client_data.client.profile_picture_url do %>
-                    <img src={client_data.client.profile_picture_url} alt={client_data.name} class="w-8 h-8 rounded-full object-cover border border-slate-200" />
-                  <% else %>
-                    <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-semibold text-xs border border-emerald-200">
-                      <%= String.slice(client_data.name, 0, 1) |> String.upcase() %>
-                    </div>
-                  <% end %>
-                  <span class="text-sm font-medium text-slate-900"><%= client_data.name %></span>
-                </div>
-                <span class="text-sm text-slate-500"><%= client_data.workout_count %> workouts</span>
-              </.link>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
 
-      <!-- Needs Attention - Inactive Clients -->
-      <div class="mb-8 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
-          <.icon name="hero-exclamation-triangle" class="w-5 h-5 text-orange-500" />
-          <h2 class="text-base font-semibold text-slate-900">Needs Attention</h2>
-        </div>
-        <%= if Enum.empty?(@inactive_clients) do %>
-          <div class="px-5 py-6 text-sm text-slate-500 flex items-center gap-2">
-            <.icon name="hero-check-circle" class="w-5 h-5 text-emerald-500" />
-            All clients are active this week!
-          </div>
-        <% else %>
-          <div class="divide-y divide-slate-100">
-            <%= for client <- Enum.take(@inactive_clients, 5) do %>
-              <.link navigate={~p"/trainer/clients/#{client.id}"} class="flex items-center justify-between px-5 py-3 hover:bg-slate-50 transition-colors">
-                <div class="flex items-center gap-3">
-                  <%= if client.profile_picture_url do %>
-                    <img src={client.profile_picture_url} alt={client.user.name} class="w-8 h-8 rounded-full object-cover border border-slate-200" />
-                  <% else %>
-                    <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 font-semibold text-xs border border-slate-200">
-                      <%= String.slice(client.user.name, 0, 1) |> String.upcase() %>
-                    </div>
-                  <% end %>
-                  <span class="text-sm font-medium text-slate-900"><%= client.user.name %></span>
-                </div>
-                <span class="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
-                  No workout this week
-                </span>
-              </.link>
-            <% end %>
-          </div>
-          <%= if length(@inactive_clients) > 5 do %>
-            <div class="px-5 py-2 bg-slate-50 text-xs text-slate-500">
-              + <%= length(@inactive_clients) - 5 %> more clients
-            </div>
-          <% end %>
-        <% end %>
-      </div>
 
-      <div class="mb-8 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+
+
+      <div class="mb-8 bg-card border border-line rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-line flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <.icon name="hero-bell-solid" class="h-5 w-5 text-emerald-600" />
-            <h2 class="text-base font-semibold text-slate-900">Latest Activities</h2>
+            <.icon name="hero-bell-solid" class="h-5 w-5 text-primary" />
+            <h2 class="text-base font-semibold text-foreground">Latest Activities</h2>
           </div>
           <div class="flex items-center gap-3">
-            <span class="text-xs text-slate-500"><%= length(@activities) %> recent</span>
+            <span class="text-xs text-dim"><%= length(@activities) %> recent</span>
             <%= if Enum.any?(@activities, &is_nil(&1.read_at)) do %>
               <button
                 phx-click="mark_all_read"
-                class="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+                class="text-xs text-primary hover:text-primary font-medium transition-colors"
               >
                 Mark all read
               </button>
             <% end %>
             <.link
               navigate={~p"/trainer/notifications"}
-              class="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+              class="text-xs text-primary hover:text-primary font-medium transition-colors"
             >
               View all
             </.link>
           </div>
         </div>
         <%= if Enum.empty?(@activities) do %>
-          <div class="px-5 py-6 text-sm text-slate-500">No notifications yet.</div>
+          <div class="px-5 py-6 text-sm text-dim">No notifications yet.</div>
         <% else %>
-          <div class="divide-y divide-slate-100">
+          <div class="divide-y divide-line">
             <%= for notification <- @activities do %>
 
               <div
                 phx-click="mark_notification_read"
                 phx-value-id={notification.id}
-                class={"px-5 py-4 flex items-start justify-between gap-4 cursor-pointer transition-colors #{if is_nil(notification.read_at), do: "bg-emerald-50 hover:bg-emerald-100", else: "hover:bg-slate-50"}"}
+                class={"px-5 py-4 flex items-start justify-between gap-4 cursor-pointer transition-colors #{if is_nil(notification.read_at), do: "bg-primary/10 hover:bg-primary/10", else: "hover:bg-card"}"}
               >
                 <div>
-                  <p class="text-sm font-medium text-slate-900">
-                    <span class="text-emerald-600"><%= notification.actor_name %></span>
+                  <p class="text-sm font-medium text-foreground">
+                    <span class="text-primary"><%= notification.actor_name %></span>
                     <%= if notification.data["message"] do %>
                       <%= notification.data["message"] %>
                     <% else %>
                       <%= String.replace(notification.type, "_", " ") |> String.capitalize() %>
                     <% end %>
                   </p>
-                  <p class="text-xs text-slate-500 mt-1">
+                  <p class="text-xs text-dim mt-1">
                     <%= notification_time(notification) %>
                   </p>
                 </div>
                 <%= if is_nil(notification.read_at) do %>
-                  <span class="mt-1 h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                  <span class="mt-1 h-2 w-2 rounded-full bg-primary flex-shrink-0"></span>
                 <% end %>
               </div>
             <% end %>
@@ -340,20 +255,20 @@ defmodule ScopestrengthWeb.Dashboard do
         <% end %>
       </div>
 
-      <div class="mb-8 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 class="text-base font-semibold text-slate-900">Programmes</h2>
-          <span class="text-xs text-slate-500"><%= length(@programmes) %> total</span>
+      <div class="mb-8 bg-card border border-line rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-line flex items-center justify-between">
+          <h2 class="text-base font-semibold text-foreground">Programmes</h2>
+          <span class="text-xs text-dim"><%= length(@programmes) %> total</span>
         </div>
         <%= if Enum.empty?(@programmes) do %>
-          <div class="px-5 py-6 text-sm text-slate-500">No programmes yet.</div>
+          <div class="px-5 py-6 text-sm text-dim">No programmes yet.</div>
         <% else %>
-          <div class="divide-y divide-slate-100">
+          <div class="divide-y divide-line">
             <%= for programme <- @programmes do %>
-              <.link navigate={~p"/trainer/programmes/#{programme.id}"} class="block px-5 py-4 hover:bg-slate-50 transition-colors">
-                <p class="text-sm font-medium text-slate-900"><%= programme.name %></p>
+              <.link navigate={~p"/trainer/programmes/#{programme.id}"} class="block px-5 py-4 hover:bg-card transition-colors">
+                <p class="text-sm font-medium text-foreground"><%= programme.name %></p>
                 <%= if programme.description do %>
-                  <p class="text-xs text-slate-500 mt-1"><%= programme.description %></p>
+                  <p class="text-xs text-dim mt-1"><%= programme.description %></p>
                 <% end %>
               </.link>
             <% end %>
@@ -362,9 +277,7 @@ defmodule ScopestrengthWeb.Dashboard do
       </div>
 
 
-      <div class="py-8 text-sm text-slate-500">
-        Your programmes and clients are managed from the left navigation.
-      </div>
+
 
     </div>
   </div>

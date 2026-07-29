@@ -224,8 +224,6 @@ defmodule Scopestrength.Account do
       Programmes.create_programme_user(%{programme_id: ppl.id, client_id: mike.id, is_active: true})
 
       # 8. Create sample workouts
-      standard_set_type = Repo.get_by(Training.SetType, name: "Standard")
-      set_type_id = if standard_set_type, do: standard_set_type.id
 
       # Workout 1: Alex's Push Day (2 days ago)
       {:ok, w1} = Training.create_workout(%{
@@ -243,7 +241,7 @@ defmodule Scopestrength.Account do
         for {set_num, reps, weight} <- sets_data do
           Training.create_workout_details(%{
             workout_id: w1.id, exercise_id: exercises[ex_name],
-            set: set_num, reps: reps, weight: weight, set_type_id: set_type_id
+            set: set_num, reps: reps, weight: weight
           })
         end
       end
@@ -264,7 +262,7 @@ defmodule Scopestrength.Account do
         for {set_num, reps, weight} <- sets_data do
           Training.create_workout_details(%{
             workout_id: w2.id, exercise_id: exercises[ex_name],
-            set: set_num, reps: reps, weight: weight, set_type_id: set_type_id
+            set: set_num, reps: reps, weight: weight
           })
         end
       end
@@ -285,7 +283,7 @@ defmodule Scopestrength.Account do
         for {set_num, reps, weight} <- sets_data do
           Training.create_workout_details(%{
             workout_id: w3.id, exercise_id: exercises[ex_name],
-            set: set_num, reps: reps, weight: weight, set_type_id: set_type_id
+            set: set_num, reps: reps, weight: weight
           })
         end
       end
