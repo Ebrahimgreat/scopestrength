@@ -70,8 +70,15 @@ defmodule ScopestrengthWeb.RequireSubscription do
           {:halt, push_navigate(socket, to: "/trainer-subscription-expired")}
         end
 
+      {:error, :no_trainer} ->
+        # A client who has not redeemed an invite code yet has no trainer, which
+        # is the normal state after signup — not an expired subscription. Let
+        # them through so they can reach the invite form on the dashboard;
+        # otherwise there is no route out of the expired page.
+        {:cont, assign(socket, :subscription_status, :no_trainer)}
+
       {:error, _reason} ->
-        # No trainer found or no subscription - redirect to dedicated page
+        # Trainer exists but has no subscription record - treat as expired.
         {:halt, push_navigate(socket, to: "/trainer-subscription-expired")}
     end
   end
@@ -82,17 +89,27 @@ defmodule ScopestrengthWeb.RequireSubscription do
   end
 
   defp get_client_trainer_subscription(user_id) do
-    with client when not is_nil(client) <- Clients.get_client_byUserId(user_id),
-         trainer when not is_nil(trainer) <- Trainers.get_trainer!(client.trainer_id),
-         trainer_user when not is_nil(trainer_user) <- Account.get_user!(trainer.user_id),
-         subscription when not is_nil(subscription) <- Subscriptions.list_subscription_by_user_id(trainer_user) do
-      trainer_name = trainer_user.name || trainer_user.email
-      {:ok, subscription, trainer_name}
+    client = Clients.get_client_byUserId(user_id)
+
+    # Checked before the lookup below: get_trainer!/1 raises on a nil id, and
+    # the old rescue turned that into the same :not_found as a genuinely
+    # missing subscription, so unlinked clients were shown the expiry page.
+    if is_nil(client) or is_nil(client.trainer_id) do
+      {:error, :no_trainer}
     else
-      _ -> {:error, :not_found}
+      with trainer when not is_nil(trainer) <- Trainers.get_trainer!(client.trainer_id),
+           trainer_user when not is_nil(trainer_user) <- Account.get_user!(trainer.user_id),
+           subscription when not is_nil(subscription) <-
+             Subscriptions.list_subscription_by_user_id(trainer_user) do
+        {:ok, subscription, trainer_user.name || trainer_user.email}
+      else
+        _ -> {:error, :not_found}
+      end
     end
   rescue
-    _ -> {:error, :not_found}
+    # Clients.get_client_byUserId/1 uses get_by! and raises when the user has no
+    # client record at all, which is also a "not linked yet" state.
+    Ecto.NoResultsError -> {:error, :no_trainer}
   end
 
   defp has_paid_access?(subscription) do
