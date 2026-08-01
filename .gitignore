@@ -35,4 +35,15 @@ scopestrength-*.tar
 npm-debug.log
 /assets/node_modules/
 
-.env/priv/static/uploads/*
+.env
+
+# User-uploaded files live on the server and must never be committed.
+# This was previously written as ".env/priv/static/uploads/*", which git read
+# as a single path and silently ignored nothing.
+/priv/static/uploads/
+
+# Digested copies produced by phx.digest. The hash suffix is 32 hex chars, so
+# match that exactly — a looser "*-*" would also catch source names that
+# legitimately contain hyphens, like barlow-condensed-700.woff2.
+/priv/static/**/*-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].*
+/priv/static/**/*.gz
