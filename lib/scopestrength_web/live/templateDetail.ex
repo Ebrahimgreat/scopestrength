@@ -263,11 +263,11 @@ alias Scopestrength.CustomExercises.CustomExercise
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-card py-10">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+    <div class="mx-auto max-w-5xl">
+      <div class="space-y-10">
         <!-- Header -->
         <div>
-          <h1 class="text-3xl font-bold text-foreground mb-2">Template Exercise Builder</h1>
+          <h1 class="font-display text-5xl font-bold uppercase tracking-wide text-foreground">Template Builder</h1>
           <p class="text-dim">Add exercises and configure sets and reps for your workout template.</p>
         </div>
 
@@ -315,7 +315,7 @@ alias Scopestrength.CustomExercises.CustomExercise
                   <select
                     phx-change="update_primary_muscle"
                     name="muscle_id"
-                    class="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-primary transition"
+                    class="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm focus:border-primary focus:ring-0 transition"
                   >
                     <option value="">Select muscle</option>
                     <%= for muscle <- @muscles do %>
@@ -337,7 +337,7 @@ alias Scopestrength.CustomExercises.CustomExercise
                   name="exercise[is_unilateral]"
                   id="is_unilateral_new"
                   value="true"
-                  class="w-4 h-4 text-primary border-line rounded focus:ring-emerald-500"
+                  class="h-4 w-4 rounded border-line bg-muted text-primary focus:ring-0"
                 />
                 <label for="is_unilateral_new" class="text-sm font-medium text-foreground">
                   Unilateral exercise (performed one side at a time)
@@ -376,7 +376,7 @@ alias Scopestrength.CustomExercises.CustomExercise
                 >
                   Cancel
                 </button>
-                <.button class="bg-primary hover:bg-emerald-700 px-4 py-2 rounded-lg">
+                <.button class="px-4 py-2 rounded-lg">
                   Create exercise
                 </.button>
               </div>
@@ -384,7 +384,12 @@ alias Scopestrength.CustomExercises.CustomExercise
           </div>
         </div>
       <% end %>
-<button phx-click="openModal" class="bg-primary text-foreground px-4 py-2 rounded">Create Exercise</button>
+        <button
+          phx-click="openModal"
+          class="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+        >
+          Create Exercise
+        </button>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Filter By Type -->
@@ -397,7 +402,7 @@ alias Scopestrength.CustomExercises.CustomExercise
       </h3>
 
       <p class="text-sm text-foreground mb-2 flex items-center gap-2">
-        Applied: <span class="inline-block bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded"><%= if @filter_by_type == "ALL", do: "All types", else: @filter_by_type %></span>
+        Applied: <span class="inline-block bg-primary/10 text-primary font-medium px-2 py-0.5 rounded"><%= if @filter_by_type == "ALL", do: "All types", else: @filter_by_type %></span>
         <%= if @filter_by_type != "ALL" do %>
           <button phx-click="filterByType" phx-value-name="ALL" class="text-sm text-danger font-medium hover:underline">
             Reset
@@ -411,7 +416,7 @@ alias Scopestrength.CustomExercises.CustomExercise
           class={[
             "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
             if(@filter_by_type == "ALL",
-              do: "bg-blue-600 text-foreground shadow-md",
+              do: "bg-primary text-primary-foreground",
               else: "bg-card border border-line text-foreground hover:bg-secondary hover:shadow-sm"
             )
           ]}
@@ -426,7 +431,7 @@ alias Scopestrength.CustomExercises.CustomExercise
             class={[
               "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
               if(@filter_by_type == muscle.name,
-                do: "bg-blue-600 text-foreground shadow-md",
+                do: "bg-primary text-primary-foreground",
                 else: "bg-card border border-line text-foreground hover:bg-secondary hover:shadow-sm"
               )
             ]}
@@ -515,7 +520,7 @@ alias Scopestrength.CustomExercises.CustomExercise
                             id={"set-#{template.data.id}"}
                             type="number"
                             min="1"
-                            class="mt-1 block w-full rounded-md border-line shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            class="num mt-1 block w-full rounded-md border-line bg-muted px-3 py-2 text-sm text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
                           />
                         </div>
                         <div>
@@ -525,13 +530,13 @@ alias Scopestrength.CustomExercises.CustomExercise
                             id={"reps-#{template.data.id}"}
                             type="text"
                             placeholder="e.g., 10, 8-12, AMRAP"
-                            class="mt-1 block w-full rounded-md border-line shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            class="num mt-1 block w-full rounded-md border-line bg-muted px-3 py-2 text-sm text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
                           />
                         </div>
                       </div>
 
                       <div class="flex justify-end">
-                        <.button class="bg-indigo-600 hover:bg-indigo-700 text-foreground px-4 py-2 rounded-md text-sm font-medium shadow-sm">
+                        <.button class="px-4 py-2 rounded-md text-sm font-medium">
                           Update
                         </.button>
                       </div>
