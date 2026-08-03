@@ -161,15 +161,9 @@ alias Scopestrength.CustomExercises.CustomExercise
 
   def handle_event("searchExercises", %{"key" => _key, "value" => value}, socket) do
     q = String.trim(value || "")
-
-    filtered =
-      socket.assigns.allExercises
-      |> Enum.filter(fn ex ->
-        String.contains?(String.downcase(ex.name || ""), String.downcase(q || ""))
-      end)
-
-    {:noreply, assign(socket, exercises: filtered, q: q)}
+    {:noreply, assign(socket, exercises: search_exercises(socket.assigns.allExercises, q), q: q)}
   end
+
 
 
   def handle_event("deleteExercise", params, socket) do
@@ -261,6 +255,19 @@ alias Scopestrength.CustomExercises.CustomExercise
   end
 
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
+  # The muscle filter buttons were removed, so search covers muscle and
+  # equipment names too — otherwise typing "Chest" or "Barbell" finds nothing.
+  defp search_exercises(exercises, ""), do: exercises
+
+  defp search_exercises(exercises, query) do
+    needle = String.downcase(query)
+
+    Enum.filter(exercises, fn ex ->
+      [ex.name, ex.muscle && ex.muscle.name, ex.equipment && ex.equipment.name]
+      |> Enum.any?(fn value -> value && String.contains?(String.downcase(value), needle) end)
+    end)
+  end
+
   def render(assigns) do
     ~H"""
     <div class="mx-auto max-w-5xl">
@@ -391,102 +398,58 @@ alias Scopestrength.CustomExercises.CustomExercise
           Create Exercise
         </button>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Filter By Type -->
-    <div>
-      <h3 class="text-sm font-medium text-foreground mb-3 flex items-center">
-        <svg class="w-4 h-4 mr-2 text-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-        </svg>
-        Filter By Type
-      </h3>
-
-      <p class="text-sm text-foreground mb-2 flex items-center gap-2">
-        Applied: <span class="inline-block bg-primary/10 text-primary font-medium px-2 py-0.5 rounded"><%= if @filter_by_type == "ALL", do: "All types", else: @filter_by_type %></span>
-        <%= if @filter_by_type != "ALL" do %>
-          <button phx-click="filterByType" phx-value-name="ALL" class="text-sm text-danger font-medium hover:underline">
-            Reset
-          </button>
-        <% end %>
-      </p>
-      <div class="flex flex-wrap gap-2">
-        <button
-          phx-click="filterByType"
-          phx-value-name="ALL"
-          class={[
-            "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-            if(@filter_by_type == "ALL",
-              do: "bg-primary text-primary-foreground",
-              else: "bg-card border border-line text-foreground hover:bg-secondary hover:shadow-sm"
-            )
-          ]}
-        >
-          All Types
-        </button>
-
-        <%= for muscle <- @muscles do %>
-          <button
-            phx-click="filterByType"
-            phx-value-name={muscle.name}
-            class={[
-              "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-              if(@filter_by_type == muscle.name,
-                do: "bg-primary text-primary-foreground",
-                else: "bg-card border border-line text-foreground hover:bg-secondary hover:shadow-sm"
-              )
-            ]}
-          >
-            {muscle.name}
-          </button>
-        <% end %>
-      </div>
-    </div>
-</div>
-
-
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <!-- Exercise Library Section -->
-          <div class="bg-card rounded-xl shadow p-6 border">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-xl font-semibold text-foreground">Exercise Library</h2>
-              <span class="text-sm text-dim">
-                <%= length(@exercises) %> available
-              </span>
+          <div class="rounded-xl border border-line bg-card p-5">
+            <div class="mb-4 flex items-baseline justify-between gap-3">
+              <h2 class="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+                Exercise Library
+              </h2>
+              <span class="num text-xs text-dim"><%= length(@exercises) %> available</span>
             </div>
 
             <div class="mb-4">
-              <.input
+              <input
                 type="search"
                 name="q"
                 id="exercise-search"
                 value={@q}
                 phx-debounce="300"
                 phx-keyup="searchExercises"
-                placeholder="Search exercises by name..."
-                class="w-full rounded-md"
+                placeholder="Search exercises or muscle groups"
+                aria-label="Search exercises"
+                class="w-full rounded-md border-line bg-muted px-4 py-2.5 text-sm text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
               />
             </div>
 
-            <div class="divide-y divide-line max-h-96 overflow-y-auto">
-              <%= for exercise <- @exercises do %>
-                <button
-                  phx-click="addExercise"
-                  phx-value-id={exercise.id}
-                  class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-secondary transition"
-                >
-                  <span class="font-medium text-foreground"><%= exercise.name %></span>
-                  <span class="text-primary font-bold text-lg">+</span>
-                </button>
-              <% end %>
+            <div class="max-h-96 space-y-2 overflow-y-auto">
+              <button
+                :for={exercise <- @exercises}
+                phx-click="addExercise"
+                phx-value-id={exercise.id}
+                class="flex w-full items-center justify-between gap-3 rounded-lg border border-line px-4 py-3 text-left transition hover:border-primary"
+              >
+                <span class="min-w-0">
+                  <span class="block truncate font-medium text-foreground">
+                    <%= exercise.name %>
+                  </span>
+                  <span :if={exercise.muscle} class="num mt-0.5 block text-xs text-dim">
+                    <%= exercise.muscle.name %>
+                  </span>
+                </span>
+                <.icon name="hero-plus" class="h-4 w-4 shrink-0 text-faint" />
+              </button>
             </div>
           </div>
 
           <!-- Template Configuration Section -->
-          <div class="bg-card rounded-xl shadow p-6 border">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-xl font-semibold text-foreground">Template Configuration</h2>
-              <span class="text-sm text-dim">
+          <div class="rounded-xl border border-line bg-card p-5">
+            <div class="mb-4 flex items-baseline justify-between gap-3">
+              <h2 class="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+                Template
+              </h2>
+              <span class="num text-xs text-dim">
                 <%= length(@programmeDetails) %> exercise<%= if length(@programmeDetails) != 1, do: "s" %>
               </span>
             </div>
@@ -494,19 +457,22 @@ alias Scopestrength.CustomExercises.CustomExercise
             <%= if length(@programmeDetails) > 0 do %>
               <div class="space-y-6 max-h-96 overflow-y-auto">
                 <%= for {template, index} <- Enum.with_index(@programmeDetails) do %>
-                  <div class="p-4 bg-card rounded-lg border">
-                    <div class="flex items-center justify-between mb-3">
-                      <h3 class="font-semibold text-foreground">
-                        <%= index + 1 %>. <%= template.data.exercise.name %>
+                  <div class="rounded-lg border border-line p-4">
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                      <h3 class="min-w-0 truncate font-medium text-foreground">
+                        <span class="num text-faint"><%= index + 1 %></span>
+                        <%= template.data.exercise.name %>
                       </h3>
-                      <.button
+                      <button
+                        type="button"
                         phx-click="deleteExercise"
                         phx-value-id={template.data.id}
                         data-confirm="Are you sure you want to remove this exercise?"
-                        class="text-danger hover:underline text-sm"
+                        aria-label="Remove exercise"
+                        class="shrink-0 rounded-md p-1.5 text-dim transition hover:bg-danger/10 hover:text-danger"
                       >
-                        Remove
-                      </.button>
+                        <.icon name="hero-trash" class="h-4 w-4" />
+                      </button>
                     </div>
 
                     <.form phx-submit="updateForm" for={template} id={"exercise-form-#{template.data.id}"} class="space-y-4">
@@ -514,7 +480,7 @@ alias Scopestrength.CustomExercises.CustomExercise
 
                       <div class="grid grid-cols-2 gap-4">
                         <div>
-                          <label class="block text-sm font-medium text-foreground">Sets</label>
+                          <label class="block text-xs uppercase tracking-widest text-dim">Sets</label>
                           <.input
                             field={template[:set]}
                             id={"set-#{template.data.id}"}
@@ -524,7 +490,7 @@ alias Scopestrength.CustomExercises.CustomExercise
                           />
                         </div>
                         <div>
-                          <label class="block text-sm font-medium text-foreground">Reps</label>
+                          <label class="block text-xs uppercase tracking-widest text-dim">Reps</label>
                           <.input
                             field={template[:reps]}
                             id={"reps-#{template.data.id}"}

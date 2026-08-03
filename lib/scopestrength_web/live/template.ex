@@ -138,7 +138,7 @@ end
           navigate={~p"/trainer/programmes/#{@template.data.programme_id}/template/#{@template.data.id}/details"}
           class="shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
         >
-          Add exercises
+          View exercises
         </.link>
       </div>
 
@@ -241,7 +241,7 @@ end
               navigate={~p"/trainer/programmes/#{@template.data.programme_id}/template/#{@template.data.id}/details"}
               class="text-sm font-medium text-primary transition hover:opacity-80"
             >
-              Add exercises →
+              View exercises →
             </.link>
           </div>
         </div>
