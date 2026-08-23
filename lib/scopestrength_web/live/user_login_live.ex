@@ -102,11 +102,6 @@ defmodule ScopestrengthWeb.UserLoginLive do
           </p>
         </div>
 
-        <p class="mt-8 text-center text-xs text-faint">
-          By signing in you agree to our
-          <a href="#" class="underline transition hover:text-dim">Terms</a>
-          and <a href="#" class="underline transition hover:text-dim">Privacy Policy</a>.
-        </p>
       </div>
     </div>
     """  end

@@ -12,16 +12,7 @@ defmodule ScopestrengthWeb.Dashboard do
 
 
 
-  def handle_event("updateStatus", params, socket) do
 
-
-   newClient = Clients.get_client!(params["id"])
-   status = newClient.active
-   Clients.update_client(newClient,%{active: !status})
-
-  {:noreply, assign(socket, clients: Clients.list_clients)}
-
-  end
 
   def handle_event("mark_notification_read", %{"id" => notification_id}, socket) do
     notification = Scopestrength.Notifications.get_notification!(notification_id)

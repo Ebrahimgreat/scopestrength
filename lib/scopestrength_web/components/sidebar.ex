@@ -10,7 +10,6 @@ defmodule ScopestrengthWeb.Sidebar do
   import ScopestrengthWeb.CoreComponents, only: [icon: 1]
 
   attr :label, :string, required: true
-  attr :short, :string, required: true, doc: "initials shown in the sidebar header badge"
   attr :home, :string, required: true
   attr :role, :string, required: true
   attr :user_name, :string, default: nil
@@ -26,7 +25,7 @@ defmodule ScopestrengthWeb.Sidebar do
     ~H"""
     <div class="min-h-screen flex bg-background text-foreground">
       <div class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-line bg-card px-4 py-3 md:hidden">
-        <.brand label={@label} short={@short} home={@home} />
+        <.brand label={@label} home={@home} />
         <button
           onclick={"document.getElementById('#{@id}').classList.toggle('hidden')"}
           class="p-2 text-dim hover:text-foreground"
@@ -45,7 +44,7 @@ defmodule ScopestrengthWeb.Sidebar do
         <aside class="relative flex h-full w-72 flex-col overflow-y-auto border-r border-line bg-card">
           <.sidebar_body
             label={@label}
-            short={@short}
+
             home={@home}
             role={@role}
             user_name={@user_name}
@@ -62,7 +61,7 @@ defmodule ScopestrengthWeb.Sidebar do
       <aside class="sticky top-0 hidden h-screen w-72 flex-col overflow-y-auto border-r border-line bg-card md:flex">
         <.sidebar_body
           label={@label}
-          short={@short}
+
           home={@home}
           role={@role}
           user_name={@user_name}
@@ -83,7 +82,6 @@ defmodule ScopestrengthWeb.Sidebar do
   end
 
   attr :label, :string, required: true
-  attr :short, :string, required: true
   attr :home, :string, required: true
 
   defp brand(assigns) do
@@ -92,16 +90,13 @@ defmodule ScopestrengthWeb.Sidebar do
       href={@home}
       class="inline-flex items-center gap-2 font-display text-lg font-bold uppercase tracking-wide text-foreground"
     >
-      <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
-        {@short}
-      </span>
       {@label}
     </.link>
     """
   end
 
   attr :label, :string, required: true
-  attr :short, :string, required: true
+
   attr :home, :string, required: true
   attr :role, :string, required: true
   attr :user_name, :string, default: nil
@@ -117,7 +112,7 @@ defmodule ScopestrengthWeb.Sidebar do
     ~H"""
     <div class="border-b border-line px-6 py-6">
       <div class="flex items-center justify-between">
-        <.brand label={@label} short={@short} home={@home} />
+        <.brand label={@label}  home={@home} />
         <button
           :if={@dismiss}
           onclick={"document.getElementById('#{@dismiss}').classList.add('hidden')"}
