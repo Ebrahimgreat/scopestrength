@@ -9,9 +9,7 @@ alias Scopestrength.Programmes
     openProgramme = false
     newProgramme = Programmes.change_programme(%Programmes.Programme{}) |> to_form()
 
-    programmes =
-      Programmes.list_programme()
-      |> Enum.filter(&(&1.user_id == user.id))
+    programmes = Programmes.list_user_programmes(user.id)
 
     {:ok, assign(socket, user_id: user.id, openProgamme: openProgramme, programmes: programmes, name: user.name, newProgramme: newProgramme, delete_confirm_id: nil)}
   end
@@ -36,7 +34,7 @@ end
 def handle_event("confirm_delete", _params, socket) do
   id = socket.assigns.delete_confirm_id
 
-  programme = Programmes.get_programme!(id)
+  programme = Programmes.get_user_programme!(socket.assigns.user_id, id)
   case Programmes.delete_programme(programme) do
     {:ok, _programme}->
       programmes = Enum.reject(socket.assigns.programmes, & (&1.id == id))
@@ -45,10 +43,11 @@ def handle_event("confirm_delete", _params, socket) do
   end
 end
 
+#Query has been optimized.
   def handle_event("duplicateProgramme", %{"id" => id}, socket) do
     id = String.to_integer(id)
 
-    case Programmes.clone_programme(id) do
+    case Programmes.clone_programme(socket.assigns.user_id, id) do
       {:ok, new_programme} ->
         {:noreply,
          update(socket, :programmes, fn programmes -> [new_programme | programmes] end)

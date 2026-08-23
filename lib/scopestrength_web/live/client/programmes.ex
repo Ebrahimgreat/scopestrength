@@ -8,9 +8,7 @@ defmodule ScopestrengthWeb.Client.Programmes do
 
     newProgramme = Programmes.change_programme(%Programmes.Programme{}) |> to_form()
 
-    programmes =
-      Programmes.list_programme()
-      |> Enum.filter(&(&1.user_id == user.id))
+    programmes = Programmes.list_user_programmes(user.id)
 
     {:ok, assign(socket, user_id: user.id, programmes: programmes, name: user.name, newProgramme: newProgramme, delete_confirm_id: nil)}
   end
@@ -35,7 +33,7 @@ defmodule ScopestrengthWeb.Client.Programmes do
   def handle_event("confirm_delete", _params, socket) do
     id = socket.assigns.delete_confirm_id
 
-    programme = Programmes.get_programme!(id)
+    programme = Programmes.get_user_programme!(socket.assigns.user_id, id)
     case Programmes.delete_programme(programme) do
       {:ok, _programme} ->
         programmes = Enum.reject(socket.assigns.programmes, &(&1.id == id))
@@ -47,7 +45,7 @@ defmodule ScopestrengthWeb.Client.Programmes do
   def handle_event("duplicateProgramme", %{"id" => id}, socket) do
     id = String.to_integer(id)
 
-    case Programmes.clone_programme(id) do
+    case Programmes.clone_programme(socket.assigns.user_id, id) do
       {:ok, new_programme} ->
         {:noreply,
          update(socket, :programmes, fn programmes -> [new_programme | programmes] end)
