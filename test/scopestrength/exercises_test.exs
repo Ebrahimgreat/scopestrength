@@ -1,165 +1,87 @@
 defmodule Scopestrength.ExercisesTest do
-  use Scopestrength.DataCase
+  use Scopestrength.DataCase, async: true
 
-  alias Scopestrength.Exercises
+  import Scopestrength.ExercisesFixtures
+  import Scopestrength.PeopleFixtures
 
-  describe "mucles" do
-    alias Scopestrength.Exercises.Muscles
+  alias Scopestrength.{Exercise, Exercises}
 
-    import Scopestrength.ExercisesFixtures
-
-    @invalid_attrs %{name: nil}
-
-    test "list_mucles/0 returns all mucles" do
-      muscles = muscles_fixture()
-      assert Exercises.list_mucles() == [muscles]
+  describe "muscles and equipment" do
+    test "require a name" do
+      {:error, changeset} = Exercises.create_muscles(%{})
+      assert %{name: ["can't be blank"]} = errors_on(changeset)
+      {:error, changeset} = Exercises.create_equipment(%{})
+      assert %{name: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "get_muscles!/1 returns the muscles with given id" do
-      muscles = muscles_fixture()
-      assert Exercises.get_muscles!(muscles.id) == muscles
-    end
+    test "are listed, updated and deleted" do
+      muscle = muscles_fixture(%{name: "Quads"})
+      equipment = equipment_fixture(%{name: "Barbell"})
 
-    test "create_muscles/1 with valid data creates a muscles" do
-      valid_attrs = %{name: "some name"}
+      assert muscle.id in Enum.map(Exercises.list_mucles(), & &1.id)
+      assert equipment.id in Enum.map(Exercises.list_equipment(), & &1.id)
 
-      assert {:ok, %Muscles{} = muscles} = Exercises.create_muscles(valid_attrs)
-      assert muscles.name == "some name"
-    end
+      {:ok, muscle} = Exercises.update_muscles(muscle, %{name: "Quadriceps"})
+      assert Exercises.get_muscles!(muscle.id).name == "Quadriceps"
 
-    test "create_muscles/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Exercises.create_muscles(@invalid_attrs)
-    end
-
-    test "update_muscles/2 with valid data updates the muscles" do
-      muscles = muscles_fixture()
-      update_attrs = %{name: "some updated name"}
-
-      assert {:ok, %Muscles{} = muscles} = Exercises.update_muscles(muscles, update_attrs)
-      assert muscles.name == "some updated name"
-    end
-
-    test "update_muscles/2 with invalid data returns error changeset" do
-      muscles = muscles_fixture()
-      assert {:error, %Ecto.Changeset{}} = Exercises.update_muscles(muscles, @invalid_attrs)
-      assert muscles == Exercises.get_muscles!(muscles.id)
-    end
-
-    test "delete_muscles/1 deletes the muscles" do
-      muscles = muscles_fixture()
-      assert {:ok, %Muscles{}} = Exercises.delete_muscles(muscles)
-      assert_raise Ecto.NoResultsError, fn -> Exercises.get_muscles!(muscles.id) end
-    end
-
-    test "change_muscles/1 returns a muscles changeset" do
-      muscles = muscles_fixture()
-      assert %Ecto.Changeset{} = Exercises.change_muscles(muscles)
-    end
-  end
-
-  describe "equipment" do
-    alias Scopestrength.Exercises.Equipment
-
-    import Scopestrength.ExercisesFixtures
-
-    @invalid_attrs %{name: nil}
-
-    test "list_equipment/0 returns all equipment" do
-      equipment = equipment_fixture()
-      assert Exercises.list_equipment() == [equipment]
-    end
-
-    test "get_equipment!/1 returns the equipment with given id" do
-      equipment = equipment_fixture()
-      assert Exercises.get_equipment!(equipment.id) == equipment
-    end
-
-    test "create_equipment/1 with valid data creates a equipment" do
-      valid_attrs = %{name: "some name"}
-
-      assert {:ok, %Equipment{} = equipment} = Exercises.create_equipment(valid_attrs)
-      assert equipment.name == "some name"
-    end
-
-    test "create_equipment/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Exercises.create_equipment(@invalid_attrs)
-    end
-
-    test "update_equipment/2 with valid data updates the equipment" do
-      equipment = equipment_fixture()
-      update_attrs = %{name: "some updated name"}
-
-      assert {:ok, %Equipment{} = equipment} = Exercises.update_equipment(equipment, update_attrs)
-      assert equipment.name == "some updated name"
-    end
-
-    test "update_equipment/2 with invalid data returns error changeset" do
-      equipment = equipment_fixture()
-      assert {:error, %Ecto.Changeset{}} = Exercises.update_equipment(equipment, @invalid_attrs)
-      assert equipment == Exercises.get_equipment!(equipment.id)
-    end
-
-    test "delete_equipment/1 deletes the equipment" do
-      equipment = equipment_fixture()
-      assert {:ok, %Equipment{}} = Exercises.delete_equipment(equipment)
+      {:ok, _} = Exercises.delete_equipment(equipment)
       assert_raise Ecto.NoResultsError, fn -> Exercises.get_equipment!(equipment.id) end
     end
+  end
 
-    test "change_equipment/1 returns a equipment changeset" do
-      equipment = equipment_fixture()
-      assert %Ecto.Changeset{} = Exercises.change_equipment(equipment)
+  describe "exercises" do
+    test "require name, muscle and equipment" do
+      {:error, changeset} = Exercise.create_exercise(%{})
+      assert %{name: ["can't be blank"], muscle_id: ["can't be blank"], equipment_id: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "can be created, updated and deleted" do
+      exercise = exercise_fixture(%{name: "Bench Press"})
+      assert exercise.muscle
+      assert exercise.equipment
+      refute exercise.is_unilateral
+
+      {:ok, exercise} = Exercise.update_exercise(exercise, %{is_unilateral: true})
+      assert Exercise.get_exercise!(exercise.id).is_unilateral
+
+      {:ok, _} = Exercise.delete_exercise(exercise)
+      assert_raise Ecto.NoResultsError, fn -> Exercise.get_exercise!(exercise.id) end
+    end
+
+    test "unilateral_exercise_fixture sets the flag" do
+      assert unilateral_exercise_fixture().is_unilateral
     end
   end
 
-  describe "exercise_muscle_contribution" do
-    alias Scopestrength.Exercises.ExerciseMuscleContribution
-
-    import Scopestrength.ExercisesFixtures
-
-    @invalid_attrs %{}
-
-    test "list_exercise_muscle_contribution/0 returns all exercise_muscle_contribution" do
-      exercise_muscle_contribution = exercise_muscle_contribution_fixture()
-      assert Exercises.list_exercise_muscle_contribution() == [exercise_muscle_contribution]
+  describe "muscle contributions" do
+    test "require muscle, exercise, role and multiplier" do
+      {:error, changeset} = Exercises.create_exercise_muscle_contribution(%{})
+      errors = errors_on(changeset)
+      assert errors.muscle_id == ["can't be blank"]
+      assert errors.exercise_id == ["can't be blank"]
+      assert errors.role == ["can't be blank"]
+      assert errors.multiplier == ["can't be blank"]
     end
 
-    test "get_exercise_muscle_contribution!/1 returns the exercise_muscle_contribution with given id" do
-      exercise_muscle_contribution = exercise_muscle_contribution_fixture()
-      assert Exercises.get_exercise_muscle_contribution!(exercise_muscle_contribution.id) == exercise_muscle_contribution
-    end
+    test "can be created for a trainer and updated" do
+      trainer = trainer_fixture()
+      exercise = exercise_fixture()
+      secondary = muscles_fixture()
 
-    test "create_exercise_muscle_contribution/1 with valid data creates a exercise_muscle_contribution" do
-      valid_attrs = %{}
+      contribution =
+        exercise_muscle_contribution_fixture(%{
+          exercise: exercise,
+          muscle_id: secondary.id,
+          role: "secondary",
+          multiplier: 0.5,
+          trainer_id: trainer.id
+        })
 
-      assert {:ok, %ExerciseMuscleContribution{} = exercise_muscle_contribution} = Exercises.create_exercise_muscle_contribution(valid_attrs)
-    end
-
-    test "create_exercise_muscle_contribution/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Exercises.create_exercise_muscle_contribution(@invalid_attrs)
-    end
-
-    test "update_exercise_muscle_contribution/2 with valid data updates the exercise_muscle_contribution" do
-      exercise_muscle_contribution = exercise_muscle_contribution_fixture()
-      update_attrs = %{}
-
-      assert {:ok, %ExerciseMuscleContribution{} = exercise_muscle_contribution} = Exercises.update_exercise_muscle_contribution(exercise_muscle_contribution, update_attrs)
-    end
-
-    test "update_exercise_muscle_contribution/2 with invalid data returns error changeset" do
-      exercise_muscle_contribution = exercise_muscle_contribution_fixture()
-      assert {:error, %Ecto.Changeset{}} = Exercises.update_exercise_muscle_contribution(exercise_muscle_contribution, @invalid_attrs)
-      assert exercise_muscle_contribution == Exercises.get_exercise_muscle_contribution!(exercise_muscle_contribution.id)
-    end
-
-    test "delete_exercise_muscle_contribution/1 deletes the exercise_muscle_contribution" do
-      exercise_muscle_contribution = exercise_muscle_contribution_fixture()
-      assert {:ok, %ExerciseMuscleContribution{}} = Exercises.delete_exercise_muscle_contribution(exercise_muscle_contribution)
-      assert_raise Ecto.NoResultsError, fn -> Exercises.get_exercise_muscle_contribution!(exercise_muscle_contribution.id) end
-    end
-
-    test "change_exercise_muscle_contribution/1 returns a exercise_muscle_contribution changeset" do
-      exercise_muscle_contribution = exercise_muscle_contribution_fixture()
-      assert %Ecto.Changeset{} = Exercises.change_exercise_muscle_contribution(exercise_muscle_contribution)
+      assert contribution.trainer_id == trainer.id
+      {:ok, updated} = Exercises.update_exercise_muscle_contribution(contribution, %{multiplier: 0.75})
+      assert Exercises.get_exercise_muscle_contribution!(updated.id).multiplier == 0.75
+      assert updated.id in Enum.map(Exercises.list_exercise_muscle_contribution(), & &1.id)
+      {:ok, _} = Exercises.delete_exercise_muscle_contribution(updated)
     end
   end
 end

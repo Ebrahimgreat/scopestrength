@@ -1,265 +1,135 @@
 defmodule Scopestrength.ProgrammesTest do
-  use Scopestrength.DataCase
+  use Scopestrength.DataCase, async: true
+
+  import Scopestrength.AccountFixtures
+  import Scopestrength.ExercisesFixtures
+  import Scopestrength.PeopleFixtures
+  import Scopestrength.ProgrammesFixtures
 
   alias Scopestrength.Programmes
+  alias Scopestrength.Programmes.{Programme, ProgrammeUser}
 
-  describe "programme" do
-    alias Scopestrength.Programmes.Programme
+  describe "programmes" do
+    test "are scoped to their owner" do
+      owner = trainer_user_fixture()
+      other = trainer_user_fixture()
+      mine = programme_fixture(%{user_id: owner.id})
+      theirs = programme_fixture(%{user_id: other.id})
 
-    import Scopestrength.ProgrammesFixtures
+      assert Enum.map(Programmes.list_user_programmes(owner.id), & &1.id) == [mine.id]
+      assert Programmes.get_user_programme!(owner.id, mine.id).id == mine.id
+      assert_raise Ecto.NoResultsError, fn -> Programmes.get_user_programme!(owner.id, theirs.id) end
+    end
 
-    @invalid_attrs %{}
-
-    test "list_programme/0 returns all programme" do
+    test "update and delete" do
       programme = programme_fixture()
-      assert Programmes.list_programme() == [programme]
-    end
-
-    test "get_programme!/1 returns the programme with given id" do
-      programme = programme_fixture()
-      assert Programmes.get_programme!(programme.id) == programme
-    end
-
-    test "create_programme/1 with valid data creates a programme" do
-      valid_attrs = %{}
-
-      assert {:ok, %Programme{} = programme} = Programmes.create_programme(valid_attrs)
-    end
-
-    test "create_programme/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Programmes.create_programme(@invalid_attrs)
-    end
-
-    test "update_programme/2 with valid data updates the programme" do
-      programme = programme_fixture()
-      update_attrs = %{}
-
-      assert {:ok, %Programme{} = programme} = Programmes.update_programme(programme, update_attrs)
-    end
-
-    test "update_programme/2 with invalid data returns error changeset" do
-      programme = programme_fixture()
-      assert {:error, %Ecto.Changeset{}} = Programmes.update_programme(programme, @invalid_attrs)
-      assert programme == Programmes.get_programme!(programme.id)
-    end
-
-    test "delete_programme/1 deletes the programme" do
-      programme = programme_fixture()
-      assert {:ok, %Programme{}} = Programmes.delete_programme(programme)
+      {:ok, programme} = Programmes.update_programme(programme, %{name: "Renamed", progression_method: "none"})
+      assert programme.name == "Renamed"
+      assert programme.progression_method == "none"
+      {:ok, _} = Programmes.delete_programme(programme)
       assert_raise Ecto.NoResultsError, fn -> Programmes.get_programme!(programme.id) end
     end
+  end
 
-    test "change_programme/1 returns a programme changeset" do
-      programme = programme_fixture()
-      assert %Ecto.Changeset{} = Programmes.change_programme(programme)
+  describe "templates and details" do
+    test "a template belongs to a programme and holds exercises" do
+      %{programme: programme, template: template, details: details, exercise: exercise} = full_programme_fixture()
+
+      assert template.programme_id == programme.id
+      assert details.exercise_id == exercise.id
+      assert Programmes.get_programme_detail_with_exericse!(details.id).exercise.id == exercise.id
+
+      loaded = Programmes.get_programme_with_template(programme.id)
+      assert [%{programmeDetails: [%{id: id}]}] = loaded.programmeTemplates
+      assert id == details.id
+    end
+
+    test "details update rep range and delete" do
+      details = programme_details_fixture()
+      {:ok, details} = Programmes.update_programme_details(details, %{min_reps: 6, max_reps: 10, set: "4"})
+      assert details.min_reps == 6
+      assert details.set == "4"
+      {:ok, _} = Programmes.delete_programme_details(details)
+      assert_raise Ecto.NoResultsError, fn -> Programmes.get_programme_details!(details.id) end
+    end
+
+    test "template update and delete" do
+      template = programme_template_fixture()
+      {:ok, template} = Programmes.update_programme_template(template, %{name: "Push"})
+      assert Programmes.get_programme_template!(template.id).name == "Push"
+      {:ok, _} = Programmes.delete_programme_template(template)
     end
   end
 
-  describe "programme_details" do
-    alias Scopestrength.Programmes.Programme
+  describe "assignment" do
+    test "a client has one active programme at a time" do
+      client = client_fixture()
+      first = programme_fixture()
+      second = programme_fixture()
 
-    import Scopestrength.ProgrammesFixtures
+      {:ok, %ProgrammeUser{is_active: true}} = Programmes.assign_client_to_programme(first.id, client.id)
+      assert MapSet.to_list(Programmes.assigned_client_ids(first.id)) == [client.id]
 
-    @invalid_attrs %{}
+      {:ok, _} = Programmes.assign_client_to_programme(second.id, client.id)
+      assert MapSet.to_list(Programmes.assigned_client_ids(first.id)) == []
+      assert MapSet.to_list(Programmes.assigned_client_ids(second.id)) == [client.id]
 
-    test "list_programme_details/0 returns all programme_details" do
+      active = Repo.get_by!(ProgrammeUser, client_id: client.id, is_active: true)
+      assert active.programme_id == second.id
+    end
+
+    test "unassign deactivates and reports the count" do
+      client = client_fixture()
       programme = programme_fixture()
-      assert Programmes.list_programme_details() == [programme]
-    end
+      {:ok, _} = Programmes.assign_client_to_programme(programme.id, client.id)
 
-    test "get_programme!/1 returns the programme with given id" do
-      programme = programme_fixture()
-      assert Programmes.get_programme!(programme.id) == programme
-    end
-
-    test "create_programme/1 with valid data creates a programme" do
-      valid_attrs = %{}
-
-      assert {:ok, %Programme{} = programme} = Programmes.create_programme(valid_attrs)
-    end
-
-    test "create_programme/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Programmes.create_programme(@invalid_attrs)
-    end
-
-    test "update_programme/2 with valid data updates the programme" do
-      programme = programme_fixture()
-      update_attrs = %{}
-
-      assert {:ok, %Programme{} = programme} = Programmes.update_programme(programme, update_attrs)
-    end
-
-    test "update_programme/2 with invalid data returns error changeset" do
-      programme = programme_fixture()
-      assert {:error, %Ecto.Changeset{}} = Programmes.update_programme(programme, @invalid_attrs)
-      assert programme == Programmes.get_programme!(programme.id)
-    end
-
-    test "delete_programme/1 deletes the programme" do
-      programme = programme_fixture()
-      assert {:ok, %Programme{}} = Programmes.delete_programme(programme)
-      assert_raise Ecto.NoResultsError, fn -> Programmes.get_programme!(programme.id) end
-    end
-
-    test "change_programme/1 returns a programme changeset" do
-      programme = programme_fixture()
-      assert %Ecto.Changeset{} = Programmes.change_programme(programme)
+      assert {:ok, 1} = Programmes.unassign_client_from_programme(programme.id, client.id)
+      assert {:ok, 0} = Programmes.unassign_client_from_programme(programme.id, client.id)
+      assert MapSet.to_list(Programmes.assigned_client_ids(programme.id)) == []
     end
   end
 
-  describe "programme_details" do
-    alias Scopestrength.Programmes.ProgrammeDetails
+  describe "cloning" do
+    test "clone_programme/2 copies templates and details to the owner" do
+      owner = trainer_user_fixture()
+      %{programme: programme, exercise: exercise} = full_programme_fixture(%{user_id: owner.id, name: "PPL"})
 
-    import Scopestrength.ProgrammesFixtures
+      {:ok, copy} = Programmes.clone_programme(owner.id, programme.id)
+      assert %Programme{} = copy
+      assert copy.name == "PPL (copy)"
+      assert copy.user_id == owner.id
+      assert copy.progression_method == programme.progression_method
 
-    @invalid_attrs %{}
-
-    test "list_programme_details/0 returns all programme_details" do
-      programme_details = programme_details_fixture()
-      assert Programmes.list_programme_details() == [programme_details]
+      loaded = Programmes.get_programme_with_template(copy.id)
+      assert [%{programmeDetails: [detail]}] = loaded.programmeTemplates
+      assert detail.exercise_id == exercise.id
+      assert detail.min_reps == 8
     end
 
-    test "get_programme_details!/1 returns the programme_details with given id" do
-      programme_details = programme_details_fixture()
-      assert Programmes.get_programme_details!(programme_details.id) == programme_details
+    test "clone_programme/2 refuses another user's programme" do
+      other = trainer_user_fixture()
+      programme = programme_fixture()
+      assert_raise Ecto.NoResultsError, fn -> Programmes.clone_programme(other.id, programme.id) end
     end
 
-    test "create_programme_details/1 with valid data creates a programme_details" do
-      valid_attrs = %{}
+    test "clone_assigned_programme/3 only copies a programme the client is on" do
+      client = client_fixture()
+      %{programme: programme} = full_programme_fixture()
 
-      assert {:ok, %ProgrammeDetails{} = programme_details} = Programmes.create_programme_details(valid_attrs)
-    end
+      assert {:error, :not_assigned} =
+               Programmes.clone_assigned_programme(client.user_id, client.id, programme.id)
 
-    test "create_programme_details/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Programmes.create_programme_details(@invalid_attrs)
-    end
-
-    test "update_programme_details/2 with valid data updates the programme_details" do
-      programme_details = programme_details_fixture()
-      update_attrs = %{}
-
-      assert {:ok, %ProgrammeDetails{} = programme_details} = Programmes.update_programme_details(programme_details, update_attrs)
-    end
-
-    test "update_programme_details/2 with invalid data returns error changeset" do
-      programme_details = programme_details_fixture()
-      assert {:error, %Ecto.Changeset{}} = Programmes.update_programme_details(programme_details, @invalid_attrs)
-      assert programme_details == Programmes.get_programme_details!(programme_details.id)
-    end
-
-    test "delete_programme_details/1 deletes the programme_details" do
-      programme_details = programme_details_fixture()
-      assert {:ok, %ProgrammeDetails{}} = Programmes.delete_programme_details(programme_details)
-      assert_raise Ecto.NoResultsError, fn -> Programmes.get_programme_details!(programme_details.id) end
-    end
-
-    test "change_programme_details/1 returns a programme_details changeset" do
-      programme_details = programme_details_fixture()
-      assert %Ecto.Changeset{} = Programmes.change_programme_details(programme_details)
+      {:ok, _} = Programmes.assign_client_to_programme(programme.id, client.id)
+      {:ok, copy} = Programmes.clone_assigned_programme(client.user_id, client.id, programme.id)
+      assert copy.user_id == client.user_id
+      assert Enum.map(Programmes.list_user_programmes(client.user_id), & &1.id) == [copy.id]
     end
   end
 
-  describe "programme_template" do
-    alias Scopestrength.Programmes.ProgrammeTemplate
-
-    import Scopestrength.ProgrammesFixtures
-
-    @invalid_attrs %{}
-
-    test "list_programme_template/0 returns all programme_template" do
-      programme_template = programme_template_fixture()
-      assert Programmes.list_programme_template() == [programme_template]
-    end
-
-    test "get_programme_template!/1 returns the programme_template with given id" do
-      programme_template = programme_template_fixture()
-      assert Programmes.get_programme_template!(programme_template.id) == programme_template
-    end
-
-    test "create_programme_template/1 with valid data creates a programme_template" do
-      valid_attrs = %{}
-
-      assert {:ok, %ProgrammeTemplate{} = programme_template} = Programmes.create_programme_template(valid_attrs)
-    end
-
-    test "create_programme_template/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Programmes.create_programme_template(@invalid_attrs)
-    end
-
-    test "update_programme_template/2 with valid data updates the programme_template" do
-      programme_template = programme_template_fixture()
-      update_attrs = %{}
-
-      assert {:ok, %ProgrammeTemplate{} = programme_template} = Programmes.update_programme_template(programme_template, update_attrs)
-    end
-
-    test "update_programme_template/2 with invalid data returns error changeset" do
-      programme_template = programme_template_fixture()
-      assert {:error, %Ecto.Changeset{}} = Programmes.update_programme_template(programme_template, @invalid_attrs)
-      assert programme_template == Programmes.get_programme_template!(programme_template.id)
-    end
-
-    test "delete_programme_template/1 deletes the programme_template" do
-      programme_template = programme_template_fixture()
-      assert {:ok, %ProgrammeTemplate{}} = Programmes.delete_programme_template(programme_template)
-      assert_raise Ecto.NoResultsError, fn -> Programmes.get_programme_template!(programme_template.id) end
-    end
-
-    test "change_programme_template/1 returns a programme_template changeset" do
-      programme_template = programme_template_fixture()
-      assert %Ecto.Changeset{} = Programmes.change_programme_template(programme_template)
-    end
-  end
-
-  describe "programmeuser" do
-    alias Scopestrength.Programmes.ProgrammeUser
-
-    import Scopestrength.ProgrammesFixtures
-
-    @invalid_attrs %{}
-
-    test "list_programmeuser/0 returns all programmeuser" do
-      programme_user = programme_user_fixture()
-      assert Programmes.list_programmeuser() == [programme_user]
-    end
-
-    test "get_programme_user!/1 returns the programme_user with given id" do
-      programme_user = programme_user_fixture()
-      assert Programmes.get_programme_user!(programme_user.id) == programme_user
-    end
-
-    test "create_programme_user/1 with valid data creates a programme_user" do
-      valid_attrs = %{}
-
-      assert {:ok, %ProgrammeUser{} = programme_user} = Programmes.create_programme_user(valid_attrs)
-    end
-
-    test "create_programme_user/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Programmes.create_programme_user(@invalid_attrs)
-    end
-
-    test "update_programme_user/2 with valid data updates the programme_user" do
-      programme_user = programme_user_fixture()
-      update_attrs = %{}
-
-      assert {:ok, %ProgrammeUser{} = programme_user} = Programmes.update_programme_user(programme_user, update_attrs)
-    end
-
-    test "update_programme_user/2 with invalid data returns error changeset" do
-      programme_user = programme_user_fixture()
-      assert {:error, %Ecto.Changeset{}} = Programmes.update_programme_user(programme_user, @invalid_attrs)
-      assert programme_user == Programmes.get_programme_user!(programme_user.id)
-    end
-
-    test "delete_programme_user/1 deletes the programme_user" do
-      programme_user = programme_user_fixture()
-      assert {:ok, %ProgrammeUser{}} = Programmes.delete_programme_user(programme_user)
-      assert_raise Ecto.NoResultsError, fn -> Programmes.get_programme_user!(programme_user.id) end
-    end
-
-    test "change_programme_user/1 returns a programme_user changeset" do
-      programme_user = programme_user_fixture()
-      assert %Ecto.Changeset{} = Programmes.change_programme_user(programme_user)
-    end
+  test "exercise_fixture exercises can be reused across programmes" do
+    exercise = exercise_fixture()
+    a = full_programme_fixture(%{exercise: exercise})
+    b = full_programme_fixture(%{exercise: exercise})
+    assert a.details.exercise_id == b.details.exercise_id
   end
 end

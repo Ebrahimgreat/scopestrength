@@ -1,173 +1,100 @@
 defmodule Scopestrength.TrainingTest do
-  use Scopestrength.DataCase
+  use Scopestrength.DataCase, async: true
+
+  import Scopestrength.ExercisesFixtures
+  import Scopestrength.PeopleFixtures
+  import Scopestrength.TrainingFixtures
 
   alias Scopestrength.Training
+  alias Scopestrength.Training.{Workout, WorkoutDetails}
 
   describe "workouts" do
-    alias Scopestrength.Training.Workout
+    test "require a client" do
+      {:error, changeset} = Training.create_workout(%{name: "x"})
+      assert %{client_id: ["can't be blank"]} = errors_on(changeset)
+    end
 
-    import Scopestrength.TrainingFixtures
+    test "get a date when saved without one" do
+      client = client_fixture()
+      {:ok, workout} = Training.create_workout(%{name: "Untitled", client_id: client.id})
+      assert %DateTime{} = workout.date
+    end
 
-    @invalid_attrs %{}
+    test "keep an explicit date" do
+      date = ~U[2026-01-02 10:00:00Z]
+      workout = workout_fixture(%{date: date})
+      assert workout.date == date
+    end
 
-    test "list_workouts/0 returns all workouts" do
+    test "update and delete cascade to sets" do
       workout = workout_fixture()
-      assert Training.list_workouts() == [workout]
-    end
+      details = workout_details_fixture(%{workout_id: workout.id})
 
-    test "get_workout!/1 returns the workout with given id" do
-      workout = workout_fixture()
-      assert Training.get_workout!(workout.id) == workout
-    end
+      {:ok, workout} = Training.update_workout(workout, %{name: "Leg day", notes: "Easy"})
+      assert Training.get_workout!(workout.id).name == "Leg day"
 
-    test "create_workout/1 with valid data creates a workout" do
-      valid_attrs = %{}
-
-      assert {:ok, %Workout{} = workout} = Training.create_workout(valid_attrs)
-    end
-
-    test "create_workout/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Training.create_workout(@invalid_attrs)
-    end
-
-    test "update_workout/2 with valid data updates the workout" do
-      workout = workout_fixture()
-      update_attrs = %{}
-
-      assert {:ok, %Workout{} = workout} = Training.update_workout(workout, update_attrs)
-    end
-
-    test "update_workout/2 with invalid data returns error changeset" do
-      workout = workout_fixture()
-      assert {:error, %Ecto.Changeset{}} = Training.update_workout(workout, @invalid_attrs)
-      assert workout == Training.get_workout!(workout.id)
-    end
-
-    test "delete_workout/1 deletes the workout" do
-      workout = workout_fixture()
-      assert {:ok, %Workout{}} = Training.delete_workout(workout)
+      {:ok, _} = Training.delete_workout(workout)
       assert_raise Ecto.NoResultsError, fn -> Training.get_workout!(workout.id) end
+      assert_raise Ecto.NoResultsError, fn -> Training.get_workout_details!(details.id) end
     end
 
-    test "change_workout/1 returns a workout changeset" do
+    test "list_workouts/0 and change_workout/1" do
       workout = workout_fixture()
-      assert %Ecto.Changeset{} = Training.change_workout(workout)
+      assert workout.id in Enum.map(Training.list_workouts(), & &1.id)
+      assert %Ecto.Changeset{} = Training.change_workout(%Workout{})
     end
   end
 
-  describe "workout_details" do
-    alias Scopestrength.Training.WorkoutDetails
+  describe "workout details" do
+    test "validate side and RPE range" do
+      workout = workout_fixture()
+      exercise = exercise_fixture()
 
-    import Scopestrength.TrainingFixtures
+      {:error, changeset} =
+        Training.create_workout_details(%{workout_id: workout.id, exercise_id: exercise.id, set: 1, side: "up"})
 
-    @invalid_attrs %{}
+      assert "is invalid" in errors_on(changeset).side
 
-    test "list_workout_details/0 returns all workout_details" do
-      workout_details = workout_details_fixture()
-      assert Training.list_workout_details() == [workout_details]
+      {:error, changeset} =
+        Training.create_workout_details(%{workout_id: workout.id, exercise_id: exercise.id, set: 1, rpe: 11})
+
+      assert errors_on(changeset).rpe != []
     end
 
-    test "get_workout_details!/1 returns the workout_details with given id" do
-      workout_details = workout_details_fixture()
-      assert Training.get_workout_details!(workout_details.id) == workout_details
+    test "default side is both and progression status is hold" do
+      details = workout_details_fixture()
+      assert details.side == "both"
+      assert details.progression_status == "hold"
     end
 
-    test "create_workout_details/1 with valid data creates a workout_details" do
-      valid_attrs = %{}
-
-      assert {:ok, %WorkoutDetails{} = workout_details} =
-               Training.create_workout_details(valid_attrs)
-    end
-
-    test "create_workout_details/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Training.create_workout_details(@invalid_attrs)
-    end
-
-    test "update_workout_details/2 with valid data updates the workout_details" do
-      workout_details = workout_details_fixture()
-      update_attrs = %{}
-
-      assert {:ok, %WorkoutDetails{} = workout_details} =
-               Training.update_workout_details(workout_details, update_attrs)
-    end
-
-    test "update_workout_details/2 with invalid data returns error changeset" do
-      workout_details = workout_details_fixture()
-
-      assert {:error, %Ecto.Changeset{}} =
-               Training.update_workout_details(workout_details, @invalid_attrs)
-
-      assert workout_details == Training.get_workout_details!(workout_details.id)
-    end
-
-    test "delete_workout_details/1 deletes the workout_details" do
-      workout_details = workout_details_fixture()
-      assert {:ok, %WorkoutDetails{}} = Training.delete_workout_details(workout_details)
-
-      assert_raise Ecto.NoResultsError, fn ->
-        Training.get_workout_details!(workout_details.id)
-      end
-    end
-
-    test "change_workout_details/1 returns a workout_details changeset" do
-      workout_details = workout_details_fixture()
-      assert %Ecto.Changeset{} = Training.change_workout_details(workout_details)
+    test "update and delete" do
+      details = workout_details_fixture()
+      {:ok, details} = Training.update_workout_details(details, %{reps: 12, weight: 60, rpe: 8})
+      assert %WorkoutDetails{reps: 12.0, weight: 60.0, rpe: 8.0} = Training.get_workout_details!(details.id)
+      {:ok, _} = Training.delete_workout_details(details)
+      assert_raise Ecto.NoResultsError, fn -> Training.get_workout_details!(details.id) end
     end
   end
 
-  describe "set_types" do
-    alias Scopestrength.Training.SetType
-
-    import Scopestrength.TrainingFixtures
-
-    @invalid_attrs %{name: nil, description: nil}
-
-    test "list_set_types/0 returns all set_types" do
-      set_type = set_type_fixture()
-      assert Training.list_set_types() == [set_type]
+  describe "progress_summary/1" do
+    test "is empty for a client without workouts" do
+      client = client_fixture()
+      assert {:ok, %{total_workouts: 0, total_sets: 0, last_workout_at: nil, pr: nil}} = Training.progress_summary(client.id)
     end
 
-    test "get_set_type!/1 returns the set_type with given id" do
-      set_type = set_type_fixture()
-      assert Training.get_set_type!(set_type.id) == set_type
-    end
+    test "counts workouts and sets and finds the heaviest set" do
+      client = client_fixture()
+      exercise = exercise_fixture(%{name: "Deadlift"})
+      workout = workout_fixture(%{client_id: client.id, date: ~U[2026-03-01 09:00:00Z]})
+      workout_details_fixture(%{workout_id: workout.id, exercise_id: exercise.id, set: 1, weight: 100.0, reps: 5.0})
+      workout_details_fixture(%{workout_id: workout.id, exercise_id: exercise.id, set: 2, weight: 120.0, reps: 3.0})
+      _other = workout_fixture(%{client_id: client.id, date: ~U[2026-03-05 09:00:00Z]})
 
-    test "create_set_type/1 with valid data creates a set_type" do
-      valid_attrs = %{name: "some name", description: "some description"}
-
-      assert {:ok, %SetType{} = set_type} = Training.create_set_type(valid_attrs)
-      assert set_type.name == "some name"
-      assert set_type.description == "some description"
-    end
-
-    test "create_set_type/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Training.create_set_type(@invalid_attrs)
-    end
-
-    test "update_set_type/2 with valid data updates the set_type" do
-      set_type = set_type_fixture()
-      update_attrs = %{name: "some updated name", description: "some updated description"}
-
-      assert {:ok, %SetType{} = set_type} = Training.update_set_type(set_type, update_attrs)
-      assert set_type.name == "some updated name"
-      assert set_type.description == "some updated description"
-    end
-
-    test "update_set_type/2 with invalid data returns error changeset" do
-      set_type = set_type_fixture()
-      assert {:error, %Ecto.Changeset{}} = Training.update_set_type(set_type, @invalid_attrs)
-      assert set_type == Training.get_set_type!(set_type.id)
-    end
-
-    test "delete_set_type/1 deletes the set_type" do
-      set_type = set_type_fixture()
-      assert {:ok, %SetType{}} = Training.delete_set_type(set_type)
-      assert_raise Ecto.NoResultsError, fn -> Training.get_set_type!(set_type.id) end
-    end
-
-    test "change_set_type/1 returns a set_type changeset" do
-      set_type = set_type_fixture()
-      assert %Ecto.Changeset{} = Training.change_set_type(set_type)
+      {:ok, summary} = Training.progress_summary(client.id)
+      assert summary.total_workouts == 2
+      assert summary.total_sets == 2
+      assert summary.last_workout_at == ~U[2026-03-05 09:00:00Z]
+      assert %{weight: 120.0, reps: 3.0, exercise_name: "Deadlift"} = summary.pr
     end
   end
 end
