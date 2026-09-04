@@ -2,7 +2,6 @@ defmodule Scopestrength.Repo.Migrations.AddChestAndTricepDips do
   use Ecto.Migration
 
   def up do
-    # Chest Dips (forward lean = chest dominant)
     execute """
     INSERT INTO exercises (name, muscle_id, equipment_id, is_unilateral, is_custom, inserted_at, updated_at)
     SELECT 'Chest Dips', mu.id, eq.id, false, false, NOW(), NOW()
@@ -11,7 +10,6 @@ defmodule Scopestrength.Repo.Migrations.AddChestAndTricepDips do
     AND NOT EXISTS (SELECT 1 FROM exercises WHERE name = 'Chest Dips');
     """
 
-    # Tricep Dips (upright torso = tricep dominant)
     execute """
     INSERT INTO exercises (name, muscle_id, equipment_id, is_unilateral, is_custom, inserted_at, updated_at)
     SELECT 'Tricep Dips', mu.id, eq.id, false, false, NOW(), NOW()
@@ -20,7 +18,6 @@ defmodule Scopestrength.Repo.Migrations.AddChestAndTricepDips do
     AND NOT EXISTS (SELECT 1 FROM exercises WHERE name = 'Tricep Dips');
     """
 
-    # Chest Dips contributions
     execute """
     INSERT INTO exercise_muscle_contribution (exercise_id, muscle_id, role, multiplier, trainer_id, inserted_at, updated_at)
     SELECT e.id, m.id, 'primary', 1.0, NULL, NOW(), NOW()
@@ -54,7 +51,6 @@ defmodule Scopestrength.Repo.Migrations.AddChestAndTricepDips do
     );
     """
 
-    # Tricep Dips contributions
     execute """
     INSERT INTO exercise_muscle_contribution (exercise_id, muscle_id, role, multiplier, trainer_id, inserted_at, updated_at)
     SELECT e.id, m.id, 'primary', 1.0, NULL, NOW(), NOW()
