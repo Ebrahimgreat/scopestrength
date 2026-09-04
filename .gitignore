@@ -53,3 +53,6 @@ npm-debug.log
 *.sql
 
 .DS_Store
+
+# Written by the programme download; regenerated on every request.
+programme.txt

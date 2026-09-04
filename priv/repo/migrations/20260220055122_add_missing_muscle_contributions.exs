@@ -2,7 +2,6 @@ defmodule Scopestrength.Repo.Migrations.AddMissingMuscleContributions do
   use Ecto.Migration
 
   def up do
-    # Front Delts secondary on pressing exercises that were missing it
     execute """
     INSERT INTO exercise_muscle_contribution (exercise_id, muscle_id, role, multiplier, trainer_id, inserted_at, updated_at)
     SELECT e.id, m.id, 'secondary', 0.5, NULL, NOW(), NOW()
@@ -21,7 +20,6 @@ defmodule Scopestrength.Repo.Migrations.AddMissingMuscleContributions do
     );
     """
 
-    # Rear Delts secondary on all rowing/pulling exercises
     execute """
     INSERT INTO exercise_muscle_contribution (exercise_id, muscle_id, role, multiplier, trainer_id, inserted_at, updated_at)
     SELECT e.id, m.id, 'secondary', 0.5, NULL, NOW(), NOW()
@@ -43,7 +41,6 @@ defmodule Scopestrength.Repo.Migrations.AddMissingMuscleContributions do
     );
     """
 
-    # Wide Grip Cable Row was missing Biceps
     execute """
     INSERT INTO exercise_muscle_contribution (exercise_id, muscle_id, role, multiplier, trainer_id, inserted_at, updated_at)
     SELECT e.id, m.id, 'secondary', 0.5, NULL, NOW(), NOW()

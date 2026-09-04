@@ -6,7 +6,6 @@ defmodule Scopestrength.Repo.Migrations.AddUserIdToProgramme do
       add :user_id, references(:users, on_delete: :delete_all)
     end
 
-    # Migrate existing data: copy trainer's user_id into programme.user_id
     execute """
     UPDATE programme
     SET user_id = t.user_id

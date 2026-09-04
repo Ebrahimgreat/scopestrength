@@ -6,9 +6,6 @@ defmodule Scopestrength.Repo.Migrations.AddRpeAndDropNotesSetTypes do
       add :rpe, :float
     end
 
-    # The set type and per-set notes fields were removed from the product:
-    # set types were rarely anything but "Standard", and notes were arbitrary.
-    # Dropping the FK column before the table it references.
     alter table(:workout_details) do
       remove :notes
       remove :set_type_id
@@ -17,9 +14,6 @@ defmodule Scopestrength.Repo.Migrations.AddRpeAndDropNotesSetTypes do
     drop table(:set_types)
   end
 
-  # Restores the original column types and FK behaviour from
-  # CreateSetTypes / AddNotesAndSetTypeToWorkoutDetails. Note this brings back
-  # the structure only — the dropped rows are not recoverable.
   def down do
     create table(:set_types) do
       add :name, :string

@@ -5,7 +5,7 @@ defmodule Scopestrength.Repo.Migrations.AddCustomToExercises do
 
       alter table(:exercises) do
         add :is_custom, :boolean, default: false, null: false
-        add :trainer_id, references(:users, on_delete: :nilify_all) # nullable
+        add :trainer_id, references(:users, on_delete: :nilify_all)
       end
 
   end
