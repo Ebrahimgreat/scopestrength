@@ -1,9 +1,26 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Router do
 
   use ScopestrengthWeb, :router
 
   import ScopestrengthWeb.UserAuth
-  import Oban.Web.Router
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -44,7 +61,6 @@ defmodule ScopestrengthWeb.Router do
       on_mount: [
         {ScopestrengthWeb.UserAuth, :ensure_authenticated},
         {ScopestrengthWeb.RequireRole, "client"},
-        ScopestrengthWeb.RequireSubscription,  # Checks trainer's subscription
         ScopestrengthWeb.ActivePath,
         ScopestrengthWeb.UnreadNotifications
       ],
@@ -76,7 +92,6 @@ defmodule ScopestrengthWeb.Router do
       on_mount: [
         {ScopestrengthWeb.UserAuth, :ensure_authenticated},
         {ScopestrengthWeb.RequireRole, "trainer"},
-        ScopestrengthWeb.RequireSubscription,  # Checks own subscription
         ScopestrengthWeb.ActivePath,
         ScopestrengthWeb.UnreadNotifications
       ],
@@ -86,7 +101,6 @@ defmodule ScopestrengthWeb.Router do
       live "/clients", Clients
       live "/clients/:id", ShowClient
       live "/clients/:id/notes", ClientNotes
-      live "/clients/:id/workouts", Workouts
       live "/clients/:id/strengthProgress/:exercise_id", ExerciseProgress
       live "/clients/:id/volumeTracking", VolumeTracking
       live "/clients/:id/volumeTracking/:contribution",MuscleContribution
@@ -96,7 +110,6 @@ defmodule ScopestrengthWeb.Router do
       live "/notifications",Notifications
       live "/clients/:id/workouts",Workouts
       live "/clients/:id/workouts/:workout_id", WorkoutDetail
-      live "/client/:id/programme", ChangeProgramme
       live "/programmes", Programmes
       live "/programmes/:id", ProgrammeShow
       live "/programmes/:id/template/:template_id", Template
@@ -104,25 +117,13 @@ defmodule ScopestrengthWeb.Router do
       live "/", Dashboard
       live "/settings",UserSettingsLive
     end
-
-    oban_dashboard("/oban")
   end
 
 
 
 
-  # Other scopes may use custom stacks.
-  # scope "/api", ScopestrengthWeb do
-  #   pipe_through :api
-  # end
 
-  # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:scopestrength, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
@@ -133,7 +134,6 @@ defmodule ScopestrengthWeb.Router do
     end
   end
 
-  ## Authentication routes
 
   scope "/", ScopestrengthWeb do
     pipe_through [:browser, :require_authenticated_user]
@@ -141,8 +141,6 @@ defmodule ScopestrengthWeb.Router do
     live_session :authenticated,
       on_mount: [{ScopestrengthWeb.UserAuth, :ensure_authenticated}] do
       live "/chat/:room", Chat
-      live "/upgrade", UpgradeLive
-      live "/trainer-subscription-expired", Client.TrainerSubscriptionExpired
 
       get "/download/workout", DownloadController, :workout
       get "/download/client-report/:client_id", DownloadController, :client_report
@@ -155,8 +153,7 @@ defmodule ScopestrengthWeb.Router do
     live_session :redirect_if_user_is_authenticated,
       on_mount: [{ScopestrengthWeb.UserAuth, :redirect_if_user_is_authenticated}] do
       live "/", UserLoginLive, :new
-      # Registration disabled — demo accounts are generated via /demo
-      # live "/users/register", UserRegistrationLive, :new
+      live "/users/register", UserRegistrationLive, :new
       live "/users/log_in", UserLoginLive, :new
       live "/users/reset_password", UserForgotPasswordLive, :new
       live "/users/reset_password/:token", UserResetPasswordLive, :edit
@@ -178,7 +175,6 @@ defmodule ScopestrengthWeb.Router do
     end
   end
 
-  # Catch-all: redirect unknown routes to login with a flash message
   scope "/", ScopestrengthWeb do
     pipe_through [:browser]
 

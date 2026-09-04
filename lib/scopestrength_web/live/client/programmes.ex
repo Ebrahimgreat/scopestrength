@@ -1,16 +1,76 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Client.Programmes do
   alias Scopestrength.Programmes
+  alias Scopestrength.Programmes.ProgrammeUser
+  alias Scopestrength.Clients.Client
+  alias Scopestrength.Repo
 
   use ScopestrengthWeb, :live_view
 
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
+    client = Repo.get_by(Client, user_id: user.id)
+    assignedProgramme =
+      Repo.get_by(ProgrammeUser, client_id: client.id, is_active: true)
+      |> Repo.preload(programme: [programmeTemplates: [programmeDetails: :exercise]])
+
 
     newProgramme = Programmes.change_programme(%Programmes.Programme{}) |> to_form()
-
     programmes = Programmes.list_user_programmes(user.id)
 
-    {:ok, assign(socket, user_id: user.id, programmes: programmes, name: user.name, newProgramme: newProgramme, delete_confirm_id: nil)}
+
+    {:ok,
+     assign(socket,
+       user_id: user.id,
+       client_id: client.id,
+       programmes: programmes,
+       name: user.name,
+       newProgramme: newProgramme,
+       assignedProgramme: assignedProgramme,
+       delete_confirm_id: nil
+     )}
+  end
+
+  defp rep_target(%{min_reps: min, max_reps: max}) when is_integer(min) and is_integer(max),
+    do: "#{min}-#{max} reps"
+
+  defp rep_target(%{reps: reps}) when is_binary(reps) and reps != "", do: "#{reps} reps"
+  defp rep_target(_detail), do: "—"
+
+  def handle_event("copyAssigned", %{"id" => id}, socket) do
+    case Programmes.clone_assigned_programme(
+           socket.assigns.user_id,
+           socket.assigns.client_id,
+           String.to_integer(id)
+         ) do
+      {:ok, new_programme} ->
+        {:noreply,
+         update(socket, :programmes, fn programmes -> [new_programme | programmes] end)
+         |> put_flash(:info, "Copied to your programmes — edit it freely")}
+
+      {:error, :not_assigned} ->
+        {:noreply, socket |> put_flash(:error, "That programme is not assigned to you")}
+
+      {:error, _reason} ->
+        {:noreply, socket |> put_flash(:error, "Failed to copy programme")}
+    end
   end
 
   def handle_event("addNewProgramme", _params, socket) do
@@ -78,6 +138,72 @@ defmodule ScopestrengthWeb.Client.Programmes do
       </div>
 
       <div
+        :if={@assignedProgramme && @assignedProgramme.programme}
+        class="mt-8 rounded-xl border border-primary/30 bg-card p-5"
+      >
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="min-w-0">
+            <p class="text-xs font-medium uppercase tracking-widest text-primary">
+              Assigned by your trainer
+            </p>
+            <h2 class="mt-1.5 font-semibold text-foreground">
+              <%= @assignedProgramme.programme.name %>
+            </h2>
+            <p class="mt-1 text-sm text-dim">
+              <%= if @assignedProgramme.programme.description && @assignedProgramme.programme.description != "" do %>
+                <%= @assignedProgramme.programme.description %>
+              <% else %>
+                No description
+              <% end %>
+            </p>
+            <% templates = @assignedProgramme.programme.programmeTemplates %>
+            <p class="num mt-2 text-xs text-dim">
+              <%= length(templates) %> template<%= if length(templates) != 1, do: "s" %>
+            </p>
+          </div>
+
+          <button
+            type="button"
+            phx-click="copyAssigned"
+            phx-value-id={@assignedProgramme.programme_id}
+            class="shrink-0 rounded-md border border-line px-3 py-2 text-xs font-medium text-dim transition hover:border-primary hover:text-primary"
+          >
+            Make a copy
+          </button>
+        </div>
+
+        <div :if={templates != []} class="mt-5 space-y-3 border-t border-line pt-4">
+          <div :for={template <- templates}>
+            <div class="flex items-baseline justify-between gap-3">
+              <h3 class="text-sm font-medium text-foreground"><%= template.name %></h3>
+              <span class="num shrink-0 text-xs text-dim">
+                <%= length(template.programmeDetails) %> exercise<%= if length(template.programmeDetails) != 1, do: "s" %>
+              </span>
+            </div>
+
+            <div :if={template.programmeDetails != []} class="mt-2 space-y-1">
+              <div
+                :for={detail <- template.programmeDetails}
+                class="flex items-baseline justify-between gap-3 text-sm"
+              >
+                <span class="truncate text-dim"><%= detail.exercise.name %></span>
+                <span class="num shrink-0 text-xs text-faint">
+                  <%= detail.set %> × <%= rep_target(detail) %>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2
+        :if={@programmes != []}
+        class="mt-10 text-xs font-medium uppercase tracking-widest text-dim"
+      >
+        Your programmes
+      </h2>
+
+      <div
         :if={@programmes == []}
         class="mt-8 rounded-xl border border-dashed border-line px-6 py-16 text-center"
       >
@@ -92,12 +218,11 @@ defmodule ScopestrengthWeb.Client.Programmes do
         </div>
       </div>
 
-      <div :if={@programmes != []} class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div :if={@programmes != []} class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div
           :for={programme <- @programmes}
           class="group relative flex flex-col rounded-xl border border-line bg-card p-5 transition hover:border-dim"
         >
-          <%!-- Stretched link covers the card; the action row sits above it. --%>
           <.link
             navigate={~p"/client/programmes/#{programme.id}"}
             class="after:absolute after:inset-0 after:rounded-xl"

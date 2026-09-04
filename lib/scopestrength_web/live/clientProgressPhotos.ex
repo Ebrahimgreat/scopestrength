@@ -1,5 +1,24 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.ClientProgressPhotos do
   use ScopestrengthWeb, :live_view
+  alias Scopestrength.Storage
 
   alias Scopestrength.Trainers
   alias Scopestrength.Clients.Client
@@ -66,7 +85,7 @@ defmodule ScopestrengthWeb.ClientProgressPhotos do
             <%= for photo <- @photos do %>
               <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden">
                 <div class="relative aspect-[3/4]">
-                  <img src={photo.photo_url} alt="Progress photo" class="w-full h-full object-cover" />
+                  <img src={Storage.url(photo.photo_url)} alt="Progress photo" class="w-full h-full object-cover" />
                 </div>
                 <div class="p-4">
                   <p class="text-sm font-medium text-foreground"><%= Calendar.strftime(photo.date, "%B %d, %Y") %></p>

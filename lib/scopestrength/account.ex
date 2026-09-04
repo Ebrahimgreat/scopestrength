@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule Scopestrength.Account do
   @moduledoc """
   The Account context.
@@ -8,7 +26,6 @@ defmodule Scopestrength.Account do
 
   alias Scopestrength.Account.{User, UserToken, UserNotifier}
 
-  ## Database getters
 
   @doc """
   Gets a user by email.
@@ -40,7 +57,7 @@ defmodule Scopestrength.Account do
   Returns {:ok, user} or {:error, reason}.
   """
   def generate_demo_account do
-    alias Scopestrength.{Trainers, Clients, Subscriptions, Programmes, Training}
+    alias Scopestrength.{Trainers, Clients, Programmes, Training}
     alias Scopestrength.Exercises.Exercise
 
     random = :crypto.strong_rand_bytes(5) |> Base.encode32(case: :lower, padding: false)
@@ -48,7 +65,6 @@ defmodule Scopestrength.Account do
     password = "Demodemo1234"
 
     Repo.transaction(fn ->
-      # 1. Create trainer user
       {:ok, trainer_user} =
         register_user(%{
           name: "Demo Trainer",
@@ -58,7 +74,6 @@ defmodule Scopestrength.Account do
           type: "demo"
         })
 
-      # 2. Create trainer profile
       {:ok, trainer} =
         Trainers.create_trainer(%{
           user_id: trainer_user.id,
@@ -66,19 +81,6 @@ defmodule Scopestrength.Account do
           specialization: "General Fitness"
         })
 
-      # 3. Create 3-day demo trial subscription
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
-
-      {:ok, _sub} =
-        Subscriptions.create_subscription(%{
-          user_id: trainer_user.id,
-          name: "Demo Trial",
-          plan: "trial",
-          trial_start: now,
-          trial_end: DateTime.add(now, 3 * 86_400, :second)
-        })
-
-      # 4. Create 3 demo clients
       clients_data = [
         %{name: "Alex Johnson", age: 28, sex: "male", height: "178.0", notes: "Intermediate lifter, focuses on strength"},
         %{name: "Sarah Martinez", age: 32, sex: "female", height: "165.0", notes: "Experienced, training for hypertrophy"},
@@ -114,7 +116,6 @@ defmodule Scopestrength.Account do
 
       [alex, sarah, mike] = clients
 
-      # 5. Lookup exercises by name (from seed data)
       exercise_names = [
         "Barbell Bench Press", "Incline Dumbbell Press", "Cable Chest Fly",
         "Tricep Pushdown", "Lateral Raise",
@@ -134,8 +135,6 @@ defmodule Scopestrength.Account do
           end
         end)
 
-      # 6. Create programmes with templates and details
-      # Programme 1: Push Pull Legs
       {:ok, ppl} = Programmes.create_programme(%{name: "Push Pull Legs", description: "Classic 3-day split", user_id: trainer_user.id})
 
       {:ok, push_day} = Programmes.create_programme_template(%{name: "Push Day", programme_id: ppl.id})
@@ -184,7 +183,6 @@ defmodule Scopestrength.Account do
         })
       end
 
-      # Programme 2: Upper Lower
       {:ok, ul} = Programmes.create_programme(%{name: "Upper Lower", description: "4-day upper/lower split", user_id: trainer_user.id})
 
       {:ok, upper} = Programmes.create_programme_template(%{name: "Upper Body", programme_id: ul.id})
@@ -218,14 +216,12 @@ defmodule Scopestrength.Account do
         })
       end
 
-      # 7. Assign programmes to clients
       Programmes.create_programme_user(%{programme_id: ppl.id, client_id: alex.id, is_active: true})
       Programmes.create_programme_user(%{programme_id: ul.id, client_id: sarah.id, is_active: true})
       Programmes.create_programme_user(%{programme_id: ppl.id, client_id: mike.id, is_active: true})
 
-      # 8. Create sample workouts
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-      # Workout 1: Alex's Push Day (2 days ago)
       {:ok, w1} = Training.create_workout(%{
         name: "Push Day - Week 1",
         date: DateTime.add(now, -2 * 86_400, :second),
@@ -246,7 +242,6 @@ defmodule Scopestrength.Account do
         end
       end
 
-      # Workout 2: Sarah's Upper Body (yesterday)
       {:ok, w2} = Training.create_workout(%{
         name: "Upper Body - Week 1",
         date: DateTime.add(now, -86_400, :second),
@@ -267,7 +262,6 @@ defmodule Scopestrength.Account do
         end
       end
 
-      # Workout 3: Mike's Leg Day (today)
       {:ok, w3} = Training.create_workout(%{
         name: "Leg Day - Week 1",
         date: now,
@@ -327,7 +321,6 @@ defmodule Scopestrength.Account do
   """
   def get_user!(id), do: Repo.get!(User, id)
 
-  ## User registration
 
   @doc """
   Registers a user.
@@ -360,7 +353,6 @@ defmodule Scopestrength.Account do
     User.registration_changeset(user, attrs, hash_password: false, validate_email: false)
   end
 
-  ## Settings
 
   @doc """
   Returns an `%Ecto.Changeset{}` for changing the user email.
@@ -482,7 +474,6 @@ defmodule Scopestrength.Account do
     end
   end
 
-  ## Session
 
   @doc """
   Generates a session token.
@@ -509,7 +500,6 @@ defmodule Scopestrength.Account do
     :ok
   end
 
-  ## Confirmation
 
   @doc ~S"""
   Delivers the confirmation email instructions to the given user.
@@ -556,7 +546,6 @@ defmodule Scopestrength.Account do
     |> Ecto.Multi.delete_all(:tokens, UserToken.by_user_and_contexts_query(user, ["confirm"]))
   end
 
-  ## Reset password
 
   @doc ~S"""
   Delivers the reset password email to the given user.

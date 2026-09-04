@@ -1,13 +1,28 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule Scopestrength.Application do
-  # See https://hexdocs.pm/elixir/Application.html
-  # for more information on OTP Applications
   @moduledoc false
 
   use Application
 
   @impl true
   def start(_type, _args) do
-    # Run migrations automatically in production
     try do
       Scopestrength.Release.migrate()
     rescue
@@ -22,20 +37,13 @@ defmodule Scopestrength.Application do
       Scopestrength.Repo,
       {Oban, Application.fetch_env!(:scopestrength, Oban)},
       {Phoenix.PubSub, name: Scopestrength.PubSub},
-      # Start the Finch HTTP client for sending emails
       {Finch, name: Scopestrength.Finch},
-      # Start a worker by calling: Scopestrength.Worker.start_link(arg)
-      # {Scopestrength.Worker, arg},
-      # Start to serve requests, typically the last entry
       ScopestrengthWeb.Endpoint
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Scopestrength.Supervisor]
     {:ok, pid} = Supervisor.start_link(children, opts)
 
-    # Auto-seed if database is empty (only runs once)
     try do
       if Scopestrength.Repo.aggregate(Scopestrength.Account.User, :count) == 0 do
         require Logger
@@ -56,8 +64,6 @@ defmodule Scopestrength.Application do
     {:ok, pid}
   end
 
-  # Tell Phoenix to update the endpoint configuration
-  # whenever the application is updated.
   @impl true
   def config_change(changed, _new, removed) do
     ScopestrengthWeb.Endpoint.config_change(changed, removed)

@@ -1,5 +1,4 @@
-// See the Tailwind configuration guide for advanced usage
-// https://tailwindcss.com/docs/configuration
+
 
 const plugin = require("tailwindcss/plugin")
 const defaultTheme = require("tailwindcss/defaultTheme")
@@ -15,30 +14,23 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Phoenix default, still referenced by the generated home page.
         brand: "#FD4F00",
 
-        // Surfaces, darkest to lightest. Dark UI needs more steps than
-        // light does, because you can't use shadow to separate layers.
         background: "#0a0a0a",
         card: "#111111",
         muted: "#161616",
         secondary: "#1c1c1c",
         line: "#1f1f1f",
 
-        // Text
         foreground: "#efefef",
-        dim: "#8a8a8a",      // readable secondary text
-        faint: "#5a5a5a",     // disabled / decorative only, ~2.9:1
+        dim: "#8a8a8a",
+        faint: "#5a5a5a",
 
-        // Accent. In this system the accent also means "healthy / live",
-        // which is why success is deliberately the same value.
         primary: {
           DEFAULT: "#c8f736",
           foreground: "#0a0a0a"
         },
 
-        // Status
         success: "#c8f736",
         warning: "#e8a33d",
         danger: "#e8674f"
@@ -61,17 +53,10 @@ module.exports = {
   },
   plugins: [
     require("@tailwindcss/forms"),
-    // Allows prefixing tailwind classes with LiveView classes to add rules
-    // only when LiveView classes are applied, for example:
-    //
-    //     <div class="phx-click-loading:animate-ping">
-    //
     plugin(({addVariant}) => addVariant("phx-click-loading", [".phx-click-loading&", ".phx-click-loading &"])),
     plugin(({addVariant}) => addVariant("phx-submit-loading", [".phx-submit-loading&", ".phx-submit-loading &"])),
     plugin(({addVariant}) => addVariant("phx-change-loading", [".phx-change-loading&", ".phx-change-loading &"])),
 
-    // Tabular numerals. Use on every weight, rep, RPE, date, timer and
-    // count so columns stop jittering as digits change width.
     plugin(({addUtilities}) => addUtilities({
       ".num": {
         "font-family": "JetBrains Mono, ui-monospace, monospace",
@@ -79,9 +64,6 @@ module.exports = {
       }
     })),
 
-    // Embeds Heroicons (https://heroicons.com) into your app.css bundle
-    // See your `CoreComponents.icon/1` for more information.
-    //
     plugin(function({matchComponents, theme}) {
       let iconsDir = path.join(__dirname, "../deps/heroicons/optimized")
       let values = {}

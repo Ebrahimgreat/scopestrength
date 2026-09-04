@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.ExerciseProgress do
   alias Scopestrength.Repo
   alias Scopestrength.Trainers
@@ -93,7 +111,6 @@ defmodule ScopestrengthWeb.ExerciseProgress do
     ~H"""
     <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
 
-      <!-- Header -->
       <div class="mb-6 flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-semibold text-foreground"><%= @exercise_name %></h1>
@@ -110,7 +127,6 @@ defmodule ScopestrengthWeb.ExerciseProgress do
         </div>
       <% else %>
 
-        <!-- PR Card -->
         <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div class="rounded-xl border border-line bg-card p-4">
             <p class="text-xs font-medium text-dim">Personal Record</p>
@@ -136,7 +152,6 @@ defmodule ScopestrengthWeb.ExerciseProgress do
           </div>
         </div>
 
-        <!-- Session Table -->
         <div class="overflow-hidden rounded-xl border border-line bg-card">
           <div class="border-b border-line bg-card px-4 py-3 sm:px-6">
             <h2 class="text-sm font-semibold text-foreground">Session History</h2>
@@ -173,7 +188,7 @@ defmodule ScopestrengthWeb.ExerciseProgress do
                         <% session.prev == nil -> %>
                           <span class="text-gray-300 text-xs">—</span>
                         <% session.top_weight > session.prev.top_weight -> %>
-                          <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-emerald-200">
+                          <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-primary/30">
                             ▲ +<%= Float.round(session.top_weight - session.prev.top_weight, 1) %>kg
                           </span>
                         <% session.top_weight < session.prev.top_weight -> %>
@@ -181,7 +196,7 @@ defmodule ScopestrengthWeb.ExerciseProgress do
                             ▼ <%= Float.round(session.top_weight - session.prev.top_weight, 1) %>kg
                           </span>
                         <% session.top_reps > session.prev.top_reps -> %>
-                          <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-emerald-200">
+                          <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-primary/30">
                             ▲ +<%= session.top_reps - session.prev.top_reps %> reps
                           </span>
                         <% session.top_reps < session.prev.top_reps -> %>

@@ -1,8 +1,24 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.ClientDashboard do
 alias Scopestrength.Programmes.ProgrammeUser
-alias Scopestrength.Programmes
 alias Scopestrength.Programmes.Programme
-alias Scopestrength.Accounts.Trainer
 alias Scopestrength.Clients.Client
 alias Scopestrength.DownloadProgramme
 alias Scopestrength.Invites
@@ -10,6 +26,7 @@ alias Scopestrength.Repo
 alias Scopestrength.Training.{Workout, WorkoutDetails}
 import Ecto.Query
   use ScopestrengthWeb, :live_view
+  alias Scopestrength.Storage
 
 
   def handle_event("searchProgress", %{"q" => query}, socket) do
@@ -28,7 +45,7 @@ import Ecto.Query
     case Invites.redeem_invite(code, user.email) do
       {:ok, trainer_id} ->
         case Invites.link_client_to_trainer(client.id, trainer_id) do
-          {:ok, updated_client} ->
+          {:ok, _updated_client} ->
             client = Repo.get!(Client, client.id) |> Repo.preload(trainer: :user)
             {:noreply, socket
               |> assign(client: client, invite_code: "")
@@ -81,7 +98,6 @@ import Ecto.Query
       end
 
 
-    # Get recent workouts
     recent_workouts =
       from(w in Workout,
         where: w.client_id == ^client.id,
@@ -91,7 +107,6 @@ import Ecto.Query
       )
       |> Repo.all()
 
-    # Get exercise progress (unique exercises the client has done)
     exercise_progress =
       from(wd in WorkoutDetails,
         join: w in Workout, on: wd.workout_id == w.id,
@@ -121,31 +136,12 @@ import Ecto.Query
       client: client,
       current_programme: currentProgramme,
       template_count: length(templates),
-      programme_progress: programme_progress(templates, recent_workouts),
       invite_code: "",
       recent_workouts: recent_workouts,
       exercise_progress: exercise_progress,
       all_exercise_progress: exercise_progress,
       progress_query: ""
     )}
-  end
-
-  # The schema has no week count or duration, so "progress" is the share of the
-  # programme's templates the client has actually trained, matched by name.
-  defp programme_progress([], _workouts), do: 0
-
-  defp programme_progress(templates, workouts) do
-    trained =
-      workouts
-      |> Enum.map(&String.downcase(&1.name || ""))
-      |> MapSet.new()
-
-    matched =
-      Enum.count(templates, fn template ->
-        MapSet.member?(trained, String.downcase(template.name || ""))
-      end)
-
-    round(matched / length(templates) * 100)
   end
 
   defp workout_volume(workout) do
@@ -158,7 +154,6 @@ import Ecto.Query
   end
   def handle_info(_, socket), do: {:noreply, socket}
 
-  # Matches exercise and muscle name, so the removed muscle chips are not missed.
   defp filter_progress(entries, ""), do: entries
 
   defp filter_progress(entries, query) do
@@ -189,7 +184,7 @@ import Ecto.Query
         >
           <%= if @client.profile_picture_url do %>
             <img
-              src={@client.profile_picture_url}
+              src={Storage.url(@client.profile_picture_url)}
               alt=""
               class="h-9 w-9 rounded-full border border-line object-cover"
             />
@@ -274,7 +269,7 @@ import Ecto.Query
                   <td class="px-5 py-4">
                     <.link
                       navigate={~p"/client/workouts/#{workout.id}"}
-                      class="font-medium text-primary transition hover:opacity-80"
+                      class="font-medium text-foreground transition hover:text-dim"
                     >
                       <%= workout.name || "Training Session" %>
                     </.link>
@@ -307,16 +302,6 @@ import Ecto.Query
               · <%= @template_count %> template<%= if @template_count != 1, do: "s" %>
             </p>
 
-            <%!-- No week/duration exists on the schema, so progress is measured
-                  as distinct templates trained rather than an invented week count. --%>
-            <div class="mt-5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div class="h-full rounded-full bg-primary" style={"width: #{@programme_progress}%"}>
-              </div>
-            </div>
-            <p class="num mt-2 text-xs text-dim">
-              <%= @programme_progress %>% of templates trained
-            </p>
-
             <div class="mt-5 flex items-center gap-4 border-t border-line pt-4">
               <.link
                 navigate={~p"/client/programmes"}
@@ -347,7 +332,6 @@ import Ecto.Query
         </div>
       </div>
 
-      <!-- Exercise Progress Section -->
       <div class="mt-10 border-t border-line pt-6">
         <div class="flex items-baseline justify-between gap-3">
           <h2 class="text-sm font-semibold text-foreground">Exercise Progress</h2>
@@ -356,8 +340,6 @@ import Ecto.Query
           </span>
         </div>
 
-        <%!-- One search box instead of a muscle-chip row, matching the exercise
-              library. Search covers the muscle name, so the chips were redundant. --%>
         <form phx-change="searchProgress" phx-debounce="250" class="mt-4">
           <input
             type="search"

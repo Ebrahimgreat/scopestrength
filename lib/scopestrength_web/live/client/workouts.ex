@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Client.Workouts do
   alias Scopestrength.Training
   alias Scopestrength.Repo
@@ -42,9 +60,6 @@ defmodule ScopestrengthWeb.Client.Workouts do
     |> assign(:total_pages, total_pages)
   end
 
-  # Derives the card's display data once per workout rather than recomputing it
-  # inside the template. A freshly created workout has no details loaded, so
-  # treat a missing association as empty rather than crashing.
   defp summarize(workout) do
     details = loaded_details(workout)
 
@@ -70,9 +85,6 @@ defmodule ScopestrengthWeb.Client.Workouts do
     }
   end
 
-  # Cards sit in a grid, so an 8-exercise leg day would otherwise stretch its
-  # row far taller than its neighbours. Cap the tags and let the card expand
-  # on demand instead.
   defp visible_names(workout, expanded_id) do
     if expanded_id == workout.id do
       workout.exercise_names
@@ -85,7 +97,6 @@ defmodule ScopestrengthWeb.Client.Workouts do
   defp loaded_details(%{workoutDetails: details}) when is_list(details), do: details
   defp loaded_details(_), do: []
 
-  # Volume reads better abbreviated once it runs to five digits.
   defp format_volume(volume) when volume >= 1000 do
     "#{Float.round(volume / 1000, 1)}k"
   end
@@ -123,7 +134,11 @@ defmodule ScopestrengthWeb.Client.Workouts do
                      recipient_id: client.trainer_id,
                      recipient_type: "trainer",
                      type: "workout_created",
-                     data: %{workout_id: workout.id, client_id: client.id}
+                     data: %{
+                       workout_id: workout.id,
+                       client_id: client.id,
+                       client_name: user.name
+                     }
                    }) do
                 {:ok, notification} -> {workout, notification}
                 {:error, changeset} -> Repo.rollback(changeset)
@@ -156,18 +171,18 @@ defmodule ScopestrengthWeb.Client.Workouts do
         {:noreply, socket |> put_flash(:error, "Unable To create workout")}
     end
   end
-  def handle_event("deleteWorkout", %{"id"=>id}, socket) do
-    id= String.to_integer(id)
-    workout= Training.get_workout!(id)
+  def handle_event("deleteWorkout", %{"id" => id}, socket) do
+    id = ScopestrengthWeb.Params.to_integer(id)
+    workout = Training.get_workout!(id)
+
     case Training.delete_workout(workout) do
-      {:ok, _deleted}->
+      {:ok, _deleted} ->
         all_workouts = Enum.reject(socket.assigns.all_workouts, &(&1.id == id))
         {:noreply, socket |> assign(:all_workouts, all_workouts) |> paginate()}
-        _->{:noreply,socket|>put_flash(:error, "Cannot delete")}
 
+      {:error, _changeset} ->
+        {:noreply, socket |> put_flash(:error, "Cannot delete")}
     end
-
-
   end
 
 
@@ -207,9 +222,6 @@ defmodule ScopestrengthWeb.Client.Workouts do
           :for={workout <- @workouts}
           class="group relative flex flex-col rounded-xl border border-line bg-card p-5 transition hover:border-dim"
         >
-          <%!-- Stretched link: the pseudo-element covers the whole card so it is
-                clickable, while the delete button sits above it via z-index.
-                Nesting the button inside the link would fire navigation too. --%>
           <.link
             navigate={~p"/client/workouts/#{workout.id}"}
             class="after:absolute after:inset-0 after:rounded-xl"
@@ -230,7 +242,6 @@ defmodule ScopestrengthWeb.Client.Workouts do
             >
               {name}
             </span>
-            <%!-- Sits above the stretched link so it toggles instead of navigating. --%>
             <button
               :if={workout.hidden_count > 0 and @expanded != workout.id}
               type="button"
@@ -266,16 +277,17 @@ defmodule ScopestrengthWeb.Client.Workouts do
             </span>
           </div>
 
-          <button
-            type="button"
-            phx-click="deleteWorkout"
-            phx-value-id={workout.id}
-            data-confirm="Are you sure you want to delete this workout?"
+          <.confirm
+            id={"delete-workout-#{workout.id}"}
+            title="Delete Workout"
+            message="Are you sure you want to delete this workout? All logged sets will be lost."
+            confirm_label="Delete"
+            on_confirm={JS.push("deleteWorkout", value: %{id: workout.id})}
             aria-label={"Delete #{workout.name || "workout"}"}
             class="absolute right-3 top-3 z-10 rounded-md p-1.5 text-dim opacity-0 transition hover:bg-danger/10 hover:text-danger focus:opacity-100 group-hover:opacity-100"
           >
             <.icon name="hero-trash" class="h-4 w-4" />
-          </button>
+          </.confirm>
         </div>
       </div>
 

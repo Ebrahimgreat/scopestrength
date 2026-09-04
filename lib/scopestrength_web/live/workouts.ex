@@ -1,11 +1,30 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Workouts do
 alias Scopestrength.Trainers
 alias Scopestrength.Clients
 alias Scopestrength.Repo
   use ScopestrengthWeb, :live_view
+  alias Scopestrength.Storage
   import Ecto.Query
 
-  def mount(params, session, socket) do
+  def mount(params, _session, socket) do
     user = socket.assigns.current_user
     trainer = Trainers.get_trainer_byUserId(user.id)
     client_id = String.to_integer(params["id"])
@@ -27,14 +46,15 @@ alias Scopestrength.Repo
 
   def render(assigns) do
     ~H"""
-   <div class="w-full min-h-screen">
+    <div class="w-full min-h-screen">
     <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-4">
         <div class="max-w-6xl mx-auto py-8">
+          <.back_link navigate={~p"/trainer/clients/#{@client.id}"}>Client</.back_link>
           <div class="flex items-start justify-between gap-6">
             <div>
               <div class="flex items-center gap-4 mb-3">
                 <%= if @client.profile_picture_url do %>
-                  <img src={@client.profile_picture_url} alt={@client.user.name} class="w-16 h-16 rounded-full object-cover border-2 border-primary shadow-sm" />
+                  <img src={Storage.url(@client.profile_picture_url)} alt={@client.user.name} class="w-16 h-16 rounded-full object-cover border-2 border-primary shadow-sm" />
                 <% else %>
                   <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl border-2 border-primary shadow-sm">
                     <%= String.slice(@client.user.name, 0, 1) |> String.upcase() %>
@@ -80,7 +100,7 @@ alias Scopestrength.Repo
                 <%end%>
 
 
-</tbody>
+                </tbody>
                 </table>
                 </div>
                 <%end%>

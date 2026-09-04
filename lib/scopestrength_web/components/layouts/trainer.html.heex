@@ -28,12 +28,6 @@
     <span class="text-sm font-medium">You're exploring a demo account with sample data</span>
   </div>
 
-  <ScopestrengthWeb.SubscriptionBanner.subscription_banner
-    subscription_status={assigns[:subscription_status] || :trial}
-    trial_days_remaining={assigns[:trial_days_remaining] || 0}
-    current_user={@current_user}
-  />
-
   <div class="flex-1 p-4 md:p-6 lg:p-8">
     <.flash_group flash={@flash} />
     {@inner_content}

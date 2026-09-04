@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.UserLoginLive do
   use ScopestrengthWeb, :live_view
 
@@ -77,6 +95,13 @@ defmodule ScopestrengthWeb.UserLoginLive do
             Log in
           </button>
         </.form>
+
+        <p class="mt-6 text-center text-sm text-dim">
+          Don't have an account?
+          <.link navigate={~p"/users/register"} class="font-semibold text-primary hover:underline">
+            Sign up
+          </.link>
+        </p>
 
         <div class="mt-8 border-t border-line pt-6">
           <p class="text-center text-sm text-dim">Want to explore first?</p>

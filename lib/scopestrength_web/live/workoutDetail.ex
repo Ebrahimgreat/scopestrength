@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.WorkoutDetail do
   alias Scopestrength.Trainers
   alias Scopestrength.Clients.Client
@@ -23,7 +41,7 @@ defmodule ScopestrengthWeb.WorkoutDetail do
             where: w.workout_id == ^workout_id,
             order_by: [asc: w.set]
         )
-        |> Repo.preload([:exercise, :set_type])
+        |> Repo.preload([:exercise])
 
       {grouped_workouts, muscle_group_frequencies} = build_workout_assigns(workouts)
 
@@ -44,126 +62,149 @@ defmodule ScopestrengthWeb.WorkoutDetail do
 
   def render(assigns) do
     ~H"""
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div class="mb-6">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-4">
-            <.link navigate={~p"/trainer/clients/#{@client.id}/workouts"} class="text-dim hover:text-foreground">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-              </svg>
-            </.link>
-            <div>
-              <h1 class="text-3xl font-bold text-foreground">Workout Details</h1>
-              <p class="text-sm text-dim mt-1">
-                <%= @workout.name || "Training Session" %>
-                <%= if @workout.date do %>
-                  · <%= Calendar.strftime(@workout.date, "%b %d, %Y") %>
-                <% end %>
-              </p>
-            </div>
-          </div>
-          <div class="text-sm text-dim">
+    <div class="mx-auto max-w-5xl">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div class="min-w-0">
+          <.link
+            navigate={~p"/trainer/clients/#{@client.id}/workouts"}
+            class="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-widest text-dim transition hover:text-foreground"
+          >
+            <.icon name="hero-chevron-left" class="h-3 w-3" /> Workouts
+          </.link>
+          <h1 class="mt-1 font-display text-5xl font-bold uppercase tracking-wide text-foreground">
+            <%= @workout.name || "Training Session" %>
+          </h1>
+          <p class="num mt-2 text-sm text-dim">
+            <%= if @workout.date do %>
+              <%= Calendar.strftime(@workout.date, "%b %d, %Y") %> ·
+            <% end %>
             <%= @client.user && @client.user.name %>
+          </p>
+        </div>
+
+        <div :if={@workouts != %{}} class="flex shrink-0 gap-6">
+          <div>
+            <p class="text-xs uppercase tracking-widest text-faint">Exercises</p>
+            <p class="num mt-1 text-2xl font-bold text-foreground"><%= map_size(@workouts) %></p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-widest text-faint">Sets</p>
+            <p class="num mt-1 text-2xl font-bold text-foreground"><%= total_sets(@workouts) %></p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-widest text-faint">Volume</p>
+            <p class="num mt-1 text-2xl font-bold text-foreground"><%= total_volume(@workouts) %></p>
           </div>
         </div>
       </div>
 
-      <div class="bg-card rounded-2xl shadow-lg border border-line">
-        <%= if Enum.empty?(@workouts) do %>
-          <div class="text-center py-16">
-            <div class="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg class="w-10 h-10 text-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-              </svg>
+      <div
+        :if={@workouts == %{}}
+        class="mt-8 rounded-xl border border-dashed border-line px-6 py-16 text-center"
+      >
+        <h3 class="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+          No exercises logged
+        </h3>
+        <p class="mx-auto mt-2 max-w-sm text-sm text-dim">
+          This workout has no logged exercises yet.
+        </p>
+      </div>
+
+      <div :if={map_size(@muscle_group_frequencies) > 0} class="mt-8 rounded-xl border border-line bg-card p-5">
+        <div class="flex items-baseline justify-between gap-3">
+          <h2 class="text-sm font-semibold text-foreground">Session Volume</h2>
+          <span class="text-xs text-dim">Direct vs effective sets</span>
+        </div>
+
+        <% volume_max =
+          @muscle_group_frequencies
+          |> Enum.map(fn {_m, v} -> v.effective end)
+          |> Enum.max(fn -> 0.0 end) %>
+
+        <div class="mt-4 space-y-2.5">
+          <div :for={{muscle_group, volumes} <- @muscle_group_frequencies}>
+            <div class="flex items-baseline justify-between gap-3">
+              <span class="truncate text-sm text-foreground"><%= muscle_group %></span>
+              <span class="num shrink-0 text-xs text-dim">
+                <%= round(volumes.direct) %> direct · <%= round(volumes.effective) %> effective
+              </span>
             </div>
-            <h3 class="text-lg font-medium text-foreground mb-2">No Exercises Yet</h3>
-            <p class="text-dim">This workout has no logged exercises</p>
-          </div>
-        <% else %>
-          <div class="p-6">
-            <%= if map_size(@muscle_group_frequencies) > 0 do %>
-              <div class="mb-6 bg-card rounded-xl border border-line p-4">
-                <div class="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 class="text-base font-semibold text-foreground">Session Volume</h3>
-                    <p class="text-xs text-dim">Direct vs effective sets per muscle</p>
-                  </div>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  <%= for {muscle_group, volumes} <- @muscle_group_frequencies do %>
-                    <div class="bg-gradient-to-br from-primary to-white border border-emerald-100 rounded-lg px-3 py-2.5">
-                      <p class="text-xs font-semibold text-foreground truncate"><%= muscle_group %></p>
-                      <div class="flex items-center justify-between mt-2 text-[11px] text-dim">
-                        <span>Direct</span>
-                        <span class="inline-flex items-center justify-center px-2 py-0.5 bg-primary text-foreground text-xs font-semibold rounded-full">
-                          <%= round(volumes.direct) %>
-                        </span>
-                      </div>
-                      <div class="flex items-center justify-between mt-1 text-[11px] text-dim">
-                        <span>Effective</span>
-                        <span class="inline-flex items-center justify-center px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded-full">
-                          <%= round(volumes.effective) %>
-                        </span>
-                      </div>
-                    </div>
-                  <% end %>
-                </div>
+            <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                class="h-full rounded-full bg-primary"
+                style={"width: #{bar_pct(volumes.effective, volume_max)}%"}
+              >
               </div>
-            <% end %>
-            <div class="grid gap-6">
-              <%= for {_exercise_id, sets} <- @workouts do %>
-                <div class="border border-line rounded-xl p-5 bg-gradient-to-br from-white to-gray-50">
-                  <div class="flex items-center justify-between mb-4 pb-3 border-b border-line">
-                    <h3 class="text-xl font-bold text-foreground">
-                      <%= List.first(sets).data.exercise.name %>
-                    </h3>
-                    <span class="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                      <%= length(sets) %> sets
-                    </span>
-                  </div>
-
-                  <div class="space-y-2">
-                    <%= for workout <- sets do %>
-                      <div class="flex items-center justify-between p-3 bg-card rounded-lg border border-line">
-                        <div class="flex items-center space-x-4">
-                          <div class="flex flex-col">
-                            <%= if workout.data.side != "both" do %>
-                              <span class="text-sm font-bold text-foreground">Set <%= workout.data.set %></span>
-                              <span class="text-xs text-dim capitalize"><%= workout.data.side %></span>
-                            <% else %>
-                              <span class="text-sm font-bold text-foreground">Set <%= workout.data.set %></span>
-                            <% end %>
-                          </div>
-                          <div class="flex items-center space-x-6">
-                            <div>
-                              <p class="text-xs text-dim uppercase tracking-wide">Reps</p>
-                              <p class="text-lg font-semibold text-foreground"><%= workout.data.reps %></p>
-
-
-
-                            </div>
-                            <div>
-                              <p class="text-xs text-dim uppercase tracking-wide">Weight</p>
-                              <p class="text-lg font-semibold text-foreground"><%= workout.data.weight %> kg</p>
-                            </div>
-                          </div>
-                        </div>
-                        <svg class="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                        </svg>
-                      </div>
-                    <% end %>
-                  </div>
-                </div>
-              <% end %>
             </div>
           </div>
-        <% end %>
+        </div>
+      </div>
+
+      <div :if={@workouts != %{}} class="mt-8 space-y-4">
+        <div
+          :for={{_exercise_id, sets} <- @workouts}
+          class="overflow-hidden rounded-xl border border-line bg-card"
+        >
+          <div class="flex items-baseline justify-between gap-3 border-b border-line px-5 py-4">
+            <h3 class="font-semibold text-foreground">
+              <%= List.first(sets).data.exercise.name %>
+            </h3>
+            <span class="num text-xs text-dim"><%= length(sets) %> sets</span>
+          </div>
+
+          <div class="grid grid-cols-[2rem,1fr,1fr,1fr,1fr] gap-3 px-5 pt-3">
+            <span class="text-[11px] uppercase tracking-widest text-faint">Set</span>
+            <span class="text-[11px] uppercase tracking-widest text-faint">Weight</span>
+            <span class="text-[11px] uppercase tracking-widest text-faint">Reps</span>
+            <span class="text-[11px] uppercase tracking-widest text-faint">RIR</span>
+            <span class="text-[11px] uppercase tracking-widest text-faint">RPE</span>
+          </div>
+
+          <div class="px-5 pb-3">
+            <div
+              :for={workout <- sets}
+              class="grid grid-cols-[2rem,1fr,1fr,1fr,1fr] items-baseline gap-3 border-b border-line/60 py-2.5 last:border-0"
+            >
+              <span class="num text-sm text-dim"><%= workout.data.set %></span>
+              <span class="num text-base text-foreground">
+                <%= workout.data.weight %><span class="ml-1 text-xs text-faint">kg</span>
+              </span>
+              <span class="num text-base text-foreground"><%= workout.data.reps %></span>
+              <span class="num text-base text-foreground"><%= workout.data.rir || 0 %></span>
+              <span class="num text-base text-foreground">
+                <%= if workout.data.rpe, do: workout.data.rpe, else: "—" %>
+              </span>
+
+              <span
+                :if={workout.data.side != "both"}
+                class="col-start-2 -mt-1 inline-flex w-fit items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-widest text-dim"
+              >
+                <%= workout.data.side %>
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     """
   end
+
+  defp total_sets(workouts) do
+    workouts |> Enum.map(fn {_id, sets} -> length(sets) end) |> Enum.sum()
+  end
+
+  defp total_volume(workouts) do
+    workouts
+    |> Enum.flat_map(fn {_id, sets} -> sets end)
+    |> Enum.map(fn form -> (form.data.reps || 0.0) * (form.data.weight || 0.0) end)
+    |> Enum.sum()
+    |> then(fn total ->
+      if total >= 1000, do: "#{Float.round(total / 1000, 1)}k", else: round(total)
+    end)
+  end
+
+  defp bar_pct(_value, max) when max <= 0, do: 0
+  defp bar_pct(value, max), do: Float.round(value / max * 100, 2)
 
   defp parse_id(nil), do: :error
 
@@ -223,7 +264,7 @@ defmodule ScopestrengthWeb.WorkoutDetail do
               {c.muscle.name, c.role, set_count * c.multiplier}
             end)
           else
-            Enum.flat_map(details, fn detail ->
+            Enum.flat_map(details, fn _detail ->
               contributions = Map.get(contributions_by_exercise, exercise_id, [])
               Enum.map(contributions, fn c ->
                 {c.muscle.name, c.role, 1 * c.multiplier}

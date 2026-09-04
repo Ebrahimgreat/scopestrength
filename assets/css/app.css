@@ -2,19 +2,6 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
-/* This file is for your main application CSS */
-
-/* @font-face must come AFTER the @import rules above — CSS requires every
-   @import to precede all other rules, so putting these first would
-   invalidate the imports and leave the app entirely unstyled.
-
-   Files live in priv/static/fonts/ (latin subset, from Google Fonts).
-   `fonts` is already in static_paths, so no endpoint config is needed.
-
-   DM Sans and JetBrains Mono are variable fonts: one file covers the whole
-   weight range, so `font-weight` is declared as a range rather than shipping
-   a separate file per weight. Barlow Condensed is only used at 700. */
-
 @font-face {
   font-family: "Barlow Condensed";
   src: url("/fonts/barlow-condensed-700.woff2") format("woff2");
@@ -44,10 +31,20 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 
-  /* @tailwindcss/forms styles inputs for a light background — white fill,
-     grey border. Without this every field renders as a white box on
-     near-black. Phoenix's core_components rely on the plugin, so override
-     it rather than removing it. */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  @media (display-mode: standalone) {
+    html {
+      overscroll-behavior-y: none;
+    }
+  }
+
   [type="text"],
   [type="email"],
   [type="password"],

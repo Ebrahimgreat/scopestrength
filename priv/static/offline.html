@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<title>Offline · ScopeStrength</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px calc(24px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left));
+    background: #0a0a0a;
+    color: #efefef;
+    font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-align: center;
+  }
+  .card { max-width: 22rem; }
+  svg { width: 56px; height: 56px; margin-bottom: 20px; }
+  h1 { font-size: 1.25rem; font-weight: 600; margin: 0 0 8px; letter-spacing: -0.01em; }
+  p { margin: 0 0 24px; color: #8a8a8a; font-size: 0.9375rem; line-height: 1.55; }
+  button {
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: #0a0a0a;
+    background: #c8f736;
+    border: 0;
+    border-radius: 6px;
+    padding: 11px 22px;
+    cursor: pointer;
+  }
+  button:active { opacity: 0.85; }
+  button:focus-visible { outline: 2px solid #c8f736; outline-offset: 2px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <svg viewBox="0 0 512 512" fill="#c8f736" aria-hidden="true">
+      <rect x="112" y="236" width="288" height="40" rx="20"/>
+      <rect x="132" y="176" width="44" height="160" rx="18"/>
+      <rect x="336" y="176" width="44" height="160" rx="18"/>
+      <rect x="84" y="212" width="34" height="88" rx="16"/>
+      <rect x="394" y="212" width="34" height="88" rx="16"/>
+    </svg>
+    <h1>You're offline</h1>
+    <p>ScopeStrength needs a connection to load your clients and programmes. Check your signal and try again.</p>
+    <button type="button" onclick="location.reload()">Try again</button>
+  </div>
+  <script>
+    // Reload automatically the moment the browser sees a connection again.
+    addEventListener("online", () => location.reload());
+  </script>
+</body>
+</html>

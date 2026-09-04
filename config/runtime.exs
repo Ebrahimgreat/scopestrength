@@ -1,6 +1,5 @@
 import Config
 
-# Load .env file in development
 env_path = Path.expand("../.env", __DIR__)
 if config_env() == :dev and File.exists?(env_path) do
   File.read!(env_path)
@@ -14,32 +13,126 @@ if config_env() == :dev and File.exists?(env_path) do
   end)
 end
 
-# config/runtime.exs is executed for all environments, including
-# during releases. It is executed after compilation and before the
-# system starts, so it is typically used to load production configuration
-# and secrets from environment variables or elsewhere. Do not define
-# any compile-time configuration in here, as it won't be applied.
-# The block below contains prod specific runtime configuration.
 
-# ## Using releases
-#
-# If you use `mix release`, you need to explicitly enable the server
-# by passing the PHX_SERVER=true when you start it:
-#
-#     PHX_SERVER=true bin/scopestrength start
-#
-# Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
-# script that automatically sets the env var above.
 if System.get_env("PHX_SERVER") do
   config :scopestrength, ScopestrengthWeb.Endpoint, server: true
+end
+
+if bucket = System.get_env("S3_BUCKET") do
+  config :scopestrength, :storage,
+    adapter: Scopestrength.Storage.S3,
+    bucket: bucket
+
+  missing = Enum.filter(~w(S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY), &(System.get_env(&1) in [nil, ""]))
+
+  if missing != [] do
+    raise """
+    S3_BUCKET is set, so uploads go to object storage, but #{Enum.join(missing, " and ")} #{if length(missing) == 1, do: "is", else: "are"} missing.
+
+    Set them, or unset S3_BUCKET to store uploads on local disk instead.
+    """
+  end
+
+  config :ex_aws,
+    access_key_id: System.fetch_env!("S3_ACCESS_KEY_ID"),
+    secret_access_key: System.fetch_env!("S3_SECRET_ACCESS_KEY"),
+    region: System.get_env("S3_REGION") || "us-east-1",
+    json_codec: Jason
+
+  if host = System.get_env("S3_HOST") do
+    config :ex_aws, :s3,
+      scheme: System.get_env("S3_SCHEME") || "https://",
+      host: host,
+      port: String.to_integer(System.get_env("S3_PORT") || "443")
+  end
+else
+  config :scopestrength, :storage, adapter: Scopestrength.Storage.Local
+end
+
+mail_from =
+  case System.get_env("MAIL_FROM") do
+    nil ->
+      {"ScopeStrength", "noreply@localhost"}
+
+    from ->
+      case Regex.run(~r/^\s*(.*?)\s*<([^>]+)>\s*$/, from) do
+        [_, "", address] -> {"ScopeStrength", address}
+        [_, name, address] -> {name, address}
+        nil -> {"ScopeStrength", String.trim(from)}
+      end
+  end
+
+config :scopestrength, :mail_from, mail_from
+
+mailer_adapter = System.get_env("MAILER_ADAPTER")
+
+api_key = fn ->
+  System.get_env("MAILER_API_KEY") ||
+    raise "MAILER_ADAPTER=#{mailer_adapter} needs MAILER_API_KEY to be set"
+end
+
+case mailer_adapter do
+  adapter when adapter in [nil, "", "local"] ->
+    if config_env() == :prod and adapter != "local" do
+      IO.puts(:stderr, """
+      [warning] MAILER_ADAPTER is not set, so ScopeStrength cannot send email.
+      Password reset and account confirmation emails will be dropped.
+      Set MAILER_ADAPTER (smtp, resend, sendgrid, postmark or mailgun) to enable them.
+      """)
+    end
+
+    config :scopestrength, Scopestrength.Mailer, adapter: Swoosh.Adapters.Local
+
+  "smtp" ->
+    relay = System.get_env("SMTP_HOST") || raise "MAILER_ADAPTER=smtp needs SMTP_HOST to be set"
+    port = String.to_integer(System.get_env("SMTP_PORT") || "587")
+    username = System.get_env("SMTP_USERNAME")
+    password = System.get_env("SMTP_PASSWORD")
+
+    config :scopestrength, Scopestrength.Mailer,
+      adapter: Swoosh.Adapters.SMTP,
+      relay: relay,
+      port: port,
+      username: username,
+      password: password,
+      auth: if(username, do: :always, else: :never),
+      ssl: port == 465,
+      tls: if(port == 465, do: :never, else: :if_available),
+      tls_options: [verify: :verify_peer, cacerts: :public_key.cacerts_get(), server_name_indication: String.to_charlist(relay), depth: 3],
+      retries: 2
+
+  "resend" ->
+    config :scopestrength, Scopestrength.Mailer, adapter: Swoosh.Adapters.Resend, api_key: api_key.()
+
+  "sendgrid" ->
+    config :scopestrength, Scopestrength.Mailer, adapter: Swoosh.Adapters.Sendgrid, api_key: api_key.()
+
+  "postmark" ->
+    config :scopestrength, Scopestrength.Mailer, adapter: Swoosh.Adapters.Postmark, api_key: api_key.()
+
+  "mailgun" ->
+    domain = System.get_env("MAILGUN_DOMAIN") || raise "MAILER_ADAPTER=mailgun needs MAILGUN_DOMAIN to be set"
+
+    config :scopestrength, Scopestrength.Mailer,
+      adapter: Swoosh.Adapters.Mailgun,
+      api_key: api_key.(),
+      domain: domain
+
+  other ->
+    raise "unknown MAILER_ADAPTER #{inspect(other)}; expected smtp, resend, sendgrid, postmark, mailgun or local"
+end
+
+if mailer_adapter in ["resend", "sendgrid", "postmark", "mailgun"] do
+  config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: Scopestrength.Finch
 end
 
 if config_env() == :prod do
   host =
     System.get_env("PHX_HOST") ||
-      System.get_env("RAILWAY_PUBLIC_DOMAIN") ||
-      System.get_env("RENDER_EXTERNAL_HOSTNAME") ||
-      "localhost"
+      raise """
+      environment variable PHX_HOST is missing.
+      This is the public hostname the app is served from, e.g. app.scopestrength.com
+      """
 
   database_url =
     System.get_env("DATABASE_URL") ||
@@ -53,11 +146,6 @@ if config_env() == :prod do
     ssl: [verify: :verify_none],
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "2")
 
-  # The secret key base is used to sign/encrypt cookies and other secrets.
-  # A default value is used in config/dev.exs and config/test.exs but you
-  # want to use a different value for prod and you most likely don't want
-  # to check this value into version control, so we use an environment
-  # variable instead.
   secret_key_base =
     System.get_env("SECRET_KEY_BASE") ||
       raise """
@@ -71,11 +159,7 @@ if config_env() == :prod do
 
   config :scopestrength, ScopestrengthWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
-    check_origin: [
-      "https://#{host}",
-      "https://*.up.railway.app",
-      "https://app.scopestrength.com"
-    ],
+    check_origin: ["https://#{host}"],
     force_ssl: [rewrite_on: [:x_forwarded_proto]],
     http: [
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
@@ -83,53 +167,5 @@ if config_env() == :prod do
     ],
     secret_key_base: secret_key_base
 
-  # ## SSL Support
-  #
-  # To get SSL working, you will need to add the `https` key
-  # to your endpoint configuration:
-  #
-  #     config :scopestrength, ScopestrengthWeb.Endpoint,
-  #       https: [
-  #         ...,
-  #         port: 443,
-  #         cipher_suite: :strong,
-  #         keyfile: System.get_env("SOME_APP_SSL_KEY_PATH"),
-  #         certfile: System.get_env("SOME_APP_SSL_CERT_PATH")
-  #       ]
-  #
-  # The `cipher_suite` is set to `:strong` to support only the
-  # latest and more secure SSL ciphers. This means old browsers
-  # and clients may not be supported. You can set it to
-  # `:compatible` for wider support.
-  #
-  # `:keyfile` and `:certfile` expect an absolute path to the key
-  # and cert in disk or a relative path inside priv, for example
-  # "priv/ssl/server.key". For all supported SSL configuration
-  # options, see https://hexdocs.pm/plug/Plug.SSL.html#configure/1
-  #
-  # We also recommend setting `force_ssl` in your config/prod.exs,
-  # ensuring no data is ever sent via http, always redirecting to https:
-  #
-  #     config :scopestrength, ScopestrengthWeb.Endpoint,
-  #       force_ssl: [hsts: true]
-  #
-  # Check `Plug.SSL` for all available options in `force_ssl`.
 
-  # ## Configuring the mailer
-  #
-  # In production you need to configure the mailer to use a different adapter.
-  # Also, you may need to configure the Swoosh API client of your choice if you
-  # are not using SMTP. Here is an example of the configuration:
-  #
-  #     config :scopestrength, Scopestrength.Mailer,
-  #       adapter: Swoosh.Adapters.Mailgun,
-  #       api_key: System.get_env("MAILGUN_API_KEY"),
-  #       domain: System.get_env("MAILGUN_DOMAIN")
-  #
-  # For this example you need include a HTTP client required by Swoosh API client.
-  # Swoosh supports Hackney and Finch out of the box:
-  #
-  #     config :swoosh, :api_client, Swoosh.ApiClient.Hackney
-  #
-  # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 end

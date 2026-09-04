@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule Scopestrength.Reports.ClientReport do
   import Ecto.Query
   alias Scopestrength.Repo
@@ -59,12 +77,12 @@ defmodule Scopestrength.Reports.ClientReport do
           reps: wd.reps,
           weight: wd.weight,
           side: wd.side,
-          notes: wd.notes
+          rpe: wd.rpe
         }
       )
       |> Repo.all()
 
-    header = [["Date", "Workout", "Exercise", "Set", "Reps", "Weight (kg)", "Side", "Notes"]]
+    header = [["Date", "Workout", "Exercise", "Set", "Reps", "Weight (kg)", "Side", "RPE"]]
 
     rows =
       Enum.map(details, fn d ->
@@ -76,7 +94,7 @@ defmodule Scopestrength.Reports.ClientReport do
           d.reps || "",
           d.weight || "",
           d.side || "",
-          d.notes || ""
+          d.rpe || ""
         ]
       end)
 

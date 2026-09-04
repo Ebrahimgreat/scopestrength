@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.ShowClient do
   alias Scopestrength.Training.Workout
   alias Scopestrength.Trainers
@@ -54,48 +72,40 @@ defmodule ScopestrengthWeb.ShowClient do
   def render(assigns) do
     ~H"""
     <div class="w-full min-h-screen bg-card">
-      <!-- Header -->
       <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h1 class="text-3xl lg:text-4xl font-semibold tracking-tight text-foreground">
-              <span class="text-primary">{@client.user.name}</span>
-            </h1>
-            <p class="mt-2 text-dim text-base lg:text-lg">Client Profile & Management</p>
+          <div class="flex items-center gap-3 lg:gap-4">
+            <.link
+              navigate={~p"/trainer/clients"}
+              class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-line text-dim transition-colors hover:bg-secondary hover:text-foreground"
+              aria-label="Back to clients"
+            >
+              <.icon name="hero-arrow-left" class="h-5 w-5" />
+            </.link>
+            <div>
+              <h1 class="text-3xl lg:text-4xl font-semibold tracking-tight text-foreground">
+                {@client.user.name}
+              </h1>
+              <p class="mt-2 text-dim text-base lg:text-lg">Client Profile & Management</p>
+            </div>
           </div>
           <div class="flex items-center gap-3">
             <a
               href={~p"/download/client-report/#{@client.id}"}
-              class="inline-flex items-center px-4 py-2 bg-primary hover:bg-emerald-700 text-foreground font-medium rounded-lg transition-colors"
+              class="inline-flex items-center px-4 py-2 bg-primary hover:opacity-90 text-primary-foreground font-medium rounded-lg transition-colors"
             >
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               Generate Report
             </a>
-            <.link
-              navigate={~p"/trainer/clients"}
-              class="inline-flex items-center px-4 py-2 bg-slate-600 hover:bg-slate-700 text-foreground font-medium rounded-lg transition-colors"
-            >
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-              Back to Clients
-            </.link>
           </div>
         </div>
       </div>
 
-    <!-- Main Content -->
       <div class="w-full px-0 sm:px-2 lg:px-4 pb-10">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
 
-    <!-- Client Information -->
           <div class="bg-card border border-line rounded-2xl shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-line">
               <h2 class="text-base font-semibold text-foreground">Client Information</h2>
@@ -169,11 +179,6 @@ defmodule ScopestrengthWeb.ShowClient do
                   </p>
                 </div>
               <% end %>
-              <.link navigate={~p"/trainer/client/#{@client.id}/programme"}>
-                <.button class="w-full bg-primary hover:bg-emerald-700 text-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                  Change Programme
-                </.button>
-              </.link>
             </div>
           </div>
 
@@ -196,7 +201,7 @@ defmodule ScopestrengthWeb.ShowClient do
                         <p class="text-sm font-medium text-foreground"><%=@client.user.name%> <%= activity_label(n) %></p>
                         <p class="text-xs text-faint mt-0.5"><%= format_activity_time(n.inserted_at) %></p>
                       </div>
-                      <svg class="w-4 h-4 text-slate-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <svg class="w-4 h-4 text-dim" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="9 18 15 12 9 6"></polyline>
                       </svg>
                     </.link>
@@ -206,7 +211,6 @@ defmodule ScopestrengthWeb.ShowClient do
             </div>
           </div>
 
-          <!-- Strength Progress - full width -->
           <div class="bg-card border border-line rounded-2xl shadow-sm overflow-hidden lg:col-span-2">
             <div class="px-5 py-4 border-b border-line">
               <h2 class="text-base font-semibold text-foreground">Strength Progress</h2>
@@ -230,7 +234,7 @@ defmodule ScopestrengthWeb.ShowClient do
                         </p>
 
                       </div>
-                      <svg class="w-4 h-4 text-slate-300 group-hover:text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <svg class="w-4 h-4 text-dim group-hover:text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="9 18 15 12 9 6"></polyline>
                       </svg>
                     </.link>
@@ -240,7 +244,6 @@ defmodule ScopestrengthWeb.ShowClient do
             </div>
           </div>
 
-          <!-- Quick Actions -->
           <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             <.link navigate={~p"/trainer/clients/#{@client.id}/workouts"} class="group bg-card border border-line rounded-2xl shadow-sm hover:shadow-md hover:border-primary transition-all overflow-hidden">
               <div class="p-5 flex items-center justify-between">
@@ -255,7 +258,7 @@ defmodule ScopestrengthWeb.ShowClient do
                     <p class="text-xs text-dim">Monitor workouts</p>
                   </div>
                 </div>
-                <svg class="w-4 h-4 text-slate-300 group-hover:text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="w-4 h-4 text-dim group-hover:text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
               </div>
@@ -274,7 +277,7 @@ defmodule ScopestrengthWeb.ShowClient do
                     <p class="text-xs text-dim">Visual transformation</p>
                   </div>
                 </div>
-                <svg class="w-4 h-4 text-slate-300 group-hover:text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="w-4 h-4 text-dim group-hover:text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
               </div>
@@ -293,7 +296,7 @@ defmodule ScopestrengthWeb.ShowClient do
                     <p class="text-xs text-dim">Client notes</p>
                   </div>
                 </div>
-                <svg class="w-4 h-4 text-slate-300 group-hover:text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="w-4 h-4 text-dim group-hover:text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
               </div>
@@ -312,7 +315,7 @@ defmodule ScopestrengthWeb.ShowClient do
                     <p class="text-xs text-dim">Training volume</p>
                   </div>
                 </div>
-                <svg class="w-4 h-4 text-slate-300 group-hover:text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="w-4 h-4 text-dim group-hover:text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
               </div>

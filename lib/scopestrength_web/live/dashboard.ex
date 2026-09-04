@@ -1,10 +1,26 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Dashboard do
   alias Scopestrength.Notifications.Notification
-  alias ScopestrengthWeb.Clients
   alias Scopestrength.Repo
   alias Scopestrength.Clients.Client
   use ScopestrengthWeb, :live_view
-  alias Scopestrength.Clients
   alias Scopestrength.Trainers.Trainer
   alias Scopestrength.Trainers
 
@@ -21,7 +37,6 @@ defmodule ScopestrengthWeb.Dashboard do
       read_at: DateTime.utc_now()
     })
 
-    # Update the activities list
     activities =
       Enum.map(socket.assigns.activities, fn n ->
         if n.id == String.to_integer(notification_id) do
@@ -37,7 +52,6 @@ defmodule ScopestrengthWeb.Dashboard do
   def handle_event("mark_all_read", _params, socket) do
     trainer = Trainers.get_trainer_byUserId(socket.assigns.current_user.id)
 
-    # Update all unread notifications for this trainer
     from(n in Notification,
       where: n.recipient_type == "trainer" and
              n.recipient_id == ^trainer.id and
@@ -45,7 +59,6 @@ defmodule ScopestrengthWeb.Dashboard do
     )
     |> Repo.update_all(set: [read_at: DateTime.utc_now()])
 
-    # Update local state
     activities =
       Enum.map(socket.assigns.activities, fn n ->
         %{n | read_at: DateTime.utc_now()}
@@ -79,7 +92,6 @@ defmodule ScopestrengthWeb.Dashboard do
               order_by: [desc: n.inserted_at],
               limit: 10
           )
-          #SO actor id is basically the user_id
           client_ids= Enum.map(notifications, &(&1.actor_id))
           clients_by_id= Repo.all(from c in Client, where: c.user_id in ^client_ids)|>Repo.preload(:user)|>Map.new(&{&1.user_id,&1})
 
@@ -94,29 +106,6 @@ defmodule ScopestrengthWeb.Dashboard do
                 Map.put(n, :actor_name, "System")
             end
           end)
-          IO.inspect(notifications_with_client)
-          start_of_week_date = Date.beginning_of_week(Date.utc_today(), :monday)
-          end_of_week_date   = Date.end_of_week(Date.utc_today(), :monday)
-
-          # Convert to DateTime in UTC
-          start_of_week = DateTime.new!(start_of_week_date, ~T[00:00:00], "Etc/UTC")
-          end_of_week   = DateTime.new!(end_of_week_date, ~T[23:59:59], "Etc/UTC")
-
-          total_workouts =
-            Repo.one(
-              from w in Scopestrength.Training.Workout,
-                join: c in Client, on: w.client_id == c.id,
-                where: c.trainer_id == ^trainer.id and w.inserted_at >= ^start_of_week and w.inserted_at <= ^end_of_week,
-                select: count(w.id)
-            )
-
-            clients= Repo.all(from c in Scopestrength.Clients.Client, where: c.trainer_id == ^trainer.id)
-
-
-
-
-
-
 
         data =
           Repo.get(Trainer, trainer.id)
@@ -152,7 +141,7 @@ defmodule ScopestrengthWeb.Dashboard do
   end
 
   def handle_info({:notification, %Notification{} = notification}, socket) do
-    activities = [notification | socket.assigns.activities] |> Enum.take(10)
+    activities = [with_actor_name(notification) | socket.assigns.activities] |> Enum.take(10)
 
     {:noreply,
      socket
@@ -162,12 +151,25 @@ defmodule ScopestrengthWeb.Dashboard do
 
   def handle_info(_, socket), do: {:noreply, socket}
 
+  defp with_actor_name(%Notification{actor_type: "client", actor_id: actor_id} = notification) do
+    name =
+      case Repo.get_by(Client, user_id: actor_id) |> Repo.preload(:user) do
+        %Client{user: %{name: name}} when is_binary(name) -> name
+        _ -> "Unknown Client"
+      end
+
+    Map.put(notification, :actor_name, name)
+  end
+
+  defp with_actor_name(%Notification{} = notification) do
+    Map.put(notification, :actor_name, "System")
+  end
+
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
 
   <div class="w-full min-h-screen">
-    <!-- Header -->
     <div class="w-full px-0 sm:px-2 lg:px-4 pt-10 pb-4">
       <h1 class="text-2xl uppercase sm:text-3xl lg:text-4xl font-semibold tracking-tight text-foreground">
         Trainer overview
@@ -175,7 +177,6 @@ defmodule ScopestrengthWeb.Dashboard do
       <p class="mt-2 text-dim text-sm sm:text-base lg:text-lg">Monitor client progress and track programmes.</p>
     </div>
 
-    <!-- Main Content -->
     <div class="w-full px-0 sm:px-2 lg:px-4 py-8">
 
 

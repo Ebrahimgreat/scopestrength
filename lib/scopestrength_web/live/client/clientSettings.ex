@@ -1,6 +1,25 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Client.ClientSettings do
   use ScopestrengthWeb, :live_view
   alias Scopestrength.Clients
+  alias Scopestrength.Storage
   alias Scopestrength.Clients.Client
   alias Scopestrength.Account
   alias Scopestrength.Repo
@@ -42,19 +61,7 @@ defmodule ScopestrengthWeb.Client.ClientSettings do
   def handle_event("save_profile_picture", _params, socket) do
     uploaded_files =
       consume_uploaded_entries(socket, :profile_picture, fn %{path: path}, entry ->
-        # Ensure upload directory exists
-        upload_dir = Path.join(["priv", "static", "uploads"])
-        File.mkdir_p!(upload_dir)
-
-        # Generate filename and destination path
-        filename = "#{entry.uuid}.#{ext(entry)}"
-        dest = Path.join([upload_dir, filename])
-
-        # Copy file to destination
-        File.cp!(path, dest)
-
-        # Return URL path
-        {:ok, "/uploads/#{filename}"}
+        Storage.put(path, "profile_pictures", "#{entry.uuid}.#{ext(entry)}")
       end)
 
     case uploaded_files do
@@ -174,11 +181,7 @@ defmodule ScopestrengthWeb.Client.ClientSettings do
   def handle_event("remove_profile_picture", _params, socket) do
     client = socket.assigns.client
 
-    # Delete the file if it exists
-    if client.profile_picture_url do
-      file_path = Path.join("priv/static", client.profile_picture_url)
-      File.rm(file_path)
-    end
+    Storage.delete(client.profile_picture_url)
 
     {:ok, updated_client} = Clients.update_client(client, %{profile_picture_url: nil})
 
@@ -207,20 +210,18 @@ defmodule ScopestrengthWeb.Client.ClientSettings do
 
       <h1 class="text-3xl font-bold text-foreground mb-8">Profile Settings</h1>
 
-      <!-- Demo Account Notice -->
       <div :if={@current_user.type == "demo"} class="mb-6 p-4 bg-warning/10 border border-warning rounded-lg">
         <div class="flex items-start gap-3">
           <svg class="w-5 h-5 text-warning flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
           </svg>
           <div>
-            <h3 class="text-sm font-semibold text-amber-900">Demo Account</h3>
+            <h3 class="text-sm font-semibold text-warning">Demo Account</h3>
             <p class="mt-1 text-sm text-warning">Settings are view-only in demo mode. Upgrade to a full account to modify your email and password.</p>
           </div>
         </div>
       </div>
 
-      <!-- Profile Picture Section -->
       <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden mb-6">
         <div class="px-6 py-4 border-b border-line">
           <h2 class="text-xl font-semibold text-foreground">Profile Picture</h2>
@@ -229,33 +230,35 @@ defmodule ScopestrengthWeb.Client.ClientSettings do
 
         <div class="p-6">
           <div class="flex flex-col md:flex-row gap-6 items-start">
-            <!-- Current Profile Picture -->
             <div class="flex-shrink-0">
               <%= if @client.profile_picture_url do %>
                 <div class="relative group">
                   <img
-                    src={@client.profile_picture_url}
+                    src={Storage.url(@client.profile_picture_url)}
                     alt="Profile picture"
-                    class="w-32 h-32 rounded-full object-cover border-4 border-emerald-100"
+                    class="w-32 h-32 rounded-full object-cover border-4 border-line"
                   />
-                  <button
-                    phx-click="remove_profile_picture"
-                    data-confirm="Are you sure you want to remove your profile picture?"
+                  <.confirm
+                    id="remove-client-profile-picture"
+                    title="Remove Photo"
+                    message="Are you sure you want to remove your profile picture?"
+                    confirm_label="Remove"
+                    on_confirm={JS.push("remove_profile_picture")}
+                    aria-label="Remove profile picture"
                     class="absolute top-0 right-0 bg-danger hover:bg-danger text-foreground rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
-                  </button>
+                  </.confirm>
                 </div>
               <% else %>
-                <div class="w-32 h-32 rounded-full bg-primary flex items-center justify-center text-foreground text-4xl font-bold border-4 border-emerald-100">
+                <div class="w-32 h-32 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-4xl font-bold border-4 border-line">
                   <%= get_initials(@client) %>
                 </div>
               <% end %>
             </div>
 
-            <!-- Upload Form -->
             <div class="flex-1">
               <form phx-submit="save_profile_picture" phx-change="validate" class="space-y-4">
                 <div class="border-2 border-dashed border-line rounded-lg p-6 hover:border-primary transition-colors">
@@ -277,7 +280,6 @@ defmodule ScopestrengthWeb.Client.ClientSettings do
                     </div>
                   </div>
 
-                  <!-- Upload Progress -->
                   <%= for entry <- @uploads.profile_picture.entries do %>
                     <div class="mt-4">
                       <div class="flex items-center justify-between text-sm">
@@ -309,7 +311,7 @@ defmodule ScopestrengthWeb.Client.ClientSettings do
                 <%= if length(@uploads.profile_picture.entries) > 0 do %>
                   <.button
                     type="submit"
-                    class="w-full bg-primary hover:bg-emerald-700 text-foreground font-semibold py-3 rounded-lg transition-colors"
+                    class="w-full bg-primary hover:opacity-90 text-primary-foreground font-semibold py-3 rounded-lg transition-colors"
                   >
                     Upload Profile Picture
                   </.button>
@@ -324,7 +326,6 @@ defmodule ScopestrengthWeb.Client.ClientSettings do
         </div>
       </div>
 
-      <!-- Additional Settings Section -->
       <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden">
         <div class="px-6 py-4 border-b border-line">
           <h2 class="text-xl font-semibold text-foreground">Account Information</h2>
@@ -370,7 +371,7 @@ defmodule ScopestrengthWeb.Client.ClientSettings do
             </div>
 
             <div>
-              <.button class="bg-primary hover:bg-emerald-700 text-foreground">
+              <.button class="bg-primary hover:opacity-90 text-primary-foreground">
                 Save Changes
               </.button>
             </div>
@@ -378,7 +379,6 @@ defmodule ScopestrengthWeb.Client.ClientSettings do
         </div>
       </div>
 
-      <!-- Login & Security -->
       <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden mt-6">
         <div class="px-6 py-4 border-b border-line">
           <h2 class="text-xl font-semibold text-foreground">Login & Security</h2>
@@ -387,9 +387,9 @@ defmodule ScopestrengthWeb.Client.ClientSettings do
         <div class="p-6 space-y-8">
           <div>
             <h3 class="text-lg font-semibold text-foreground mb-3">Name</h3>
-            <.form id="name_form" phx-submit="update_name" class="space-y-4">
+            <.form for={%{}} id="name_form" phx-submit="update_name" class="space-y-4">
               <.input type="text" name="name" label="Name" value={@name} disabled={@current_user.type == "demo"} />
-              <.button class="bg-primary hover:bg-emerald-700 text-foreground" disabled={@current_user.type == "demo"}>
+              <.button class="bg-primary hover:opacity-90 text-primary-foreground" disabled={@current_user.type == "demo"}>
                 Update Name
               </.button>
             </.form>

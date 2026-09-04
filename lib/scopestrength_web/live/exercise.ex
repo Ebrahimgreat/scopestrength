@@ -1,8 +1,26 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Exercise do
   use ScopestrengthWeb, :live_view
 
   @impl true
-  alias Scopestrength.Workout
+  alias Scopestrength.Exercise, as: Workout
 
   def mount(_params, _session, socket) do
 
@@ -186,7 +204,6 @@ end
     ~H"""
     <div class="min-h-screen bg-card py-6">
       <div class="max-w-4xl mx-auto p-6 space-y-8">
-        <!-- Header Section -->
         <div class="bg-card rounded-2xl shadow-xl border border-line p-6">
           <div class="flex items-center justify-between">
             <div class="flex items-center  space-x-3">
@@ -196,7 +213,7 @@ end
               </h1>
             </div>
             <%= if @report == "true" do %>
-              <a class="bg-primary hover:from-primary hover:to-primary text-foreground px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2 font-semibold" href="download/workout">
+              <a class="bg-primary hover:from-primary hover:to-primary text-primary-foreground px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2 font-semibold" href="download/workout">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
                 </svg>
@@ -206,7 +223,6 @@ end
           </div>
         </div>
 
-        <!-- Workout Details Section -->
         <div class="bg-card rounded-2xl shadow-xl border border-line p-6 space-y-6">
           <h2 class="text-xl font-bold text-foreground border-b border-line pb-3">Workout Details</h2>
 
@@ -218,7 +234,7 @@ end
               field={@name_form[:name]}
                 name="name"
                 placeholder="Enter your name"
-                class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
               />
             </.form>
 
@@ -228,14 +244,14 @@ end
                 type="date"
                 name="date"
                 value={@date}
-                class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
               />
             </form>
           </div>
 
           <div class="grid grid-cols-2 space-x-3">
           <div class="pt-4">
-            <.button class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-foreground px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2 font-semibold" phx-click="add">
+            <.button class="px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2 font-semibold" phx-click="add">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
               </svg>
@@ -254,7 +270,6 @@ end
 
         </div>
 
-        <!-- Exercises Section -->
         <div class="space-y-4">
           <div class="flex items-center space-x-3">
             <h2 class="text-2xl font-bold text-foreground">Exercises</h2>
@@ -264,18 +279,17 @@ end
           <.form for={@update_set_form}  phx-change="updateSet">
             <%= for {exercise, index} <- Enum.with_index(@exercises) do %>
               <div class="bg-card rounded-2xl shadow-xl border border-line overflow-hidden">
-                <!-- Exercise Header -->
                 <div class="bg-card p-6 border-b border-line">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
-                      <div class="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center">
+                      <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                         <span class="text-foreground font-bold text-sm"><%= index + 1 %></span>
                       </div>
                       <h3 class="text-lg font-semibold text-foreground">Exercise <%= index + 1 %></h3>
                     </div>
                     <div class="flex items-center space-x-3">
                       <.button
-                        class="bg-primary hover:from-primary hover:to-primary text-foreground px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center space-x-2 font-medium"
+                        class="bg-primary hover:from-primary hover:to-primary text-primary-foreground px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center space-x-2 font-medium"
                         phx-value-id={exercise.id}
                         phx-click="addSet"
                         type="button"
@@ -299,7 +313,6 @@ end
                     </div>
                   </div>
 
-                  <!-- Exercise Selector -->
                   <div class="mt-4">
                     <label class="block text-sm font-semibold text-foreground mb-2">Exercise Type</label>
                     <.input
@@ -307,20 +320,19 @@ end
                       name={"databaseExercise_#{exercise.id}"}
                       value={exercise.exercise_id}
                       options={@databaseExercises}
-                      class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-card"
+                      class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 bg-card"
                     />
                   </div>
                 </div>
 
-                <!-- Sets Grid -->
                 <div class="p-6">
                   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <%= for workout <- exercise.workout do %>
                       <div class="bg-card border-2 border-line rounded-xl p-4 space-y-4 hover:shadow-md transition-all duration-200">
                         <div class="flex items-center justify-between">
                           <div class="flex items-center space-x-2">
-                            <div class="w-6 h-6 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                              <span class="text-foreground font-bold text-xs"><%= workout.set %></span>
+                            <div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                              <span class="text-primary-foreground font-bold text-xs"><%= workout.set %></span>
                             </div>
                             <span class="text-sm font-semibold text-foreground">Set <%= workout.set %></span>
                           </div>
@@ -333,7 +345,7 @@ end
                               type="number"
                               name={"reps_#{exercise.id}_#{workout.set}"}
                               value={workout.reps}
-                              class="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-center font-semibold"
+                              class="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 text-center font-semibold"
                             />
                           </div>
 
@@ -343,7 +355,7 @@ end
                               type="number"
                               name={"weight_#{exercise.id}_#{workout.set}"}
                               value={workout.weight}
-                              class="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-center font-semibold"
+                              class="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 text-center font-semibold"
                             />
                           </div>
                         </div>
@@ -368,12 +380,11 @@ end
               </div>
             <% end %>
 
-            <!-- Submit Section -->
             <div class="bg-card rounded-2xl shadow-xl border border-line p-6">
               <div class="text-center">
                 <.button
                   type="button"
-                  class="bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-foreground px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-3 font-bold text-lg mx-auto"
+                  class="px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-3 font-bold text-lg mx-auto"
                   phx-click="submit"
                 >
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
