@@ -1,8 +1,24 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.TemplateDetail do
 
-alias Scopestrength.CustomExercises
 alias Scopestrength.Trainers
-alias Scopestrength.CustomExercises.CustomExercise
   use ScopestrengthWeb, :live_view
   alias Scopestrength.Programmes.ProgrammeDetails
   alias Scopestrength.Repo
@@ -140,7 +156,6 @@ alias Scopestrength.CustomExercises.CustomExercise
 
 
   def handle_event("filterByType", %{"name" => name}, socket) do
-    # prevent redundant reload
     if socket.assigns.filter_by_type == name do
 
       {:noreply, socket}
@@ -167,7 +182,7 @@ alias Scopestrength.CustomExercises.CustomExercise
 
 
   def handle_event("deleteExercise", params, socket) do
-    id = String.to_integer(params["id"])
+    id = ScopestrengthWeb.Params.to_integer(params["id"])
     programmeDetails = socket.assigns.programmeDetails
     programmeFind= Enum.find(programmeDetails,fn x-> x.data.id == id end)
  case Programmes.delete_programme_details(programmeFind.data) do
@@ -188,13 +203,15 @@ alias Scopestrength.CustomExercises.CustomExercise
     id = String.to_integer(params["programme_details"]["id"])
     reps = params["programme_details"]["reps"]
     set = params["programme_details"]["set"]
+    min_reps= params["programme_details"]["min_reps"]
+    max_reps = params["programme_details"]["max_reps"]
     programmeDetails = socket.assigns.programmeDetails
 
     programmeFind = Enum.find(programmeDetails, fn x-> x.data.id == id end)
-   case Programmes.update_programme_details(programmeFind.data, %{set: set, reps: reps}) do
+   case Programmes.update_programme_details(programmeFind.data, %{set: set, reps: reps, min_reps: min_reps, max_reps: max_reps}) do
     {:ok,_updated}->
       programmeToUpdate = Enum.map(programmeDetails, fn x-> if x.data.id == id do
-        updatedData= %{x.data | set: set, reps: reps}
+        updatedData= %{x.data | set: set, reps: reps, min_reps: min_reps, max_reps: max_reps}
         IO.inspect(updatedData)
         Programmes.change_programme_details(updatedData)|> to_form()
       else
@@ -209,9 +226,20 @@ alias Scopestrength.CustomExercises.CustomExercise
 
   end
 
-  def mount(params, session, socket) do
+  def mount(params, _session, socket) do
+    if ScopestrengthWeb.TemplateAccess.owned_template?(params["template_id"], socket.assigns.current_user.id) do
+      mount_template(params, socket)
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, "Template not found")
+       |> redirect(to: ~p"/trainer/programmes")}
+    end
+  end
 
-    trainer_id = params["trainer_id"]
+  defp mount_template(params, socket) do
+
+    _trainer_id = params["trainer_id"]
     show_modal = false
 
 
@@ -219,7 +247,7 @@ alias Scopestrength.CustomExercises.CustomExercise
     newExerciseForm = Scopestrength.Exercises.Exercise.changeset(%Scopestrength.Exercises.Exercise{}, %{})|> to_form()
 
     user = socket.assigns.current_user
-    trainer = Trainers.get_trainer_byUserId(user.id)
+    _trainer = Trainers.get_trainer_byUserId(user.id)
 
     template_id = params["template_id"]
 
@@ -246,7 +274,7 @@ alias Scopestrength.CustomExercises.CustomExercise
 
       socket =
       socket
-      |> assign(allExercises: exercises, filter_by_type: "ALL", newExerciseForm: newExerciseForm, show_modal: show_modal, template_id: template_id, programmeDetails: changesets, exercises: exercises, muscles: muscles,  selected_primary_muscle_id: nil,
+      |> assign(allExercises: exercises, filter_by_type: "ALL", newExerciseForm: newExerciseForm, show_modal: show_modal, template_id: template_id, programme_id: params["id"], programmeDetails: changesets, exercises: exercises, muscles: muscles,  selected_primary_muscle_id: nil,
       secondary_muscles: [], equipment_list: equipment_list)
       |> assign_new(:q, fn -> "" end)
 
@@ -255,8 +283,6 @@ alias Scopestrength.CustomExercises.CustomExercise
   end
 
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
-  # The muscle filter buttons were removed, so search covers muscle and
-  # equipment names too — otherwise typing "Chest" or "Barbell" finds nothing.
   defp search_exercises(exercises, ""), do: exercises
 
   defp search_exercises(exercises, query) do
@@ -272,7 +298,7 @@ alias Scopestrength.CustomExercises.CustomExercise
     ~H"""
     <div class="mx-auto max-w-5xl">
       <div class="space-y-10">
-        <!-- Header -->
+        <.back_link navigate={~p"/trainer/programmes/#{@programme_id}"}>Programme</.back_link>
         <div>
           <h1 class="font-display text-5xl font-bold uppercase tracking-wide text-foreground">Template Builder</h1>
           <p class="text-dim">Add exercises and configure sets and reps for your workout template.</p>
@@ -400,7 +426,6 @@ alias Scopestrength.CustomExercises.CustomExercise
 
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <!-- Exercise Library Section -->
           <div class="rounded-xl border border-line bg-card p-5">
             <div class="mb-4 flex items-baseline justify-between gap-3">
               <h2 class="font-display text-xl font-bold uppercase tracking-wide text-foreground">
@@ -443,7 +468,6 @@ alias Scopestrength.CustomExercises.CustomExercise
             </div>
           </div>
 
-          <!-- Template Configuration Section -->
           <div class="rounded-xl border border-line bg-card p-5">
             <div class="mb-4 flex items-baseline justify-between gap-3">
               <h2 class="font-display text-xl font-bold uppercase tracking-wide text-foreground">
@@ -463,22 +487,23 @@ alias Scopestrength.CustomExercises.CustomExercise
                         <span class="num text-faint"><%= index + 1 %></span>
                         <%= template.data.exercise.name %>
                       </h3>
-                      <button
-                        type="button"
-                        phx-click="deleteExercise"
-                        phx-value-id={template.data.id}
-                        data-confirm="Are you sure you want to remove this exercise?"
+                      <.confirm
+                        id={"remove-exercise-#{template.data.id}"}
+                        title="Remove Exercise"
+                        message="Are you sure you want to remove this exercise from the template?"
+                        confirm_label="Remove"
+                        on_confirm={JS.push("deleteExercise", value: %{id: template.data.id})}
                         aria-label="Remove exercise"
                         class="shrink-0 rounded-md p-1.5 text-dim transition hover:bg-danger/10 hover:text-danger"
                       >
                         <.icon name="hero-trash" class="h-4 w-4" />
-                      </button>
+                      </.confirm>
                     </div>
 
                     <.form phx-submit="updateForm" for={template} id={"exercise-form-#{template.data.id}"} class="space-y-4">
-                      <.input type="hidden" field={template[:id]} />
+                      <input type="hidden" name={template[:id].name} value={template[:id].value} />
 
-                      <div class="grid grid-cols-2 gap-4">
+                      <div class="grid grid-cols-4 gap-4">
                         <div>
                           <label class="block text-xs uppercase tracking-widest text-dim">Sets</label>
                           <.input
@@ -499,7 +524,34 @@ alias Scopestrength.CustomExercises.CustomExercise
                             class="num mt-1 block w-full rounded-md border-line bg-muted px-3 py-2 text-sm text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
                           />
                         </div>
+                        <div>
+                      <label class="block text-xs uppercase tracking-widest text-dim">
+                      Min Reps
+                      <.input field={template[:min_reps]}
+                      id={"min-reps-#{template.data.id}"}
+                      type="number"
+                      placeholder="4"
+                      class="num mt-1 block w-full rounded-md border-line bg-muted px-3 py-2 text-sm text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
+                      />
+
+
+                      </label>
                       </div>
+                      <div>
+                      <label class="block text-xs uppercase tracking-widest text-dim">
+                      Max Reps
+                      <.input field={template[:max_reps]}
+                      id={"max-reps-#{template.data.id}"}
+                      type="number"
+                      placeholder="4"
+                      class="num mt-1 block w-full rounded-md border-line bg-muted px-3 py-2 text-sm text-foreground placeholder:text-faint focus:border-primary focus:ring-0"
+                      />
+
+
+                      </label>
+                      </div>
+                      </div>
+
 
                       <div class="flex justify-end">
                         <.button class="px-4 py-2 rounded-md text-sm font-medium">
@@ -511,7 +563,6 @@ alias Scopestrength.CustomExercises.CustomExercise
                 <% end %>
               </div>
             <% else %>
-              <!-- Empty State -->
               <div class="text-center py-12 bg-card rounded-lg border">
                 <h3 class="text-lg font-medium text-foreground mb-2">No exercises added yet</h3>
                 <p class="text-dim">Start building your template by adding exercises from the library.</p>

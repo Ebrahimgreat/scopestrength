@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Telemetry do
   use Supervisor
   import Telemetry.Metrics
@@ -9,11 +27,7 @@ defmodule ScopestrengthWeb.Telemetry do
   @impl true
   def init(_arg) do
     children = [
-      # Telemetry poller will execute the given period measurements
-      # every 10_000ms. Learn more here: https://hexdocs.pm/telemetry_metrics
       {:telemetry_poller, measurements: periodic_measurements(), period: 10_000}
-      # Add reporters as children of your supervision tree.
-      # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
@@ -21,7 +35,6 @@ defmodule ScopestrengthWeb.Telemetry do
 
   def metrics do
     [
-      # Phoenix Metrics
       summary("phoenix.endpoint.start.system_time",
         unit: {:native, :millisecond}
       ),
@@ -52,7 +65,6 @@ defmodule ScopestrengthWeb.Telemetry do
         unit: {:native, :millisecond}
       ),
 
-      # Database Metrics
       summary("scopestrength.repo.query.total_time",
         unit: {:native, :millisecond},
         description: "The sum of the other measurements"
@@ -75,7 +87,6 @@ defmodule ScopestrengthWeb.Telemetry do
           "The time the connection spent waiting before being checked out for the query"
       ),
 
-      # VM Metrics
       summary("vm.memory.total", unit: {:byte, :kilobyte}),
       summary("vm.total_run_queue_lengths.total"),
       summary("vm.total_run_queue_lengths.cpu"),
@@ -85,9 +96,6 @@ defmodule ScopestrengthWeb.Telemetry do
 
   defp periodic_measurements do
     [
-      # A module, function and arguments to be invoked periodically.
-      # This function must call :telemetry.execute/3 and a metric must be added above.
-      # {ScopestrengthWeb, :count_users, []}
     ]
   end
 end

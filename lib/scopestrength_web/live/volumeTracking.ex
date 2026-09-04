@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.VolumeTracking do
   use ScopestrengthWeb, :live_view
   alias Scopestrength.Repo
@@ -60,7 +78,6 @@ defmodule ScopestrengthWeb.VolumeTracking do
   defp get_volume_data(client_id, period) do
     grouped_by = if period == "monthly", do: :month, else: :week
 
-    # Query all workout details for this client
     workout_details =
       Repo.all(
         from wd in WorkoutDetails,
@@ -79,10 +96,8 @@ defmodule ScopestrengthWeb.VolumeTracking do
           }
       )
 
-    # Get exercise IDs
     exercise_ids = workout_details |> Enum.map(& &1.exercise_id) |> Enum.uniq()
 
-    # Get muscle contributions for these exercises
     muscle_contributions =
       if Enum.empty?(exercise_ids) do
         []
@@ -101,10 +116,8 @@ defmodule ScopestrengthWeb.VolumeTracking do
         )
       end
 
-    # Group contributions by exercise
     contributions_by_exercise = Enum.group_by(muscle_contributions, & &1.exercise_id)
 
-    # Calculate sets with muscle contributions
     workout_details
     |> Enum.group_by(fn detail ->
       {detail.workout_id, detail.exercise_id, detail.set}
@@ -112,7 +125,6 @@ defmodule ScopestrengthWeb.VolumeTracking do
     |> Enum.flat_map(fn {{_workout_id, exercise_id, _set_num}, details} ->
       is_unilateral = List.first(details).is_unilateral
 
-      # For unilateral: if both sides done = 1 set, if only one side = 0.5 set
       set_count = if is_unilateral do
         sides = details |> Enum.map(& &1.side) |> Enum.uniq()
         if length(sides) >= 2, do: 1.0, else: 0.5
@@ -120,13 +132,10 @@ defmodule ScopestrengthWeb.VolumeTracking do
         1.0
       end
 
-      # Get muscle contributions for this exercise
       contributions = Map.get(contributions_by_exercise, exercise_id, [])
 
-      # Get date from first detail
       date = List.first(details).date
 
-      # Return one entry per muscle that this exercise works
       Enum.map(contributions, fn c ->
         %{
           muscle_name: c.muscle_name,
@@ -138,7 +147,6 @@ defmodule ScopestrengthWeb.VolumeTracking do
       end)
     end)
     |> Enum.group_by(fn entry ->
-      # Convert DateTime to Date for grouping
       workout_date = DateTime.to_date(entry.date)
 
       period_key =
@@ -152,7 +160,6 @@ defmodule ScopestrengthWeb.VolumeTracking do
       {entry.muscle_name, period_key}
     end)
     |> Enum.map(fn {{muscle_name, period_key}, entries} ->
-      # Calculate total sets (all sets regardless of role)
       total_sets =
         entries
         |> Enum.map(& &1.set_count)
@@ -160,7 +167,6 @@ defmodule ScopestrengthWeb.VolumeTracking do
         |> then(fn sum -> sum * 1.0 end)
         |> Float.round(1)
 
-      # Calculate direct sets (primary role only)
       direct_sets =
         entries
         |> Enum.filter(fn e -> e.role == "primary" end)
@@ -169,7 +175,6 @@ defmodule ScopestrengthWeb.VolumeTracking do
         |> then(fn sum -> sum * 1.0 end)
         |> Float.round(1)
 
-      # Calculate effective sets (all roles with multipliers)
       effective_sets =
         entries
         |> Enum.map(& &1.set_count * &1.multiplier)
@@ -200,7 +205,6 @@ defmodule ScopestrengthWeb.VolumeTracking do
     |> Enum.sort_by(& &1.period_key, :desc)
     |> Enum.group_by(& &1.muscle_name)
     |> then(fn volume_by_muscle ->
-      # Find earliest workout date to start periods from
       earliest_date =
         workout_details
         |> Enum.map(fn d -> DateTime.to_date(d.date) end)
@@ -208,7 +212,6 @@ defmodule ScopestrengthWeb.VolumeTracking do
 
       all_periods = generate_all_periods(grouped_by, earliest_date)
 
-      # Get all muscles so ones with 0 volume still show
       all_muscles = Repo.all(from m in Muscles, select: m.name, order_by: m.name)
 
       Enum.into(all_muscles, %{}, fn muscle_name ->
@@ -265,6 +268,7 @@ defmodule ScopestrengthWeb.VolumeTracking do
   def render(assigns) do
     ~H"""
     <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <.back_link navigate={~p"/trainer/clients/#{@client_id}"}>Client</.back_link>
       <div class="mb-6 rounded-xl border border-line bg-card p-5 sm:flex sm:items-center sm:justify-between">
         <div>
           <h1 class="text-2xl font-semibold text-foreground">Volume Tracking</h1>

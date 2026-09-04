@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Exercises do
   use ScopestrengthWeb, :live_view
 
@@ -73,7 +91,7 @@ defmodule ScopestrengthWeb.Exercises do
   end
 
   def handle_event("deleteExercise", %{"id" => id}, socket) do
-    exercise_id = String.to_integer(id)
+    exercise_id = ScopestrengthWeb.Params.to_integer(id)
     exercise = ExerciseContext.get_exercise!(exercise_id)
 
     case ExerciseContext.delete_exercise(exercise) do
@@ -364,16 +382,17 @@ defmodule ScopestrengthWeb.Exercises do
             >
               <.icon name="hero-pencil-square" class="h-4 w-4" />
             </button>
-            <button
-              type="button"
-              phx-click="deleteExercise"
-              phx-value-id={exercise.id}
-              data-confirm="Delete this exercise?"
+            <.confirm
+              id={"delete-exercise-#{exercise.id}"}
+              title="Delete Exercise"
+              message={"Are you sure you want to delete #{exercise.name}? This action cannot be undone."}
+              confirm_label="Delete"
+              on_confirm={JS.push("deleteExercise", value: %{id: exercise.id})}
               aria-label={"Delete #{exercise.name}"}
               class="rounded-md p-1.5 text-dim transition hover:bg-danger/10 hover:text-danger"
             >
               <.icon name="hero-trash" class="h-4 w-4" />
-            </button>
+            </.confirm>
           </div>
         </div>
       </div>
@@ -582,9 +601,6 @@ defmodule ScopestrengthWeb.Exercises do
     |> Enum.sort_by(fn ex -> String.downcase(ex.name || "") end)
   end
 
-  # The single search box replaced the muscle filter chips, so it matches on
-  # muscle and equipment as well as name — otherwise typing "Chest" or
-  # "Barbell" would return nothing.
   defp matches_search?(_exercise, ""), do: true
 
   defp matches_search?(exercise, search) do

@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Programmes do
 alias Scopestrength.Programmes
 
@@ -5,13 +23,12 @@ alias Scopestrength.Programmes
 
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
-
     openProgramme = false
     newProgramme = Programmes.change_programme(%Programmes.Programme{}) |> to_form()
 
     programmes = Programmes.list_user_programmes(user.id)
 
-    {:ok, assign(socket, user_id: user.id, openProgamme: openProgramme, programmes: programmes, name: user.name, newProgramme: newProgramme, delete_confirm_id: nil)}
+    {:ok, assign(socket, user_id: user.id,openProgamme: openProgramme, programmes: programmes, name: user.name, newProgramme: newProgramme, delete_confirm_id: nil)}
   end
 
   def handle_event("addNewProgramme", _params, socket) do
@@ -43,7 +60,6 @@ def handle_event("confirm_delete", _params, socket) do
   end
 end
 
-#Query has been optimized.
   def handle_event("duplicateProgramme", %{"id" => id}, socket) do
     id = String.to_integer(id)
 
@@ -100,7 +116,6 @@ end
           :for={programme <- @programmes}
           class="group relative flex flex-col rounded-xl border border-line bg-card p-5 transition hover:border-dim"
         >
-          <%!-- Stretched link covers the card; the action row sits above it. --%>
           <.link
             navigate={~p"/trainer/programmes/#{programme.id}"}
             class="after:absolute after:inset-0 after:rounded-xl"

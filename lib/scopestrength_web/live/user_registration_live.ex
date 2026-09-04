@@ -1,5 +1,22 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.UserRegistrationLive do
-alias Scopestrength.Subscriptions
 alias Scopestrength.Clients
   use ScopestrengthWeb, :live_view
 
@@ -40,17 +57,16 @@ alias Scopestrength.Clients
           <.input field={@form[:email]} type="email" label="Email" required />
           <.input field={@form[:password]} type="password" label="Password" required />
           <.input
-            options={[{"Trainer","trainer"},{"Client","client"}]}
+            options={[{"Client","client"},{"Trainer","trainer"}]}
             label="I am a"
             type="select"
             field={@form[:role]}
             phx-change="role_changed"
           />
 
-          <!-- Invite Code Field (only for clients) -->
           <div :if={@selected_role == "client"}>
             <label for="user_invite_code" class="block text-sm font-semibold leading-6 text-foreground">
-              Invite Code
+              Invite Code <span class="font-normal text-dim">(optional)</span>
             </label>
             <input
               type="text"
@@ -58,12 +74,10 @@ alias Scopestrength.Clients
               id="user_invite_code"
               value={@invite_code}
               class="mt-2 block w-full rounded-lg text-foreground focus:ring-0 sm:text-sm sm:leading-6 phx-no-feedback:border-line phx-no-feedback:focus:border-zinc-400 border-line focus:border-zinc-400"
-              placeholder="Enter the code from your trainer"
-              required
+              placeholder="Have a code from your coach? Enter it here"
               phx-blur="validate_invite_code"
             />
 
-            <!-- Invite validation feedback -->
             <div :if={@invite_status == :valid} class="mt-1 text-sm text-primary flex items-center gap-1">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
@@ -111,13 +125,12 @@ alias Scopestrength.Clients
   def mount(params, _session, socket) do
     changeset = Account.change_user_registration(%User{})
 
-    # Get invite code from URL params if present
     invite_code = params["invite"]
 
     socket =
       socket
       |> assign(trigger_submit: false, check_errors: false)
-      |> assign(selected_role: "trainer")
+      |> assign(selected_role: "client")
       |> assign(invite_code: invite_code)
       |> assign(invite_status: nil)
       |> assign(trainer_name: nil)
@@ -145,13 +158,11 @@ alias Scopestrength.Clients
   end
 
   def handle_event("save", %{"user" => user_params}, socket) do
-    # Validate invite code for clients BEFORE registration
     case validate_client_invite(user_params) do
       {:error, message} ->
         {:noreply, put_flash(socket, :error, message)}
 
       {:ok, trainer_id} ->
-        # Proceed with registration
         user_params = Map.put(user_params, "type", "normal")
         case Account.register_user(user_params) do
           {:ok, user} ->
@@ -166,23 +177,13 @@ alias Scopestrength.Clients
             case user.role do
               "trainer" ->
                 Trainers.create_trainer(%{user_id: user.id})
-                now = DateTime.utc_now()
-                trial_days = 7
-
-                Subscriptions.create_subscription(%{
-                  user_id: user.id,
-                  name: "Basic",
-                  plan: "trial",
-                  trial_start: now,
-                  trial_end: DateTime.add(now, trial_days * 86_400, :second),
-                  paid_until: nil
-                })
 
               "client" ->
-                # Create client and link to trainer
                 {:ok, client} = Clients.create_client(%{user_id: user.id})
-                # Link client to trainer from invite
-                Invites.link_client_to_trainer(client.id, trainer_id)
+
+                if trainer_id do
+                  Invites.link_client_to_trainer(client.id, trainer_id)
+                end
             end
 
             {:noreply, socket |> assign(trigger_submit: true) |> assign_form(changeset)}
@@ -208,7 +209,6 @@ alias Scopestrength.Clients
     end
   end
 
-  # Validates invite code for client registration
   defp validate_client_invite(%{"role" => "client", "invite_code" => code, "email" => email})
        when code != "" and email != "" do
     case Invites.redeem_invite(code, email) do
@@ -229,22 +229,18 @@ alias Scopestrength.Clients
     end
   end
 
-  # Client must have invite code
   defp validate_client_invite(%{"role" => "client"}) do
-    {:error, "Clients must register with an invite code from their trainer."}
+    {:ok, nil}
   end
 
-  # Trainers don't need invite code
   defp validate_client_invite(%{"role" => "trainer"}) do
     {:ok, nil}
   end
 
-  # Default case
   defp validate_client_invite(_params) do
     {:ok, nil}
   end
 
-  # Validates invite without redeeming (for real-time feedback)
   defp validate_invite(code, email) when code != "" and email != "" do
     case Invites.check_invite(code, email) do
       {:ok, _trainer_id, trainer_name} ->

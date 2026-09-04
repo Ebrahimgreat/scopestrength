@@ -1,6 +1,22 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Client.TemplateDetail do
-  alias Scopestrength.CustomExercises
-  alias Scopestrength.CustomExercises.CustomExercise
   use ScopestrengthWeb, :live_view
   alias Scopestrength.Programmes.ProgrammeDetails
   alias Scopestrength.Repo
@@ -154,7 +170,7 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
   end
 
   def handle_event("deleteExercise", params, socket) do
-    id = String.to_integer(params["id"])
+    id = ScopestrengthWeb.Params.to_integer(params["id"])
     programmeDetails = socket.assigns.programmeDetails
     programmeFind = Enum.find(programmeDetails, fn x -> x.data.id == id end)
 
@@ -192,6 +208,17 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
   end
 
   def mount(params, _session, socket) do
+    if ScopestrengthWeb.TemplateAccess.owned_template?(params["template_id"], socket.assigns.current_user.id) do
+      mount_template(params, socket)
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, "Template not found")
+       |> redirect(to: ~p"/client/programmes")}
+    end
+  end
+
+  defp mount_template(params, socket) do
     show_modal = false
     newExerciseForm = Scopestrength.Exercises.Exercise.changeset(%Scopestrength.Exercises.Exercise{}, %{}) |> to_form()
 
@@ -220,7 +247,7 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
 
     socket =
       socket
-      |> assign(allExercises: exercises, filter_by_type: "ALL", newExerciseForm: newExerciseForm, show_modal: show_modal, template_id: template_id, programmeDetails: changesets, exercises: exercises, muscles: muscles, selected_primary_muscle_id: nil,
+      |> assign(allExercises: exercises, filter_by_type: "ALL", newExerciseForm: newExerciseForm, show_modal: show_modal, template_id: template_id, programme_id: params["id"], programmeDetails: changesets, exercises: exercises, muscles: muscles, selected_primary_muscle_id: nil,
       secondary_muscles: [], equipment_list: equipment_list)
       |> assign_new(:q, fn -> "" end)
 
@@ -231,6 +258,7 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
     ~H"""
     <div class="min-h-screen bg-card py-10">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+        <.back_link navigate={~p"/client/programmes/#{@programme_id}"}>Programme</.back_link>
         <div>
           <h1 class="text-3xl font-bold text-foreground mb-2">Template Exercise Builder</h1>
           <p class="text-dim">Add exercises and configure sets and reps for your workout template.</p>
@@ -258,7 +286,7 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-foreground mb-1">Primary muscle</label>
-                  <select phx-change="update_primary_muscle" name="muscle_id" class="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-primary transition">
+                  <select phx-change="update_primary_muscle" name="muscle_id" class="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary transition">
                     <option value="">Select muscle</option>
                     <%= for muscle <- @muscles do %>
                       <option value={muscle.id} selected={@selected_primary_muscle_id == muscle.id}>{muscle.name}</option>
@@ -269,7 +297,7 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
               </div>
 
               <div class="flex items-center gap-2 py-2">
-                <input type="checkbox" name="exercise[is_unilateral]" id="is_unilateral_new" value="true" class="w-4 h-4 text-primary border-line rounded focus:ring-emerald-500" />
+                <input type="checkbox" name="exercise[is_unilateral]" id="is_unilateral_new" value="true" class="w-4 h-4 text-primary border-line rounded focus:ring-primary" />
                 <label for="is_unilateral_new" class="text-sm font-medium text-foreground">
                   Unilateral exercise (performed one side at a time)
                 </label>
@@ -303,7 +331,7 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
                 <button type="button" phx-click="openModal" class="px-4 py-2 rounded-lg bg-secondary text-foreground hover:bg-secondary">
                   Cancel
                 </button>
-                <.button class="bg-primary hover:bg-emerald-700 px-4 py-2 rounded-lg">
+                <.button class="bg-primary hover:opacity-90 px-4 py-2 rounded-lg">
                   Create exercise
                 </.button>
               </div>
@@ -312,7 +340,7 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
         </div>
         <% end %>
 
-        <button phx-click="openModal" class="bg-primary text-foreground px-4 py-2 rounded">Create Exercise</button>
+        <button phx-click="openModal" class="bg-primary text-primary-foreground px-4 py-2 rounded">Create Exercise</button>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
@@ -324,7 +352,7 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
             </h3>
 
             <p class="text-sm text-foreground mb-2 flex items-center gap-2">
-              Applied: <span class="inline-block bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded"><%= if @filter_by_type == "ALL", do: "All types", else: @filter_by_type %></span>
+              Applied: <span class="inline-block bg-primary/10 text-primary font-semibold px-2 py-0.5 rounded"><%= if @filter_by_type == "ALL", do: "All types", else: @filter_by_type %></span>
               <%= if @filter_by_type != "ALL" do %>
                 <button phx-click="filterByType" phx-value-name="ALL" class="text-sm text-danger font-medium hover:underline">
                   Reset
@@ -338,7 +366,7 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
                 class={[
                   "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
                   if(@filter_by_type == "ALL",
-                    do: "bg-blue-600 text-foreground shadow-md",
+                    do: "bg-primary text-primary-foreground shadow-md",
                     else: "bg-card border border-line text-foreground hover:bg-secondary hover:shadow-sm"
                   )
                 ]}
@@ -353,7 +381,7 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
                   class={[
                     "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
                     if(@filter_by_type == muscle.name,
-                      do: "bg-blue-600 text-foreground shadow-md",
+                      do: "bg-primary text-primary-foreground shadow-md",
                       else: "bg-card border border-line text-foreground hover:bg-secondary hover:shadow-sm"
                     )
                   ]}
@@ -402,13 +430,20 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
                       <h3 class="font-semibold text-foreground">
                         <%= index + 1 %>. <%= template.data.exercise.name %>
                       </h3>
-                      <.button phx-click="deleteExercise" phx-value-id={template.data.id} data-confirm="Are you sure you want to remove this exercise?" class="text-danger hover:underline text-sm">
+                      <.confirm
+                        id={"client-remove-exercise-#{template.data.id}"}
+                        title="Remove Exercise"
+                        message="Are you sure you want to remove this exercise from the template?"
+                        confirm_label="Remove"
+                        on_confirm={JS.push("deleteExercise", value: %{id: template.data.id})}
+                        class="text-danger hover:underline text-sm"
+                      >
                         Remove
-                      </.button>
+                      </.confirm>
                     </div>
 
                     <.form phx-submit="updateForm" for={template} id={"exercise-form-#{template.data.id}"} class="space-y-4">
-                      <.input type="hidden" field={template[:id]} />
+                      <input type="hidden" name={template[:id].name} value={template[:id].value} />
                       <div class="grid grid-cols-2 gap-4">
                         <div>
                           <label class="block text-sm font-medium text-foreground">Sets</label>
@@ -421,7 +456,7 @@ defmodule ScopestrengthWeb.Client.TemplateDetail do
                       </div>
 
                       <div class="flex justify-end">
-                        <.button class="bg-indigo-600 hover:bg-indigo-700 text-foreground px-4 py-2 rounded-md text-sm font-medium shadow-sm">
+                        <.button class="px-4 py-2 rounded-md text-sm font-medium shadow-sm">
                           Update
                         </.button>
                       </div>

@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Client.ProgrammeView do
   use ScopestrengthWeb, :live_view
 
@@ -16,7 +34,6 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
         pu -> Repo.preload(pu, [programme: [programmeTemplates: [programmeDetails: :exercise]]])
       end
 
-    # Calculate muscle group volume across all templates
     muscle_group_volume =
       case current_programme do
         nil -> %{}
@@ -33,7 +50,6 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
           |> Map.new()
       end
 
-    # Calculate per-template volume
     template_volumes =
       case current_programme do
         nil -> %{}
@@ -64,7 +80,6 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
   def render(assigns) do
     ~H"""
     <div class="max-w-4xl mx-auto px-4 py-6 space-y-6">
-      <!-- Header -->
       <div class="flex items-center space-x-3">
         <.link
           navigate={~p"/client"}
@@ -79,7 +94,6 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
       </div>
 
       <%= if @current_programme do %>
-        <!-- Programme Info -->
         <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden">
           <div class="px-5 py-4 border-b border-line">
             <h2 class="text-lg font-semibold text-foreground"><%= @current_programme.programme.name %></h2>
@@ -89,7 +103,6 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
           </div>
         </div>
 
-        <!-- Overall Muscle Group Volume -->
         <%= if map_size(@muscle_group_volume) > 0 do %>
           <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden">
             <div class="px-5 py-4 border-b border-line">
@@ -99,7 +112,7 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
             <div class="p-4">
               <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 <%= for {muscle_group, total_sets} <- @muscle_group_volume do %>
-                  <div class="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 rounded-lg px-3 py-2.5">
+                  <div class="bg-muted border border-line rounded-lg px-3 py-2.5">
                     <p class="text-xs font-semibold text-foreground truncate"><%= muscle_group %></p>
                     <div class="flex items-center justify-between mt-2 text-[11px] text-dim">
                       <span>Total Sets</span>
@@ -114,7 +127,6 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
           </div>
         <% end %>
 
-        <!-- Templates with Per-Template Volume -->
         <div class="space-y-4">
           <%= for template <- @current_programme.programme.programmeTemplates do %>
             <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden">
@@ -122,7 +134,6 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
                 <h3 class="font-semibold text-foreground"><%= template.name %></h3>
               </div>
 
-              <!-- Per-Template Volume -->
               <%= if Map.has_key?(@template_volumes, template.id) and map_size(@template_volumes[template.id]) > 0 do %>
                 <div class="px-5 py-3 border-b border-line bg-warning/10">
                   <p class="text-xs font-semibold text-dim mb-2">Session Volume</p>
@@ -136,7 +147,6 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
                 </div>
               <% end %>
 
-              <!-- Exercises -->
               <div class="divide-y divide-line">
                 <%= for detail <- template.programmeDetails do %>
                   <div class="px-5 py-3 flex items-center justify-between">
@@ -145,7 +155,7 @@ defmodule ScopestrengthWeb.Client.ProgrammeView do
                       <span class="ml-2 text-xs text-faint"><%= if detail.exercise.muscle, do: detail.exercise.muscle.name, else: "N/A" %></span>
                     </div>
                     <div class="flex items-center space-x-4 text-sm text-dim">
-                      <span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium"><%= detail.set %> sets</span>
+                      <span class="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium"><%= detail.set %> sets</span>
                       <span class="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium"><%= detail.reps %> reps</span>
                       <%= if detail.rir do %>
                         <span class="px-2 py-0.5 bg-secondary text-dim rounded text-xs font-medium">RIR <%= detail.rir %></span>

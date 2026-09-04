@@ -1,13 +1,29 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Client.WorkoutShow do
-alias Scopestrength.Trainers
+alias Scopestrength.ClientProgressions
 alias Scopestrength.Programmes.ProgrammeUser
-alias GenLSP.Structures.ConfigurationItem
 alias Scopestrength.Training
 alias Scopestrength.Training.Workout
 alias Scopestrength.Exercises.Exercise
 alias Scopestrength.Exercises.ExerciseMuscleContribution
 alias Scopestrength.Exercises
-alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
   use ScopestrengthWeb, :live_view
   alias Scopestrength.Repo
   import Ecto.Query
@@ -21,7 +37,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
     existing_sets = Map.get(socket.assigns.workouts, exercise_id, [])
     next_set = length(existing_sets) + 1
 
-    # Get side parameter if provided (for unilateral exercises)
     side = Map.get(params, "side", "both")
 
     case Training.create_workout_details(%{
@@ -85,14 +100,12 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
         :error -> nil
       end
 
-    # Store pending changes instead of saving immediately
     pending_changes = Map.put(
       socket.assigns.pending_changes,
       workout_detail_id,
       %{reps: reps, weight: weight, rir: rir, rpe: rpe}
     )
 
-    # Update the form display
     updated_workouts =
       socket.assigns.workouts
       |> Enum.map(fn {exercise_id, sets} ->
@@ -114,10 +127,11 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
   end
 
   def handle_event("save_all_changes", _params, socket) do
-    case save_pending_changes(socket.assigns.pending_changes) do
-      :ok ->
+    case save_pending_changes(socket.assigns.pending_changes, socket.assigns.client.id) do
+      {:ok, saved} ->
         {:noreply,
          socket
+         |> assign(workouts: refresh_workouts(socket.assigns.workouts, saved))
          |> assign(pending_changes: %{}, has_unsaved_changes: false)
          |> put_flash(:info, "All changes saved successfully")}
 
@@ -128,7 +142,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
 
   def handle_event("auto_save_on_leave", _params, socket) do
     if socket.assigns.has_unsaved_changes do
-      save_pending_changes(socket.assigns.pending_changes)
+      save_pending_changes(socket.assigns.pending_changes, socket.assigns.client.id)
     end
     {:noreply, socket}
   end
@@ -139,8 +153,8 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
     {:noreply, assign(socket, exercises: search_exercises(socket.assigns.allExercises, q), q: q)}
   end
 
-  def handle_event("deleteExercise", %{"id" => id_str}, socket) do
-    case Integer.parse(id_str) do
+  def handle_event("deleteExercise", %{"id" => id_param}, socket) do
+    case Integer.parse(to_string(id_param)) do
       {id, ""} ->
         workout_detail = Training.get_workout_details!(id)
         exercise_id = workout_detail.exercise_id
@@ -165,7 +179,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
               |> Enum.reject(fn {_exercise_id, sets} -> Enum.empty?(sets) end)
               |> Map.new()
 
-            # Remove deleted workout_detail from pending changes
             updated_pending_changes = Map.delete(socket.assigns.pending_changes, id)
 
             {:noreply,
@@ -193,11 +206,11 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
   end
 
   def handle_event("toggle_edit_mode", _params, socket) do
-    # If exiting edit mode and there are unsaved changes, save them
     socket = if socket.assigns.edit_mode and socket.assigns.has_unsaved_changes do
-      case save_pending_changes(socket.assigns.pending_changes) do
-        :ok ->
+      case save_pending_changes(socket.assigns.pending_changes, socket.assigns.client.id) do
+        {:ok, saved} ->
           socket
+          |> assign(workouts: refresh_workouts(socket.assigns.workouts, saved))
           |> assign(pending_changes: %{}, has_unsaved_changes: false)
           |> put_flash(:info, "Changes saved successfully")
         {:error, _} ->
@@ -249,9 +262,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
           template.programmeDetails
           |> Enum.uniq_by(& &1.exercise_id)
           |> Enum.each(fn detail ->
-            # Check if exercise is unilateral
             if detail.exercise.is_unilateral do
-              # Create left side set
               left_attrs = %{
                 workout_id: workout_id,
                 exercise_id: detail.exercise_id,
@@ -261,7 +272,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                 weight: nil
               }
 
-              # Create right side set
               right_attrs = %{
                 workout_id: workout_id,
                 exercise_id: detail.exercise_id,
@@ -282,7 +292,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                   Repo.rollback(changeset)
               end
             else
-              # Create normal bilateral set
               attrs = %{
                 workout_id: workout_id,
                 exercise_id: detail.exercise_id,
@@ -389,7 +398,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
     user = socket.assigns.current_user
     client = Repo.get_by(Scopestrength.Clients.Client, %{user_id: user.id})
 
-    # Get trainer if available
     trainer = case client.trainer_id do
       nil -> nil
       trainer_id -> Repo.get_by(Scopestrength.Trainers.Trainer, %{id: trainer_id})
@@ -412,7 +420,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
         )
     end
 
-    # Get muscles list for filtering
     muscles = Exercises.list_mucles()
 
     case Repo.get_by(Client, user_id: user.id) do
@@ -526,7 +533,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
             <%= if @has_unsaved_changes and @edit_mode do %>
               <.button
                 phx-click="save_all_changes"
-                class="bg-primary hover:bg-primary text-foreground px-6 py-3 rounded-xl shadow-lg transition-all duration-200"
+                class="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-xl shadow-lg transition-all duration-200"
               >
                 <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -536,7 +543,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
             <% end %>
             <.button
               phx-click="toggle_edit_mode"
-              class={"#{if @edit_mode, do: "bg-secondary hover:bg-secondary", else: "bg-primary hover:bg-primary"} text-foreground px-6 py-3 rounded-xl shadow-lg transition-all duration-200"}
+              class={"#{if @edit_mode, do: "bg-secondary hover:bg-secondary/90 text-foreground border border-line", else: "bg-primary hover:bg-primary/90 text-primary-foreground"} px-6 py-3 rounded-xl shadow-lg transition-all duration-200"}
             >
             <%= if @edit_mode do %>
               <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -592,16 +599,17 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                 </p>
                 <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <%= for template <- @programme.programme.programmeTemplates do %>
-                    <button
-                      type="button"
-                      phx-click="load_from_programme"
-                      phx-value-template-id={template.id}
-                      data-confirm="This will replace your current workout. Continue?"
+                    <.confirm
+                      id={"load-template-#{template.id}"}
+                      title="Replace Workout"
+                      message="This will replace your current workout with this template. Continue?"
+                      confirm_label="Replace"
+                      on_confirm={JS.push("load_from_programme", value: %{"template-id" => template.id})}
                       class="flex items-center justify-between gap-2 rounded-md border border-line px-3 py-2 text-xs font-medium text-dim transition hover:border-primary hover:text-primary"
                     >
                       <span class="truncate"><%= template.name %></span>
                       <.icon name="hero-arrow-down-tray" class="h-3.5 w-3.5 shrink-0" />
-                    </button>
+                    </.confirm>
                   <% end %>
                 </div>
               </div>
@@ -619,16 +627,19 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                   </p>
                   <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <%= for template <- programme.programmeTemplates do %>
-                      <button
-                        type="button"
-                        phx-click="load_from_own_programme"
-                        phx-value-template-id={template.id}
-                        data-confirm="This will replace your current workout. Continue?"
+                      <.confirm
+                        id={"load-own-template-#{template.id}"}
+                        title="Replace Workout"
+                        message="This will replace your current workout with this template. Continue?"
+                        confirm_label="Replace"
+                        on_confirm={
+                          JS.push("load_from_own_programme", value: %{"template-id" => template.id})
+                        }
                         class="flex items-center justify-between gap-2 rounded-md border border-line px-3 py-2 text-xs font-medium text-dim transition hover:border-primary hover:text-primary"
                       >
                         <span class="truncate"><%= template.name %></span>
                         <.icon name="hero-arrow-down-tray" class="h-3.5 w-3.5 shrink-0" />
-                      </button>
+                      </.confirm>
                     <% end %>
                   </div>
                 <% end %>
@@ -642,9 +653,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
               <span class="num text-xs text-dim">{length(@exercises)} available</span>
             </div>
 
-            <%!-- One search box instead of a muscle-chip row: the chips took a
-                  whole block of vertical space in a side panel, and the search
-                  already matches muscle and equipment names. --%>
             <div class="mb-4">
               <input
                 type="search"
@@ -700,7 +708,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
             </div>
           </div>
 
-          <!-- Workout Configuration (Editable) -->
           <div class="bg-card rounded-xl shadow-lg p-6 border border-line">
             <h2 class="text-xl font-semibold text-foreground mb-4">Workout Configuration</h2>
 
@@ -723,9 +730,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                       </h3>
                     </div>
 
-                    <%!-- Column headers appear once for the whole exercise rather
-                          than as a label above every input. Widths here must stay
-                          in sync with the per-set grid below. --%>
                     <div class="hidden px-4 pt-3 sm:grid sm:grid-cols-[2rem,1fr,1fr,1fr,1fr,2rem] sm:gap-3">
                       <span class="text-[11px] uppercase tracking-widest text-faint">Set</span>
                       <span class="text-[11px] uppercase tracking-widest text-faint">Weight (kg)</span>
@@ -743,13 +747,21 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                           id={"workout-form-#{workout.data.id}"}
                           class="px-4 py-2"
                         >
-                          <.input type="hidden" field={workout[:id]} />
+                          <input type="hidden" name={workout[:id].name} value={workout[:id].value} />
 
-                          <div class="grid grid-cols-[2rem,1fr,1fr,1fr,1fr,2rem] items-center gap-3">
+                          <div class="grid grid-cols-2 gap-2 sm:grid-cols-[2rem,1fr,1fr,1fr,1fr,2rem] sm:items-center sm:gap-3">
                             <span class="num text-sm text-dim">
-                              {workout.data.set}
+                              <span class="sm:hidden">Set </span>{workout.data.set}
                             </span>
 
+                            <label class="flex flex-col gap-1 sm:contents">
+                              <span class="text-[10px] uppercase tracking-widest text-faint sm:hidden">Weight (kg)</span>
+                            <label class="flex flex-col gap-1 sm:contents">
+                              <span class="text-[10px] uppercase tracking-widest text-faint sm:hidden">Reps</span>
+                            <label class="flex flex-col gap-1 sm:contents">
+                              <span class="text-[10px] uppercase tracking-widest text-faint sm:hidden">RIR</span>
+                            <label class="flex flex-col gap-1 sm:contents">
+                              <span class="text-[10px] uppercase tracking-widest text-faint sm:hidden">RPE</span>
                             <input
                               type="text"
                               inputmode="decimal"
@@ -760,6 +772,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                               phx-debounce="500"
                               class="num w-full rounded-md border-0 bg-muted px-3 py-2.5 text-base text-foreground placeholder:text-faint focus:ring-2 focus:ring-inset focus:ring-primary"
                             />
+                            </label>
 
                             <input
                               type="number"
@@ -771,6 +784,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                               phx-debounce="500"
                               class="num w-full rounded-md border-0 bg-muted px-3 py-2.5 text-base text-foreground placeholder:text-faint focus:ring-2 focus:ring-inset focus:ring-primary"
                             />
+                            </label>
 
                             <input
                               type="number"
@@ -784,6 +798,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                               phx-debounce="500"
                               class="num w-full rounded-md border-0 bg-muted px-3 py-2.5 text-base text-foreground placeholder:text-faint focus:ring-2 focus:ring-inset focus:ring-primary"
                             />
+                            </label>
 
                             <input
                               type="number"
@@ -798,17 +813,19 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                               phx-debounce="500"
                               class="num w-full rounded-md border-0 bg-muted px-3 py-2.5 text-base text-foreground placeholder:text-faint focus:ring-2 focus:ring-inset focus:ring-primary"
                             />
+                            </label>
 
-                            <button
-                              type="button"
-                              phx-click="deleteExercise"
-                              data-confirm="Remove this set?"
-                              phx-value-id={workout.data.id}
+                            <.confirm
+                              id={"remove-set-#{workout.data.id}"}
+                              title="Remove Set"
+                              message="Are you sure you want to remove this set?"
+                              confirm_label="Remove"
+                              on_confirm={JS.push("deleteExercise", value: %{id: workout.data.id})}
                               aria-label={"Remove set #{workout.data.set}"}
-                              class="rounded-md p-1.5 text-faint transition hover:bg-danger/10 hover:text-danger"
+                              class="col-span-2 mt-1 inline-flex w-fit items-center gap-1 rounded-md px-2 py-1 text-xs text-faint transition hover:bg-danger/10 hover:text-danger sm:col-span-1 sm:mt-0 sm:p-1.5 sm:text-sm"
                             >
-                              <.icon name="hero-x-mark" class="h-4 w-4" />
-                            </button>
+                              <.icon name="hero-x-mark" class="h-4 w-4" /><span class="sm:hidden">Remove set</span>
+                            </.confirm>
                           </div>
 
                           <div
@@ -854,7 +871,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
             <% end %>
           </div>
         </div>
-        <!-- Programme loading -->
 
 
 
@@ -880,8 +896,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                       <p class="text-xs text-dim">Direct vs effective sets per muscle</p>
                     </div>
                   </div>
-                  <%!-- Same layered direct/indirect bar as the volume page, so
-                        the two views read the same way. --%>
                   <% session_max =
                     @muscle_group_frequencies
                     |> Enum.map(fn {_m, v} -> v.effective end)
@@ -916,8 +930,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                   </div>
                 </div>
               <% end %>
-              <%!-- Mirrors the edit-mode table exactly, minus the inputs, so
-                    toggling edit does not reshuffle the layout. --%>
               <div class="space-y-4">
                 <%= for {_exercise_id, sets} <- @workouts do %>
                   <div class="overflow-hidden rounded-lg border border-line">
@@ -925,10 +937,28 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
                       <h3 class="font-semibold text-primary">
                         <%= List.first(sets).data.exercise.name %>
                       </h3>
-                      <span class="num text-xs text-dim"><%= length(sets) %> sets</span>
+
+                      <% progressed = status_count(sets, "progress") %>
+                      <% reduced = status_count(sets, "reduce") %>
+
+                      <div class="flex items-center gap-2">
+                        <span
+                          :if={progressed > 0}
+                          class="inline-flex items-center rounded-full border border-primary/40 px-2 py-0.5 text-[10px] uppercase tracking-widest text-primary"
+                        >
+                          <%= progressed %> progressed
+                        </span>
+                        <span
+                          :if={reduced > 0}
+                          class="inline-flex items-center rounded-full border border-danger/40 px-2 py-0.5 text-[10px] uppercase tracking-widest text-danger"
+                        >
+                          <%= reduced %> reduced
+                        </span>
+                        <span class="num text-xs text-dim"><%= length(sets) %> sets</span>
+                      </div>
                     </div>
 
-                    <div class="grid grid-cols-[2rem,1fr,1fr,1fr,1fr] gap-3 px-4 pt-3">
+                    <div class="hidden sm:grid grid-cols-[2rem,1fr,1fr,1fr,1fr] gap-3 px-4 pt-3">
                       <span class="text-[11px] uppercase tracking-widest text-faint">Set</span>
                       <span class="text-[11px] uppercase tracking-widest text-faint">Weight</span>
                       <span class="text-[11px] uppercase tracking-widest text-faint">Reps</span>
@@ -938,22 +968,37 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
 
                     <div class="px-4 pb-3">
                       <%= for workout <- sets do %>
-                        <div class="grid grid-cols-[2rem,1fr,1fr,1fr,1fr] items-baseline gap-3 border-b border-line/60 py-2.5 last:border-0">
-                          <span class="num text-sm text-dim"><%= workout.data.set %></span>
+                        <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-line/60 py-2.5 last:border-0 sm:grid sm:grid-cols-[2rem,1fr,1fr,1fr,1fr] sm:gap-3">
+                          <span class="num text-sm text-dim"><span class="sm:hidden">Set </span><%= workout.data.set %></span>
                           <span class="num text-base text-foreground">
                             <%= workout.data.weight %><span class="ml-1 text-xs text-faint">kg</span>
                           </span>
-                          <span class="num text-base text-foreground"><%= workout.data.reps %></span>
-                          <span class="num text-base text-foreground"><%= workout.data.rir || 0 %></span>
+                          <span class="num text-base text-foreground"><%= workout.data.reps %><span class="ml-1 text-xs text-faint sm:hidden">reps</span></span>
+                          <span class="num text-base text-foreground"><span class="mr-1 text-xs text-faint sm:hidden">RIR</span><%= workout.data.rir || 0 %></span>
                           <span class="num text-base text-foreground">
-                            <%= if workout.data.rpe, do: workout.data.rpe, else: "—" %>
+                            <span class="mr-1 text-xs text-faint sm:hidden">RPE</span><%= if workout.data.rpe, do: workout.data.rpe, else: "—" %>
                           </span>
-                          <span
-                            :if={workout.data.side != "both"}
-                            class="col-start-2 -mt-1 inline-flex w-fit items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-widest text-dim"
+                          <div
+                            :if={workout.data.side != "both" or workout.data.progression_status in ["progress", "reduce"]}
+                            class="flex basis-full items-center gap-2 sm:col-start-2 sm:-mt-1 sm:w-fit sm:basis-auto"
                           >
-                            <%= workout.data.side %>
-                          </span>
+                            <span
+                              :if={workout.data.side != "both"}
+                              class="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-widest text-dim"
+                            >
+                              <%= workout.data.side %>
+                            </span>
+                            <span
+                              :if={workout.data.progression_status in ["progress", "reduce"]}
+                              class={[
+                                "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-widest",
+                                workout.data.progression_status == "progress" && "border-primary/40 text-primary",
+                                workout.data.progression_status == "reduce" && "border-danger/40 text-danger"
+                              ]}
+                            >
+                              <%= workout.data.progression_status %>
+                            </span>
+                          </div>
                         </div>
                       <% end %>
                     </div>
@@ -968,7 +1013,10 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
     """
   end
 
-  # Bar segment width, guarding an all-zero session.
+  defp status_count(sets, status) do
+    Enum.count(sets, fn workout -> workout.data.progression_status == status end)
+  end
+
   defp bar_pct(_value, max) when max <= 0, do: 0
   defp bar_pct(value, max), do: Float.round(value / max * 100, 2)
 
@@ -1021,8 +1069,7 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
               {c.muscle.name, c.role, set_count * c.multiplier}
             end)
           else
-            # For bilateral: each row = 1 set (normal counting)
-            Enum.flat_map(details, fn detail ->
+            Enum.flat_map(details, fn _detail ->
               contributions = Map.get(contributions_by_exercise, exercise_id, [])
               Enum.map(contributions, fn c ->
                 {c.muscle.name, c.role, 1 * c.multiplier}
@@ -1052,9 +1099,12 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
   end
 
   defp normalize_workout_attrs(params) do
-    params
-    |> Map.take(["name", "date"])
-    |> Map.update("date", nil, &parse_datetime_local/1)
+    attrs = Map.take(params, ["name", "date"])
+
+    case parse_datetime_local(attrs["date"]) do
+      %DateTime{} = date -> Map.put(attrs, "date", date)
+      _ -> Map.delete(attrs, "date")
+    end
   end
 
   defp parse_datetime_local(nil), do: nil
@@ -1067,8 +1117,6 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
     end
   end
 
-  # The muscle filter chips were removed, so search matches muscle and
-  # equipment names too — otherwise typing "Chest" or "Barbell" finds nothing.
   defp search_exercises(exercises, ""), do: exercises
 
   defp search_exercises(exercises, query) do
@@ -1080,22 +1128,52 @@ alias ScopestrengthWeb.Exercises, as: ExercisesLiveView
     end)
   end
 
-  defp save_pending_changes(pending_changes) when map_size(pending_changes) == 0, do: :ok
+  defp refresh_workouts(workouts, saved) when map_size(saved) == 0, do: workouts
 
-  defp save_pending_changes(pending_changes) do
+  defp refresh_workouts(workouts, saved) do
+    Map.new(workouts, fn {exercise_id, sets} ->
+      sets =
+        Enum.map(sets, fn workout_form ->
+          case Map.fetch(saved, workout_form.data.id) do
+            {:ok, detail} -> detail |> Training.change_workout_details() |> to_form()
+            :error -> workout_form
+          end
+        end)
+
+      {exercise_id, sets}
+    end)
+  end
+
+  defp save_pending_changes(pending_changes, _client_id) when map_size(pending_changes) == 0,
+    do: {:ok, %{}}
+
+  defp save_pending_changes(pending_changes, client_id) do
     results =
       Enum.map(pending_changes, fn {workout_detail_id, changes} ->
         case Repo.get(WorkoutDetails, workout_detail_id) do
           nil ->
-            # Workout detail was deleted, skip silently
             {:ok, :skipped}
+
           workout_detail ->
-            Training.update_workout_details(workout_detail, changes)
+            case Training.update_workout_details(workout_detail, changes) do
+              {:ok, updated_workout_detail} ->
+                ClientProgressions.process_workout_detail(client_id, updated_workout_detail)
+
+                {:ok, Repo.get(WorkoutDetails, updated_workout_detail.id) |> Repo.preload(:exercise)}
+
+              {:error, changeset} ->
+                {:error, changeset}
+            end
         end
       end)
 
     if Enum.all?(results, fn result -> match?({:ok, _}, result) end) do
-      :ok
+      saved =
+        for {:ok, %WorkoutDetails{} = detail} <- results,
+            into: %{},
+            do: {detail.id, detail}
+
+      {:ok, saved}
     else
       {:error, :some_updates_failed}
     end

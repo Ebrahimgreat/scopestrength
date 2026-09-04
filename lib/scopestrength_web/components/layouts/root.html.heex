@@ -2,11 +2,19 @@
 <html lang="en" class="[scrollbar-gutter:stable]">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="csrf-token" content={get_csrf_token()} />
   <.live_title default="Scopestrength" suffix=" · Phoenix Framework">
     {assigns[:page_title]}
   </.live_title>
+  <link rel="manifest" href={~p"/manifest.json"} />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="icon" href={~p"/favicon.ico"} sizes="any" />
+  <link rel="icon" type="image/svg+xml" href={~p"/images/icon.svg"} />
+  <link rel="apple-touch-icon" href={~p"/images/apple-touch-icon.png"} />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ScopeStrength" />
   <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
   <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
   </script>

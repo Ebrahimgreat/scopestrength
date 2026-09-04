@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#0a0a0a"/>
+  <!-- Barbell mark: two plates on a bar, the "strength" half of the name. -->
+  <g fill="#c8f736">
+    <rect x="112" y="236" width="288" height="40" rx="20"/>
+    <rect x="132" y="176" width="44" height="160" rx="18"/>
+    <rect x="336" y="176" width="44" height="160" rx="18"/>
+    <rect x="84" y="212" width="34" height="88" rx="16"/>
+    <rect x="394" y="212" width="34" height="88" rx="16"/>
+  </g>
+</svg>

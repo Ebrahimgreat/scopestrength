@@ -1,7 +1,26 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Client.ProgressPhotos do
   use ScopestrengthWeb, :live_view
 
   alias Scopestrength.ProgressPhotos
+  alias Scopestrength.Storage
   alias Scopestrength.Clients.Client
   alias Scopestrength.Notifications
   alias Scopestrength.Repo
@@ -45,15 +64,7 @@ defmodule ScopestrengthWeb.Client.ProgressPhotos do
   def handle_event("save_photo", %{"notes" => notes}, socket) do
     uploaded_files =
       consume_uploaded_entries(socket, :progress_photo, fn %{path: path}, entry ->
-        upload_dir = Path.join(["priv", "static", "uploads", "progress_photos"])
-        File.mkdir_p!(upload_dir)
-
-        filename = "#{entry.uuid}.#{ext(entry)}"
-        dest = Path.join([upload_dir, filename])
-
-        File.cp!(path, dest)
-
-        {:ok, "/uploads/progress_photos/#{filename}"}
+        Storage.put(path, "progress_photos", "#{entry.uuid}.#{ext(entry)}")
       end)
 
     case uploaded_files do
@@ -79,7 +90,7 @@ defmodule ScopestrengthWeb.Client.ProgressPhotos do
                          recipient_id: client.trainer_id,
                          recipient_type: "trainer",
                          type: "progress_photo_uploaded",
-                         data: %{photo_id: photo.id, client_id: client.id}
+                         data: %{photo_id: photo.id, client_id: client.id, client_name: user.name}
                        }) do
                     {:ok, notification} -> {photo, notification}
                     {:error, changeset} -> Repo.rollback(changeset)
@@ -159,12 +170,9 @@ defmodule ScopestrengthWeb.Client.ProgressPhotos do
 
   def handle_event("delete_photo", %{"id" => id}, socket) do
     client = socket.assigns.client
-    photo = ProgressPhotos.get_progress_photo_for_client!(String.to_integer(id), client.id)
+    photo = ProgressPhotos.get_progress_photo_for_client!(ScopestrengthWeb.Params.to_integer(id), client.id)
 
-    if photo.photo_url do
-      file_path = Path.join("priv/static", photo.photo_url)
-      File.rm(file_path)
-    end
+    Storage.delete(photo.photo_url)
 
     case ProgressPhotos.delete_progress_photo(photo) do
       {:ok, _} ->
@@ -197,14 +205,14 @@ defmodule ScopestrengthWeb.Client.ProgressPhotos do
         </.link>
       </div>
 
-      <div class="flex items-center justify-between mb-8">
+      <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 class="text-3xl font-bold text-foreground">Progress Photos</h1>
+          <h1 class="text-2xl font-bold text-foreground sm:text-3xl">Progress Photos</h1>
           <p class="text-sm text-dim mt-1">Track your physical transformation over time</p>
         </div>
         <button
           phx-click="toggle_upload_form"
-          class="inline-flex items-center px-4 py-2 bg-primary hover:bg-emerald-700 text-foreground font-medium rounded-lg transition-colors"
+          class="inline-flex items-center px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-colors"
         >
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -222,7 +230,7 @@ defmodule ScopestrengthWeb.Client.ProgressPhotos do
             <form phx-submit="save_photo" phx-change="validate" class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-foreground mb-1">Notes (optional)</label>
-                <textarea name="notes" rows="2" class="w-full rounded-lg border-line shadow-sm focus:ring-emerald-500 focus:border-primary" placeholder="e.g., Week 4 of program, feeling stronger"><%= @notes %></textarea>
+                <textarea name="notes" rows="2" class="w-full rounded-lg border-line shadow-sm focus:ring-primary focus:border-primary" placeholder="e.g., Week 4 of program, feeling stronger"><%= @notes %></textarea>
               </div>
 
               <div class="border-2 border-dashed border-line rounded-lg p-6 hover:border-primary transition-colors">
@@ -257,7 +265,7 @@ defmodule ScopestrengthWeb.Client.ProgressPhotos do
 
               <div class="flex gap-3">
                 <%= if length(@uploads.progress_photo.entries) > 0 do %>
-                  <button type="submit" class="flex-1 bg-primary hover:bg-emerald-700 text-foreground font-semibold py-3 rounded-lg transition-colors">
+                  <button type="submit" class="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 rounded-lg transition-colors">
                     Upload Photo
                   </button>
                 <% end %>
@@ -270,7 +278,7 @@ defmodule ScopestrengthWeb.Client.ProgressPhotos do
 
       <%= if length(@photos) == 0 do %>
         <div class="bg-card rounded-xl shadow-sm border border-line p-12 text-center">
-          <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="mx-auto h-16 w-16 text-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
           </svg>
           <h3 class="mt-4 text-lg font-medium text-foreground">No progress photos yet</h3>
@@ -281,27 +289,30 @@ defmodule ScopestrengthWeb.Client.ProgressPhotos do
           <%= for photo <- @photos do %>
             <div class="bg-card rounded-xl shadow-sm border border-line overflow-hidden group">
               <div class="relative aspect-[3/4]">
-                <img src={photo.photo_url} alt="Progress photo" class="w-full h-full object-cover" />
-                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <img src={Storage.url(photo.photo_url)} alt="Progress photo" class="w-full h-full object-cover" />
+                <div class="absolute inset-x-0 bottom-0 flex items-center justify-end gap-2 bg-gradient-to-t from-black/60 to-transparent p-3 sm:inset-0 sm:justify-center sm:bg-black/40 sm:bg-none sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity">
                   <button
                     phx-click="edit_photo"
                     phx-value-id={photo.id}
-                    class="bg-primary hover:bg-primary text-foreground rounded-full p-2"
+                    class="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full p-2"
                   >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                     </svg>
                   </button>
-                  <button
-                    phx-click="delete_photo"
-                    phx-value-id={photo.id}
-                    data-confirm="Are you sure you want to delete this photo?"
-                    class="bg-danger hover:bg-danger text-foreground rounded-full p-2"
+                  <.confirm
+                    id={"delete-photo-#{photo.id}"}
+                    title="Delete Photo"
+                    message="Are you sure you want to delete this progress photo? This action cannot be undone."
+                    confirm_label="Delete"
+                    on_confirm={JS.push("delete_photo", value: %{id: photo.id})}
+                    aria-label="Delete photo"
+                    class="bg-danger hover:bg-danger/90 text-background rounded-full p-2"
                   >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
-                  </button>
+                  </.confirm>
                 </div>
               </div>
               <div class="p-4">
@@ -330,15 +341,15 @@ defmodule ScopestrengthWeb.Client.ProgressPhotos do
             </div>
             <div class="p-6">
               <div class="mb-4">
-                <img src={@editing_photo.photo_url} alt="Progress photo" class="w-full max-h-64 object-contain rounded-lg" />
+                <img src={Storage.url(@editing_photo.photo_url)} alt="Progress photo" class="w-full max-h-64 object-contain rounded-lg" />
               </div>
               <form phx-submit="save_edit" phx-change="validate_edit" class="space-y-4">
                 <div>
                   <label class="block text-sm font-medium text-foreground mb-1">Notes</label>
-                  <textarea name="edit_notes" rows="3" class="w-full rounded-lg border-line shadow-sm focus:ring-emerald-500 focus:border-primary" placeholder="Add notes about this photo..."><%= @edit_notes %></textarea>
+                  <textarea name="edit_notes" rows="3" class="w-full rounded-lg border-line shadow-sm focus:ring-primary focus:border-primary" placeholder="Add notes about this photo..."><%= @edit_notes %></textarea>
                 </div>
                 <div class="flex gap-3">
-                  <button type="submit" class="flex-1 bg-primary hover:bg-emerald-700 text-foreground font-semibold py-2.5 rounded-lg transition-colors">
+                  <button type="submit" class="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2.5 rounded-lg transition-colors">
                     Save Changes
                   </button>
                   <button type="button" phx-click="cancel_edit" class="px-4 py-2 text-dim hover:text-foreground font-medium">

@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.MuscleContribution do
   alias Scopestrength.Repo
   alias Scopestrength.Clients
@@ -115,6 +133,7 @@ defmodule ScopestrengthWeb.MuscleContribution do
   def render(assigns) do
     ~H"""
     <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+      <.back_link navigate={~p"/trainer/clients/#{@client.id}/volumeTracking"}>Volume tracking</.back_link>
       <div class="mb-6">
         <h1 class="text-2xl font-semibold text-foreground">
           <%= @client.user.name %> — <%= @muscle.name %> Volume
@@ -133,7 +152,7 @@ defmodule ScopestrengthWeb.MuscleContribution do
               <section>
                 <h2 class={[
                   "mb-3 text-xs font-semibold uppercase tracking-wide",
-                  if(role == "primary", do: "text-primary", else: "text-blue-700")
+                  if(role == "primary", do: "text-primary", else: "text-dim")
                 ]}>
                   <%= if role == "primary", do: "Direct (Primary)", else: "Indirect (Secondary)" %>
                 </h2>

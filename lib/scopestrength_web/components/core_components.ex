@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.CoreComponents do
   @moduledoc """
   Provides core UI components.
@@ -90,6 +108,86 @@ defmodule ScopestrengthWeb.CoreComponents do
   end
 
   @doc """
+  Renders a confirmation dialog for a destructive action.
+
+  Replaces `data-confirm`, whose native browser dialog cannot be styled and
+  announces itself as "localhost says". Everything here is client side -- the
+  dialog is markup that starts hidden, and the trigger shows it -- so a call
+  site needs no assign and no cancel handler. Only the confirm button carries
+  a `phx-click`, and it fires the event the trigger would have fired.
+
+  ## Examples
+
+      <.confirm
+        id={"delete-note-\#{note.id}"}
+        title="Delete Note"
+        message="Are you sure you want to delete this note?"
+        confirm_label="Delete"
+        on_confirm={JS.push("deleteNote", value: %{id: note.id})}
+      >
+        <.icon name="hero-trash" class="h-4 w-4" />
+      </.confirm>
+
+  """
+  attr :id, :string, required: true
+  attr :title, :string, required: true
+  attr :message, :string, required: true
+  attr :confirm_label, :string, default: "Confirm"
+  attr :on_confirm, JS, required: true
+  attr :class, :string, default: nil, doc: "classes for the trigger button"
+  attr :rest, :global, doc: "attributes for the trigger button, e.g. aria-label"
+
+  slot :inner_block, required: true, doc: "the trigger button's contents"
+
+  def confirm(assigns) do
+    ~H"""
+    <button type="button" phx-click={JS.show(to: "##{@id}")} class={@class} {@rest}>
+      {render_slot(@inner_block)}
+    </button>
+
+    <div id={@id} class="fixed inset-0 z-50 hidden overflow-y-auto">
+      <div
+        class="absolute inset-0 bg-black/70"
+        phx-click={JS.hide(to: "##{@id}")}
+        aria-hidden="true"
+      >
+      </div>
+      <div class="relative flex min-h-full items-center justify-center p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          phx-window-keydown={JS.hide(to: "##{@id}")}
+          phx-key="escape"
+          class="w-full max-w-sm rounded-xl border border-line bg-card p-6 shadow-2xl"
+        >
+          <h3 class="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+            {@title}
+          </h3>
+          <p class="mt-2 text-sm text-dim">{@message}</p>
+          <div class="mt-6 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              phx-click={JS.hide(to: "##{@id}")}
+              class="rounded-md px-4 py-2 text-sm font-medium text-dim transition hover:text-foreground"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              phx-click={JS.hide(to: "##{@id}") |> JS.exec("data-confirm-action", to: "##{@id}")}
+              data-confirm-action={@on_confirm}
+              class="rounded-md bg-danger px-4 py-2 text-sm font-semibold text-foreground transition hover:opacity-90"
+            >
+              {@confirm_label}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
   Renders flash notices.
 
   ## Examples
@@ -100,7 +198,9 @@ defmodule ScopestrengthWeb.CoreComponents do
   attr :id, :string, doc: "the optional id of flash container"
   attr :flash, :map, default: %{}, doc: "the map of flash messages to display"
   attr :title, :string, default: nil
-  attr :kind, :atom, values: [:info, :error], doc: "used for styling and flash lookup"
+  attr :kind, :atom,
+    values: [:info, :notification, :error],
+    doc: "used for styling and flash lookup"
   attr :rest, :global, doc: "the arbitrary HTML attributes to add to the flash container"
 
   slot :inner_block, doc: "the optional inner block that renders the flash message"
@@ -115,20 +215,41 @@ defmodule ScopestrengthWeb.CoreComponents do
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
       role="alert"
       class={[
-        "fixed top-2 right-2 mr-2 w-80 sm:w-96 z-50 rounded-lg p-3 ring-1",
-        @kind == :info && "bg-primary/10 text-primary ring-emerald-500 fill-cyan-900",
-        @kind == :error && "bg-danger/10 text-rose-900 shadow-md ring-rose-500 fill-rose-900"
+        "fixed top-2 right-2 mr-2 w-80 sm:w-96 z-50 overflow-hidden rounded-lg border border-l-4",
+        "bg-card text-foreground shadow-xl",
+        @kind == :info && "border-line border-l-primary",
+        @kind == :notification && "border-line border-l-dim",
+        @kind == :error && "border-line border-l-danger"
       ]}
       {@rest}
     >
-      <p :if={@title} class="flex items-center gap-1.5 text-sm font-semibold leading-6">
-        <.icon :if={@kind == :info} name="hero-information-circle-mini" class="h-4 w-4" />
-        <.icon :if={@kind == :error} name="hero-exclamation-circle-mini" class="h-4 w-4" />
-        {@title}
-      </p>
-      <p class="mt-2 text-sm leading-5">{msg}</p>
-      <button type="button" class="group absolute top-1 right-1 p-2" aria-label={gettext("close")}>
-        <.icon name="hero-x-mark-solid" class="h-5 w-5 opacity-40 group-hover:opacity-70" />
+      <div class="flex gap-2.5 p-3 pr-9">
+        <.icon
+          :if={@kind == :info}
+          name="hero-check-circle-mini"
+          class="mt-0.5 h-4 w-4 shrink-0 text-primary"
+        />
+        <.icon
+          :if={@kind == :notification}
+          name="hero-chat-bubble-left-ellipsis-mini"
+          class="mt-0.5 h-4 w-4 shrink-0 text-dim"
+        />
+        <.icon
+          :if={@kind == :error}
+          name="hero-exclamation-circle-mini"
+          class="mt-0.5 h-4 w-4 shrink-0 text-danger"
+        />
+        <div class="min-w-0">
+          <p :if={@title} class="text-sm font-semibold leading-5">{@title}</p>
+          <p class={["text-sm leading-5", @title && "mt-0.5 text-dim"]}>{msg}</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="group absolute top-1.5 right-1.5 rounded-md p-1.5 text-faint transition hover:bg-secondary hover:text-foreground"
+        aria-label={gettext("close")}
+      >
+        <.icon name="hero-x-mark-solid" class="h-4 w-4" />
       </button>
     </div>
     """
@@ -148,6 +269,7 @@ defmodule ScopestrengthWeb.CoreComponents do
     ~H"""
     <div id={@id}>
       <.flash kind={:info} title={gettext("Success!")} flash={@flash} />
+      <.flash kind={:notification} title={gettext("Message")} flash={@flash} />
       <.flash kind={:error} title={gettext("Error!")} flash={@flash} />
       <.flash
         id="client-error"
@@ -366,7 +488,6 @@ defmodule ScopestrengthWeb.CoreComponents do
     """
   end
 
-  # All other inputs text, datetime-local, url, password, etc. are handled here...
   def input(assigns) do
     ~H"""
     <div>
@@ -547,6 +668,32 @@ defmodule ScopestrengthWeb.CoreComponents do
   end
 
   @doc """
+  Renders a compact back link for the top of a detail page.
+
+  ## Examples
+
+      <.back_link navigate={~p"/trainer/clients"}>Clients</.back_link>
+  """
+  attr :navigate, :any, required: true
+  attr :class, :string, default: nil
+  slot :inner_block, required: true
+
+  def back_link(assigns) do
+    ~H"""
+    <.link
+      navigate={@navigate}
+      class={[
+        "mb-4 inline-flex items-center gap-1 text-xs font-medium uppercase tracking-widest text-dim transition hover:text-foreground",
+        @class
+      ]}
+    >
+      <.icon name="hero-arrow-left" class="h-3.5 w-3.5" />
+      {render_slot(@inner_block)}
+    </.link>
+    """
+  end
+
+  @doc """
   Renders a back navigation link.
 
   ## Examples
@@ -597,7 +744,6 @@ defmodule ScopestrengthWeb.CoreComponents do
     """
   end
 
-  ## JS Commands
 
   def show(js \\ %JS{}, selector) do
     JS.show(js,
@@ -650,16 +796,6 @@ defmodule ScopestrengthWeb.CoreComponents do
   Translates an error message using gettext.
   """
   def translate_error({msg, opts}) do
-    # When using gettext, we typically pass the strings we want
-    # to translate as a static argument:
-    #
-    #     # Translate the number of files with plural rules
-    #     dngettext("errors", "1 file", "%{count} files", count)
-    #
-    # However the error messages in our forms and APIs are generated
-    # dynamically, so we need to translate them by calling Gettext
-    # with our gettext backend as first argument. Translations are
-    # available in the errors.po file (as we use the "errors" domain).
     if count = opts[:count] do
       Gettext.dngettext(ScopestrengthWeb.Gettext, "errors", msg, msg, count, opts)
     else

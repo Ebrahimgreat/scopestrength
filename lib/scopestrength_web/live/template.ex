@@ -1,6 +1,23 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Template do
 alias Scopestrength.Exercises.ExerciseMuscleContribution
-alias Scopestrength.Exercise
 alias Scopestrength.Trainers
   use ScopestrengthWeb, :live_view
   alias Scopestrength.Programmes
@@ -24,11 +41,11 @@ alias Scopestrength.Trainers
     end
   end
  @spec mount(nil | maybe_improper_list() | map(), any(), any()) :: {:ok, any()}
- def mount(params, session, socket) do
+ def mount(params, _session, socket) do
   user = socket.assigns.current_user
-  trainer = Trainers.get_trainer_byUserId(user.id)
+  _trainer = Trainers.get_trainer_byUserId(user.id)
   template_id = String.to_integer(params["template_id"])
-  programme_id = String.to_integer(params["id"])
+  _programme_id = String.to_integer(params["id"])
 
   case Repo.get(ProgrammeTemplate, template_id) do
     nil ->
@@ -78,7 +95,7 @@ alias Scopestrength.Trainers
 
                 grouped =
                   expanded
-                  |> Enum.group_by(fn {muscle, role, _volume} ->
+                  |> Enum.group_by(fn {muscle, _role, _volume} ->
                     muscle
                   end)
 
@@ -249,7 +266,6 @@ end
     </div>
     """
   end
-  # Bar segment width, guarding an empty template.
   defp tpl_pct(_value, max) when max <= 0, do: 0
   defp tpl_pct(value, max), do: Float.round(value / max * 100, 2)
 end

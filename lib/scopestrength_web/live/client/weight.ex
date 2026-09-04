@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Client.Weight do
   use ScopestrengthWeb, :live_view
   alias Scopestrength.Repo
@@ -45,7 +63,12 @@ defmodule ScopestrengthWeb.Client.Weight do
                      recipient_id: client.trainer_id,
                      recipient_type: "trainer",
                      type: "weight_logged",
-                     data: %{weight_id: weight_entry.id, client_id: client.id, weight: params["weight"]}
+                     data: %{
+                       weight_id: weight_entry.id,
+                       client_id: client.id,
+                       client_name: user.name,
+                       weight: params["weight"]
+                     }
                    }) do
                 {:ok, notification} -> {weight_entry, notification}
                 {:error, changeset} -> Repo.rollback(changeset)
@@ -82,7 +105,7 @@ defmodule ScopestrengthWeb.Client.Weight do
   end
 
   def handle_event("delete_weight", %{"id" => id}, socket) do
-    id = String.to_integer(id)
+    id = ScopestrengthWeb.Params.to_integer(id)
     weight = ClientWeight.get_client_weights!(id)
 
     case ClientWeight.delete_client_weights(weight) do
@@ -109,7 +132,7 @@ defmodule ScopestrengthWeb.Client.Weight do
           </.link>
         </div>
 
-        <div class="bg-card rounded-2xl shadow-xl p-8 mb-6 border border-emerald-100">
+        <div class="bg-card rounded-2xl shadow-xl p-8 mb-6 border border-line">
           <div class="flex items-center justify-between">
             <div>
               <h1 class="text-4xl font-bold bg-primary bg-clip-text text-transparent mb-2">
@@ -119,7 +142,7 @@ defmodule ScopestrengthWeb.Client.Weight do
             </div>
             <button
               phx-click="open_modal"
-              class="bg-primary hover:from-primary hover:to-primary text-foreground font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2">
+              class="bg-primary hover:from-primary hover:to-primary text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
               </svg>
@@ -167,7 +190,7 @@ defmodule ScopestrengthWeb.Client.Weight do
                     class="flex-1 bg-card border-2 border-line text-foreground font-semibold px-6 py-3 rounded-xl hover:bg-card transition-all duration-200">
                     Cancel
                   </button>
-                  <.button class="flex-1 bg-primary hover:from-primary hover:to-primary text-foreground font-semibold px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-200">
+                  <.button class="flex-1 bg-primary hover:from-primary hover:to-primary text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-200">
                     Save Weight
                   </.button>
                 </div>
@@ -176,9 +199,8 @@ defmodule ScopestrengthWeb.Client.Weight do
           </div>
         <% end %>
 
-        <!-- Trend Chart -->
         <%= if length(@weights) >= 2 do %>
-          <div class="bg-card rounded-2xl shadow-lg p-6 mb-6 border border-emerald-100">
+          <div class="bg-card rounded-2xl shadow-lg p-6 mb-6 border border-line">
             <h2 class="text-xl font-bold text-foreground mb-4">Weight Trend</h2>
             <% values = Enum.map(@weights, &Decimal.to_float(&1.weight)) %>
             <% # Compute EMA (Exponential Moving Average) with alpha = 2/(N+1), N=min(5, count) %>
@@ -203,7 +225,6 @@ defmodule ScopestrengthWeb.Client.Weight do
                 <% chart_w = 800 - padding_x * 2 %>
                 <% chart_h = 250 - padding_y * 2 %>
 
-                <!-- Grid lines -->
                 <%= for i <- 0..4 do %>
                   <% y = padding_y + chart_h - (i / 4 * chart_h) %>
                   <% label = Float.round(min_val + (i / 4 * range), 1) %>
@@ -211,7 +232,6 @@ defmodule ScopestrengthWeb.Client.Weight do
                   <text x={padding_x - 10} y={y + 4} text-anchor="end" class="fill-gray-500" font-size="12"><%= label %></text>
                 <% end %>
 
-                <!-- Actual weight line -->
                 <polyline
                   fill="none"
                   stroke="url(#gradient)"
@@ -225,7 +245,6 @@ defmodule ScopestrengthWeb.Client.Weight do
                   end)}
                 />
 
-                <!-- Area fill -->
                 <polygon
                   fill="url(#area-gradient)"
                   opacity="0.3"
@@ -239,7 +258,6 @@ defmodule ScopestrengthWeb.Client.Weight do
                   }
                 />
 
-                <!-- EMA trend line (dashed) -->
                 <polyline
                   fill="none"
                   stroke="#f59e0b"
@@ -254,7 +272,6 @@ defmodule ScopestrengthWeb.Client.Weight do
                   end)}
                 />
 
-                <!-- Data points -->
                 <%= for {val, i} <- Enum.with_index(values) do %>
                   <% x = padding_x + (i / max(count - 1, 1) * chart_w) %>
                   <% y = padding_y + chart_h - ((val - min_val) / range * chart_h) %>
@@ -273,7 +290,6 @@ defmodule ScopestrengthWeb.Client.Weight do
                 </defs>
               </svg>
             </div>
-            <!-- Legend -->
             <div class="flex items-center justify-center gap-6 mt-3 text-sm text-dim">
               <div class="flex items-center gap-2">
                 <div class="w-6 h-0.5 bg-primary rounded"></div>
@@ -291,7 +307,6 @@ defmodule ScopestrengthWeb.Client.Weight do
           </div>
         <% end %>
 
-        <!-- Summary Stats -->
         <%= if length(@weights) > 0 do %>
           <% values = Enum.map(@weights, &Decimal.to_float(&1.weight)) %>
           <% latest = List.last(values) %>
@@ -308,21 +323,21 @@ defmodule ScopestrengthWeb.Client.Weight do
           end %>
           <% trend_diff = Float.round(trend_weight - first_val, 1) %>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-card rounded-xl shadow-md p-5 border border-emerald-100">
+            <div class="bg-card rounded-xl shadow-md p-5 border border-line">
               <p class="text-sm text-dim mb-1">Current Weight</p>
               <p class="text-2xl font-bold text-foreground"><%= Float.round(latest, 1) %> kg</p>
             </div>
-            <div class="bg-card rounded-xl shadow-md p-5 border border-emerald-100">
+            <div class="bg-card rounded-xl shadow-md p-5 border border-line">
               <p class="text-sm text-dim mb-1">Starting Weight</p>
               <p class="text-2xl font-bold text-foreground"><%= Float.round(first_val, 1) %> kg</p>
             </div>
-            <div class="bg-card rounded-xl shadow-md p-5 border border-emerald-100">
+            <div class="bg-card rounded-xl shadow-md p-5 border border-line">
               <p class="text-sm text-dim mb-1">Total Change</p>
               <p class={"text-2xl font-bold #{if diff <= 0, do: "text-primary", else: "text-danger"}"}>
                 <%= if diff > 0, do: "+", else: "" %><%= diff %> kg
               </p>
             </div>
-            <div class="bg-card rounded-xl shadow-md p-5 border border-amber-100">
+            <div class="bg-card rounded-xl shadow-md p-5 border border-line">
               <p class="text-sm text-dim mb-1">Trend Weight</p>
               <p class="text-2xl font-bold text-warning"><%= Float.round(trend_weight, 1) %> kg</p>
               <p class={"text-xs mt-1 #{if trend_diff <= 0, do: "text-primary", else: "text-danger"}"}>
@@ -332,9 +347,8 @@ defmodule ScopestrengthWeb.Client.Weight do
           </div>
         <% end %>
 
-        <!-- Weight Log List -->
         <%= if length(@weights) > 0 do %>
-          <div class="bg-card rounded-2xl shadow-lg border border-emerald-100 overflow-hidden">
+          <div class="bg-card rounded-2xl shadow-lg border border-line overflow-hidden">
             <div class="px-6 py-4 border-b border-line">
               <h2 class="text-xl font-bold text-foreground">Weight Log</h2>
             </div>
@@ -352,21 +366,24 @@ defmodule ScopestrengthWeb.Client.Weight do
                       <p class="text-lg font-semibold text-foreground"><%= weight.weight %> kg</p>
                     </div>
                   </div>
-                  <button
-                    phx-click="delete_weight"
-                    phx-value-id={weight.id}
-                    data-confirm="Are you sure you want to delete this entry?"
+                  <.confirm
+                    id={"delete-weight-#{weight.id}"}
+                    title="Delete Entry"
+                    message="Are you sure you want to delete this weight entry? This action cannot be undone."
+                    confirm_label="Delete"
+                    on_confirm={JS.push("delete_weight", value: %{id: weight.id})}
+                    aria-label="Delete weight entry"
                     class="text-danger hover:text-danger transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                     </svg>
-                  </button>
+                  </.confirm>
                 </div>
               <% end %>
             </div>
           </div>
         <% else %>
-          <div class="bg-card rounded-2xl shadow-lg p-12 text-center border border-emerald-100">
+          <div class="bg-card rounded-2xl shadow-lg p-12 text-center border border-line">
             <div class="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
@@ -376,7 +393,7 @@ defmodule ScopestrengthWeb.Client.Weight do
             <p class="text-dim mb-6">Start tracking your weight to see your progress over time.</p>
             <button
               phx-click="open_modal"
-              class="inline-flex items-center gap-2 bg-primary hover:from-primary hover:to-primary text-foreground font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+              class="inline-flex items-center gap-2 bg-primary hover:from-primary hover:to-primary text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
               </svg>

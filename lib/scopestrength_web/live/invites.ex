@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Invites do
   use ScopestrengthWeb, :live_view
   alias Scopestrength.Trainers
@@ -40,7 +58,7 @@ defmodule ScopestrengthWeb.Invites do
   end
 
   def handle_event("delete_invite", %{"id" => id}, socket) do
-    case Invites.delete_invite(String.to_integer(id), socket.assigns.trainer_id) do
+    case Invites.delete_invite(ScopestrengthWeb.Params.to_integer(id), socket.assigns.trainer_id) do
       {:ok, _} ->
         invites = Invites.list_invites_for_trainer(socket.assigns.trainer_id)
         {:noreply, socket
@@ -221,15 +239,17 @@ defmodule ScopestrengthWeb.Invites do
                   {Calendar.strftime(invite.inserted_at, "%b %d, %Y")}
                 </td>
                 <td class="px-5 py-4 text-right">
-                  <button
+                  <.confirm
                     :if={!invite.used}
-                    phx-click="delete_invite"
-                    phx-value-id={invite.id}
-                    data-confirm="Are you sure you want to delete this invite?"
+                    id={"delete-invite-#{invite.id}"}
+                    title="Delete Invite"
+                    message="Are you sure you want to delete this invite?"
+                    confirm_label="Delete"
+                    on_confirm={JS.push("delete_invite", value: %{id: invite.id})}
                     class="rounded-md px-2 py-1 text-sm font-medium text-dim transition hover:bg-danger/10 hover:text-danger"
                   >
                     Delete
-                  </button>
+                  </.confirm>
                 </td>
               </tr>
             </tbody>
@@ -258,15 +278,17 @@ defmodule ScopestrengthWeb.Invites do
                 {Calendar.strftime(invite.inserted_at, "%b %d, %Y")}
               </span>
             </div>
-            <button
+            <.confirm
               :if={!invite.used}
-              phx-click="delete_invite"
-              phx-value-id={invite.id}
-              data-confirm="Are you sure you want to delete this invite?"
+              id={"delete-invite-card-#{invite.id}"}
+              title="Delete Invite"
+              message="Are you sure you want to delete this invite?"
+              confirm_label="Delete"
+              on_confirm={JS.push("delete_invite", value: %{id: invite.id})}
               class="text-sm font-medium text-dim transition hover:text-danger"
             >
               Delete
-            </button>
+            </.confirm>
           </div>
         </div>
       </div>
@@ -277,10 +299,7 @@ defmodule ScopestrengthWeb.Invites do
   attr :label, :string, required: true
   attr :value, :integer, required: true
   attr :unit, :string, default: nil
-  # :any, not :string — callers pass `false` to omit the note entirely.
   attr :note, :any, default: nil
-  # Full class rather than a tone name: Tailwind only emits utilities it can
-  # find as literal strings, so "text-#{@tone}" would not compile reliably.
   attr :note_class, :string, default: "text-dim"
 
   defp stat(assigns) do

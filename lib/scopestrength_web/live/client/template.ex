@@ -1,6 +1,23 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Client.Template do
   alias Scopestrength.Exercises.ExerciseMuscleContribution
-  alias Scopestrength.Exercise
   use ScopestrengthWeb, :live_view
   alias Scopestrength.Programmes
   alias Scopestrength.Programmes.Programme
@@ -100,8 +117,8 @@ defmodule ScopestrengthWeb.Client.Template do
     ~H"""
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-8">
-        <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center space-x-4">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex min-w-0 items-center space-x-4">
             <.link
               navigate={~p"/client/programmes/#{@template.data.programme_id}"}
               class="inline-flex items-center text-sm text-dim hover:text-foreground transition-colors duration-200"
@@ -114,13 +131,13 @@ defmodule ScopestrengthWeb.Client.Template do
             <svg class="w-4 h-4 text-faint" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
             </svg>
-            <h1 class="text-3xl font-bold text-foreground">
+            <h1 class="truncate text-2xl font-bold text-foreground sm:text-3xl">
               <%= @template.data.name %>
             </h1>
           </div>
           <.link
             navigate={~p"/client/programmes/#{@template.data.programme_id}/template/#{@template.data.id}/details"}
-            class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-foreground font-medium rounded-lg shadow-sm transition-colors duration-200"
+            class="inline-flex shrink-0 items-center rounded-md border border-line px-3 py-1.5 text-xs font-medium text-dim transition hover:border-primary hover:text-primary"
           >
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -140,11 +157,11 @@ defmodule ScopestrengthWeb.Client.Template do
                 <.input
                   label="Template Name"
                   field={@template[:name]}
-                  class="block w-full rounded-md border-line shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  class="block w-full rounded-md border-line shadow-sm focus:border-primary focus:ring-primary"
                   placeholder="Enter template name"
                 />
               </div>
-              <.button class="inline-flex items-center px-4 py-2 bg-primary hover:bg-green-700 text-foreground font-medium rounded-lg shadow-sm transition-colors duration-200">
+              <.button class="inline-flex items-center px-4 py-2 bg-primary hover:bg-green-700 text-primary-foreground font-medium rounded-lg shadow-sm transition-colors duration-200">
                 Update Name
               </.button>
             </div>
@@ -154,20 +171,20 @@ defmodule ScopestrengthWeb.Client.Template do
 
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <%= for {muscle_group, volumes} <- @muscle_group_frequencies do %>
-          <div class="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-lg px-3 py-2.5">
+          <div class="bg-muted border border-line rounded-lg px-3 py-2.5">
             <div class="flex flex-col gap-2">
               <span class="text-xs font-semibold text-foreground truncate">
                 <%= muscle_group %>
               </span>
               <div class="flex items-center justify-between text-[11px] text-dim">
                 <span>Direct</span>
-                <span class="inline-flex items-center justify-center px-2 py-0.5 bg-indigo-600 text-foreground text-xs font-semibold rounded-full">
+                <span class="inline-flex items-center justify-center px-2 py-0.5 bg-primary text-primary-foreground text-xs font-semibold rounded-full">
                   <%= Float.round(volumes.direct) %>
                 </span>
               </div>
               <div class="flex items-center justify-between text-[11px] text-dim">
                 <span>Effective</span>
-                <span class="inline-flex items-center justify-center px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">
+                <span class="inline-flex items-center justify-center px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded-full">
                   <%= Float.round(volumes.effective, 1) %>
                 </span>
               </div>
@@ -180,7 +197,7 @@ defmodule ScopestrengthWeb.Client.Template do
         <div class="px-6 py-4 border-b border-line">
           <div class="flex items-center justify-between">
             <h2 class="text-xl font-semibold text-foreground">Programme Details</h2>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
               <%= length(@template.data.programmeDetails) %> exercise<%= if length(@template.data.programmeDetails) != 1, do: "s" %>
             </span>
           </div>
@@ -193,8 +210,8 @@ defmodule ScopestrengthWeb.Client.Template do
                 <div class="bg-gradient-to-br from-gray-50 to-white border border-line rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
                   <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center space-x-2">
-                      <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                        <span class="text-sm font-semibold text-indigo-600"><%= index + 1 %></span>
+                      <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span class="text-sm font-semibold text-primary"><%= index + 1 %></span>
                       </div>
                       <span class="text-xs font-medium text-dim uppercase tracking-wide"><%= programmeDetail.exercise.name %></span>
                     </div>
@@ -206,7 +223,7 @@ defmodule ScopestrengthWeb.Client.Template do
                   <div class="space-y-3">
                     <div class="flex items-center justify-between">
                       <span class="text-sm font-medium text-dim">Sets</span>
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                         <%= programmeDetail.set %>
                       </span>
                     </div>
@@ -227,7 +244,7 @@ defmodule ScopestrengthWeb.Client.Template do
               <div class="mt-6">
                 <.link
                   navigate={~p"/client/programmes/#{@template.data.programme_id}/template/#{@template.data.id}/details"}
-                  class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-foreground font-medium rounded-lg shadow-sm transition-colors duration-200"
+                  class="inline-flex items-center px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg shadow-sm transition-colors duration-200"
                 >
                   Add Exercises
                 </.link>

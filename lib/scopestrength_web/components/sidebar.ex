@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Sidebar do
   @moduledoc """
   Shared app shell: dark sidebar + main column.
@@ -24,15 +42,26 @@ defmodule ScopestrengthWeb.Sidebar do
   def app_shell(assigns) do
     ~H"""
     <div class="min-h-screen flex bg-background text-foreground">
-      <div class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-line bg-card px-4 py-3 md:hidden">
+      <div class="pt-safe fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-line bg-card px-4 py-3 md:hidden">
         <.brand label={@label} home={@home} />
-        <button
-          onclick={"document.getElementById('#{@id}').classList.toggle('hidden')"}
-          class="p-2 text-dim hover:text-foreground"
-          aria-label="Open menu"
+        <.link
+          :if={@notifications_path}
+          navigate={@notifications_path}
+          class="relative shrink-0 rounded-md p-1.5 text-dim transition hover:bg-secondary hover:text-foreground"
+          aria-label={
+            if @unread_count > 0,
+              do: "Notifications, #{@unread_count} unread",
+              else: "Notifications"
+          }
         >
-          <.icon name="hero-bars-3" class="h-6 w-6" />
-        </button>
+          <.icon name="hero-bell" class="h-6 w-6" />
+          <span
+            :if={@unread_count > 0}
+            class="num absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground"
+          >
+            {if @unread_count > 9, do: "9+", else: @unread_count}
+          </span>
+        </.link>
       </div>
 
       <div id={@id} class="hidden fixed inset-0 z-50 md:hidden">
@@ -74,10 +103,62 @@ defmodule ScopestrengthWeb.Sidebar do
         />
       </aside>
 
-      <main class="flex min-w-0 flex-1 flex-col pt-14 md:pt-0">
+      <main class="flex min-w-0 flex-1 flex-col pt-14 pb-28 md:pb-0 md:pt-0">
         {render_slot(@inner_block)}
       </main>
+
+      <.tab_bar items={@items} active_path={@active_path} drawer={@id} />
     </div>
+    """
+  end
+
+  attr :items, :list, required: true
+  attr :active_path, :string, default: nil
+  attr :drawer, :string, required: true
+
+  defp tab_bar(assigns) do
+    assigns = assign(assigns, :tabs, Enum.take(assigns.items, 4))
+
+    ~H"""
+    <nav
+      class="pb-safe fixed bottom-0 left-0 right-0 z-40 flex items-stretch border-t border-line bg-card md:hidden"
+      aria-label="Primary"
+    >
+      <.tab_link :for={item <- @tabs} item={item} active_path={@active_path} />
+      <button
+        type="button"
+        onclick={"document.getElementById('#{@drawer}').classList.toggle('hidden')"}
+        class="flex flex-1 flex-col items-center justify-center gap-1 py-2 text-dim transition active:bg-secondary"
+        aria-label="More"
+      >
+        <.icon name="hero-ellipsis-horizontal" class="h-6 w-6" />
+        <span class="text-[10px] font-medium leading-none">More</span>
+      </button>
+    </nav>
+    """
+  end
+
+  attr :item, :map, required: true
+  attr :active_path, :string, default: nil
+
+  defp tab_link(assigns) do
+    assigns = assign(assigns, :active, active?(assigns.item, assigns.active_path))
+
+    ~H"""
+    <.link
+      navigate={@item.path}
+      aria-current={@active && "page"}
+      class={[
+        "flex flex-1 flex-col items-center justify-center gap-1 py-2 transition active:bg-secondary",
+        @active && "text-primary",
+        !@active && "text-dim"
+      ]}
+    >
+      <.icon name={@item.icon} class="h-6 w-6" />
+      <span class="max-w-full truncate px-1 text-[10px] font-medium leading-none">
+        {@item.label}
+      </span>
+    </.link>
     """
   end
 
@@ -105,7 +186,6 @@ defmodule ScopestrengthWeb.Sidebar do
   attr :active_path, :string, default: nil
   attr :notifications_path, :any, default: nil
   attr :unread_count, :integer, default: 0
-  # nil on the desktop sidebar, which has nothing to dismiss.
   attr :dismiss, :any, default: nil
 
   defp sidebar_body(assigns) do
@@ -131,9 +211,6 @@ defmodule ScopestrengthWeb.Sidebar do
           <p class="text-xs text-dim">{@role}</p>
         </div>
 
-        <%!-- Unread count comes from the UnreadNotifications on_mount hook, which
-              subscribes for the whole live_session so the badge survives
-              navigation between pages. --%>
         <.link
           :if={@notifications_path}
           navigate={@notifications_path}
@@ -209,9 +286,6 @@ defmodule ScopestrengthWeb.Sidebar do
     """
   end
 
-  # The home link ("/client") is a prefix of every other path in its section, so
-  # it only counts as active on an exact match. Everything else also matches its
-  # own sub-routes, keeping e.g. /client/workouts/12 highlighted under Workouts.
   defp active?(_item, nil), do: false
 
   defp active?(%{path: path, exact: true}, current), do: path == current

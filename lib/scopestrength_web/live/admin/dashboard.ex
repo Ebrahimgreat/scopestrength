@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule ScopestrengthWeb.Admin.Dashboard do
   use ScopestrengthWeb, :live_view
   alias Scopestrength.Repo
@@ -39,7 +57,6 @@ defmodule ScopestrengthWeb.Admin.Dashboard do
     <div class="space-y-6">
       <h1 class="text-2xl font-bold text-foreground">Dashboard</h1>
 
-      <!-- Stat Cards -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-card rounded-xl border border-line p-5 shadow-sm">
           <p class="text-xs font-medium text-dim uppercase tracking-wide">Total Leads</p>
@@ -48,7 +65,7 @@ defmodule ScopestrengthWeb.Admin.Dashboard do
         </div>
         <div class="bg-card rounded-xl border border-line p-5 shadow-sm">
           <p class="text-xs font-medium text-dim uppercase tracking-wide">New Today</p>
-          <p class="mt-2 text-3xl font-bold text-violet-600">{@leads_today}</p>
+          <p class="mt-2 text-3xl font-bold text-primary">{@leads_today}</p>
           <p class="mt-1 text-xs text-faint">leads today</p>
         </div>
         <div class="bg-card rounded-xl border border-line p-5 shadow-sm">
@@ -63,7 +80,6 @@ defmodule ScopestrengthWeb.Admin.Dashboard do
         </div>
       </div>
 
-      <!-- Leads Table -->
       <div class="bg-card rounded-xl border border-line shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-line flex items-center justify-between">
           <h2 class="text-base font-semibold text-foreground">Demo Leads</h2>

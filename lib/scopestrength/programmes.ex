@@ -1,3 +1,21 @@
+# ScopeStrength - personal trainer management application
+# Copyright (C) 2026  Ebrahim Shahid Arshad
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 defmodule Scopestrength.Programmes do
   @moduledoc """
   The Programmes context.
@@ -21,22 +39,18 @@ defmodule Scopestrength.Programmes do
  def calculate_programme_volume(programme) do
    alias Scopestrength.Exercises.ExerciseMuscleContribution
 
-   # Get all exercise IDs across all templates
    exercise_ids =
      programme.programmeTemplates
      |> Enum.flat_map(& &1.programmeDetails)
      |> Enum.map(& &1.exercise_id)
      |> Enum.uniq()
 
-   # Load muscle contributions for all exercises
    muscle_contributions =
      Repo.all(from c in ExerciseMuscleContribution, where: c.exercise_id in ^exercise_ids)
      |> Repo.preload(:muscle)
 
-   # Group contributions by exercise_id for faster lookup
    contributions_by_exercise = Enum.group_by(muscle_contributions, & &1.exercise_id)
 
-   # Expand all programme details across all templates into muscle contributions
    expanded =
      programme.programmeTemplates
      |> Enum.flat_map(fn template ->
@@ -51,7 +65,6 @@ defmodule Scopestrength.Programmes do
        end)
      end)
 
-   # Group by muscle and calculate direct/effective volume
    expanded
    |> Enum.group_by(fn {muscle, _role, _volume} -> muscle end)
    |> Enum.map(fn {muscle, rows} ->
@@ -71,52 +84,61 @@ defmodule Scopestrength.Programmes do
    |> Map.new()
  end
 
-  def clone_programme(user_id, programme_id) do
+  @doc """
+  Copies a programme the client has been assigned into their own list.
 
-    # 1. One query: the programme row itself (id, name, description, user_id).
-    #    Associations come back as NotLoaded — Ecto never lazy-loads.
-    #
-    #    Scoped by user_id so a crafted phx-value-id cannot clone someone
-    #    else's programme. Raises Ecto.NoResultsError if it isn't yours,
-    #    which leaks nothing about whether the id exists.
+  `clone_programme/2` is scoped to the owner, which is right for a trainer
+  duplicating their own work but wrong here: the programme belongs to the
+  trainer, and the client is copying it. Authorisation is the assignment --
+  the client may copy a programme that is (or was) assigned to them, and
+  nothing else.
+
+  Returns `{:error, :not_assigned}` if it was never assigned to that client.
+
+  ## Examples
+
+      iex> clone_assigned_programme(user_id, client_id, 16)
+      {:ok, %Programme{}}
+
+  """
+  def clone_assigned_programme(user_id, client_id, programme_id) do
+    assigned? =
+      Scopestrength.Programmes.ProgrammeUser
+      |> where([pu], pu.client_id == ^client_id and pu.programme_id == ^programme_id)
+      |> Repo.exists?()
+
+    if assigned? do
+      clone_programme(programme_id, owner_id: user_id)
+    else
+      {:error, :not_assigned}
+    end
+  end
+
+  def clone_programme(user_id, programme_id) when is_integer(programme_id) do
+    do_clone_programme(Repo.get_by!(Programme, id: programme_id, user_id: user_id), user_id)
+  end
+
+  def clone_programme(programme_id, owner_id: owner_id) do
+    do_clone_programme(Repo.get!(Programme, programme_id), owner_id)
+  end
+
+  defp do_clone_programme(programme, owner_id) do
+
     programme =
-      Repo.get_by!(Programme, id: programme_id, user_id: user_id)
-      # 2. Two more queries, one per level of nesting: all templates, then ALL
-      #    details in a single WHERE programme_template_id = ANY($1). Six
-      #    templates still means one details query, not six.
-      #
-      #    3 round trips total, and flat — a 3-day programme and a 60-day one
-      #    both cost 3. The reads are already batched; the writes below are not.
+      programme
       |> Repo.preload(programmeTemplates: :programmeDetails)
 
-    # 3. BEGIN — one round trip. Everything below is atomic: a failure at any
-    #    point rolls back every insert before it, so you never end up with a
-    #    programme that has 4 of its 6 templates. Non-negotiable here.
-    #
-    #    Returns normally -> COMMIT, {:ok, new_programme}.
-    #    Raises or Repo.rollback/1 -> ROLLBACK, {:error, reason}.
-    #
-    #    The transaction is pinned to ONE pooled connection, so spawning the
-    #    inserts across processes would put them on other connections and
-    #    silently break the rollback. Batching is the only safe speedup.
     Repo.transaction(fn ->
-      # 4. One INSERT — the new parent programme row.
       {:ok, new_programme} =
         create_programme(%{
           name: "#{programme.name} (copy)",
           description: programme.description,
-          user_id: programme.user_id
+          progression_method: programme.progression_method,
+          user_id: owner_id
         })
 
-      # insert_all skips changesets, so timestamps are not autogenerated.
-      # Both tables have NOT NULL timestamps, so set them by hand.
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-      # 5. ONE insert for every template, not one per template.
-      #    returning: [:id] hands back the new ids in the same round trip.
-      #    The pinned count is the pattern match: a short insert raises and
-      #    rolls back, and it guards the zip below from pairing against a
-      #    truncated list and silently dropping details.
       template_rows =
         Enum.map(programme.programmeTemplates, fn template ->
           %{
@@ -134,10 +156,6 @@ defmodule Scopestrength.Programmes do
           returning: [:id]
         )
 
-      # 6. Pair each OLD template with its NEW id positionally — insert_all
-      #    returns rows in the order they were passed. Then flatten every
-      #    template's details into one list. Pure in-memory work: flat_map
-      #    builds the list, it does not touch the database.
       detail_rows =
         Enum.zip(programme.programmeTemplates, inserted_templates)
         |> Enum.flat_map(fn {old_template, new_template} ->
@@ -146,6 +164,8 @@ defmodule Scopestrength.Programmes do
               set: detail.set,
               reps: detail.reps,
               rir: detail.rir,
+              min_reps: detail.min_reps,
+              max_reps: detail.max_reps,
               exercise_id: detail.exercise_id,
               programme_template_id: new_template.id,
               inserted_at: now,
@@ -154,12 +174,6 @@ defmodule Scopestrength.Programmes do
           end)
         end)
 
-      # 7. ONE insert for ALL details across ALL templates — replaces the 36+
-      #    nested inserts. Same count assertion.
-      #
-      #    Postgres caps a statement at 65535 bind parameters; at 7 columns
-      #    that is ~9000 rows, well above any real programme. chunk_every/2
-      #    is the fix if that ever changes.
       detail_count = length(detail_rows)
 
       {^detail_count, _} =
@@ -524,6 +538,91 @@ defmodule Scopestrength.Programmes do
 
   """
   def get_programme_user!(id), do: Repo.get!(ProgrammeUser, id)
+
+  @doc """
+  Returns the ids of clients currently on a programme, as a MapSet.
+
+  Only active assignments count. Moving a client to another programme flips
+  the old row to `is_active: false` and inserts a new one, so inactive rows
+  are history -- a client moved off this programme must be offered again.
+
+  ## Examples
+
+      iex> assigned_client_ids(16)
+      #MapSet<[3, 7]>
+
+  """
+  def assigned_client_ids(programme_id) do
+    ProgrammeUser
+    |> where([pu], pu.programme_id == ^programme_id and pu.is_active == true)
+    |> select([pu], pu.client_id)
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
+  @doc """
+  Takes a client off a programme, leaving them on nothing.
+
+  The counterpart to `assign_client_to_programme/2`, which always leaves the
+  client on something. This is the case that one cannot express: a client who
+  is paused, injured or between blocks. The row is demoted rather than deleted,
+  so their history on the programme survives.
+
+  Returns `{:ok, count}` -- 0 when the client was not on this programme.
+
+  ## Examples
+
+      iex> unassign_client_from_programme(16, 3)
+      {:ok, 1}
+
+  """
+  def unassign_client_from_programme(programme_id, client_id) do
+    {count, _} =
+      from(pu in ProgrammeUser,
+        where:
+          pu.programme_id == ^programme_id and
+            pu.client_id == ^client_id and
+            pu.is_active == true
+      )
+      |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now(:second)])
+
+    {:ok, count}
+  end
+
+  @doc """
+  Moves a client onto a programme, replacing whatever they were on.
+
+  A client is only ever on one programme at a time, so any active assignment
+  is demoted to history before the new row is inserted -- the two happen in a
+  transaction, and a partial unique index on `(client_id) where is_active`
+  backs the invariant up in the database.
+
+  ## Examples
+
+      iex> assign_client_to_programme(16, 3)
+      {:ok, %ProgrammeUser{}}
+
+  """
+  def assign_client_to_programme(programme_id, client_id) do
+    Repo.transaction(fn ->
+      from(pu in ProgrammeUser,
+        where: pu.client_id == ^client_id and pu.is_active == true
+      )
+      |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now(:second)])
+
+      %ProgrammeUser{}
+      |> ProgrammeUser.changeset(%{
+        programme_id: programme_id,
+        client_id: client_id,
+        is_active: true
+      })
+      |> Repo.insert()
+      |> case do
+        {:ok, programme_user} -> programme_user
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+  end
 
   @doc """
   Creates a programme_user.
