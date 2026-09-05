@@ -56,14 +56,13 @@ defmodule Scopestrength.Account do
 
     random = :crypto.strong_rand_bytes(5) |> Base.encode32(case: :lower, padding: false)
     email = "demo_#{random}@scopestrength.com"
-    password = "Demodemo1234"
 
     Repo.transaction(fn ->
       {:ok, trainer_user} =
         register_user(%{
           name: "Demo Trainer",
           email: email,
-          password: password,
+          password: random_demo_password(),
           role: "trainer",
           type: "demo"
         })
@@ -89,7 +88,7 @@ defmodule Scopestrength.Account do
             register_user(%{
               name: data.name,
               email: "demo_client_#{client_random}@scopestrength.com",
-              password: password,
+              password: random_demo_password(),
               role: "client",
               type: "demo"
             })
@@ -280,6 +279,15 @@ defmodule Scopestrength.Account do
     end)
   end
 
+  # Each demo account gets its own random password. Nobody ever needs to know
+  # it -- the visitor is logged in automatically right after this runs -- so
+  # there is no reason for it to be memorable, or worse, the same literal
+  # string for every demo account this ever creates. A fixed password here
+  # would be visible to anyone reading the source, at which point it stops
+  # being a password at all.
+  defp random_demo_password do
+    :crypto.strong_rand_bytes(24) |> Base.url_encode64(padding: false)
+  end
 
   @doc """
   Gets a user by email and password.
