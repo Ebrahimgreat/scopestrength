@@ -49,8 +49,11 @@ npm-debug.log
 /priv/static/**/*.gz
 
 # Database dumps -- these contain real user data, never commit them.
+# Scripts we write ourselves (priv/repo/*.sql) are intentionally NOT covered
+# here -- only actual pg_dump/pg_restore output, which should never live
+# inside the repo tree in the first place.
 *.dump
-*.sql
+/*.sql
 
 .DS_Store
 
