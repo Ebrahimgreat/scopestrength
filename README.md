@@ -1,8 +1,9 @@
 # ScopeStrength
 
-Open source personal trainer software. Trainers manage clients, build programmes and
-track progress; clients log their own workouts, weight and photos, and message their
-trainer. Everything runs in one Phoenix application backed by PostgreSQL.
+Open source software for personal trainers and their clients. Trainers manage clients,
+build programmes and track progress; clients log their own workouts, weight and photos,
+and message their trainer. Everything runs in one Phoenix application backed by
+PostgreSQL.
 
 Hosted version: [scopestrength.com](https://scopestrength.com). You can also host it
 yourself — the whole application is in this repository under the AGPL, with no paid
