@@ -120,6 +120,10 @@ defmodule ScopestrengthWeb.UserSettingsLive do
 
 
   def handle_event("update_name", %{"name" => name}, socket) do
+    guard_against_demo(socket, fn socket -> do_update_name(socket, name) end)
+  end
+
+  defp do_update_name(socket, name) do
     user = socket.assigns.current_user
 
     case Account.update_name(user, %{"name" => name}) do
@@ -144,6 +148,10 @@ defmodule ScopestrengthWeb.UserSettingsLive do
   end
 
   def handle_event("update_email", params, socket) do
+    guard_against_demo(socket, fn socket -> do_update_email(socket, params) end)
+  end
+
+  defp do_update_email(socket, params) do
     %{"current_password" => password, "user" => user_params} = params
     user = socket.assigns.current_user
 
@@ -176,6 +184,10 @@ defmodule ScopestrengthWeb.UserSettingsLive do
   end
 
   def handle_event("update_password", params, socket) do
+    guard_against_demo(socket, fn socket -> do_update_password(socket, params) end)
+  end
+
+  defp do_update_password(socket, params) do
     %{"current_password" => password, "user" => user_params} = params
     user = socket.assigns.current_user
 
@@ -193,6 +205,18 @@ defmodule ScopestrengthWeb.UserSettingsLive do
     end
   end
 
+
+  # The settings form disables these fields for a demo account, but a
+  # disabled attribute is a rendering hint, not a permission check -- it does
+  # nothing to stop the underlying event from firing directly. This is the
+  # actual enforcement: demo accounts are shared, disposable logins, and
+  # changing their name/email/password would either lock other visitors out
+  # or leave stale credentials behind.
+  defp guard_against_demo(%{assigns: %{current_user: %{type: "demo"}}} = socket, _fun) do
+    {:noreply, put_flash(socket, :error, "Demo accounts can't change this. Sign up for a real account to save changes.")}
+  end
+
+  defp guard_against_demo(socket, fun), do: fun.(socket)
 
   defp get_initials(trainer) do
     case Repo.preload(trainer, :user) do
@@ -376,8 +400,12 @@ defmodule ScopestrengthWeb.UserSettingsLive do
 
           <div>
             <h3 class="text-base font-semibold text-foreground mb-3">Email</h3>
-            <.simple_form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
-              <.input field={@email_form[:email]} type="email" label="Email" required disabled={@current_user.type == "demo"} />
+            <div :if={@current_user.type == "demo"}>
+              <label class="block text-sm font-medium text-foreground mb-1">Email</label>
+              <input type="text" value="Demo account" disabled class="w-full rounded-lg border-line bg-muted text-dim" />
+            </div>
+            <.simple_form :if={@current_user.type != "demo"} for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
+              <.input field={@email_form[:email]} type="email" label="Email" required />
               <.input
                 field={@email_form[:current_password]}
                 name="current_password"
@@ -386,10 +414,9 @@ defmodule ScopestrengthWeb.UserSettingsLive do
                 label="Current password"
                 value={@email_form_current_password}
                 required
-                disabled={@current_user.type == "demo"}
               />
               <:actions>
-                <.button phx-disable-with="Changing..." disabled={@current_user.type == "demo"}>Change Email</.button>
+                <.button phx-disable-with="Changing...">Change Email</.button>
               </:actions>
             </.simple_form>
           </div>
