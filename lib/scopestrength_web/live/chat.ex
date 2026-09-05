@@ -21,6 +21,7 @@ defmodule ScopestrengthWeb.Chat do
   alias Scopestrength.Chat.Message
   alias Scopestrength.Storage
   alias Scopestrength.Clients.Client
+  alias Scopestrength.Trainers
   alias Scopestrength.Notifications
   alias Scopestrength.Repo
   import Ecto.Query
@@ -30,29 +31,56 @@ defmodule ScopestrengthWeb.Chat do
   def mount(params, _session, socket) do
     user = socket.assigns.current_user
     room_id = params["room"]
-    messages =
-      Repo.all(from m in Message, where: m.room_id == ^room_id, preload: [:user, :attachments])
-    topic = "chat:#{room_id}"
 
-    back_path = if user.role == "trainer", do: "/trainer/chat", else: "/client/chat"
-    other_user = fetch_other_user(user, room_id)
+    if authorized_for_room?(user, room_id) do
+      messages =
+        Repo.all(from m in Message, where: m.room_id == ^room_id, preload: [:user, :attachments])
+      topic = "chat:#{room_id}"
 
-    if connected?(socket) do
-      Phoenix.PubSub.subscribe(Scopestrength.PubSub, topic)
+      back_path = if user.role == "trainer", do: "/trainer/chat", else: "/client/chat"
+      other_user = fetch_other_user(user, room_id)
+
+      if connected?(socket) do
+        Phoenix.PubSub.subscribe(Scopestrength.PubSub, topic)
+      end
+
+      {:ok,
+       socket
+       |> assign(:room_id, room_id)
+       |> assign(:messages, messages)
+       |> assign(:user, user)
+       |> assign(:topic, topic)
+       |> assign(:back_path, back_path)
+       |> assign(:other_user, other_user)
+       |> assign(:text, "")
+       |> assign(:input_version, 0)
+       |> assign(:pending_attachments, %{})
+       |> allow_attachments()}
+    else
+      back_path = if user.role == "trainer", do: "/trainer/chat", else: "/client/chat"
+
+      {:ok,
+       socket
+       |> put_flash(:error, "Conversation not found")
+       |> redirect(to: back_path)}
     end
+  end
 
-    {:ok,
-     socket
-     |> assign(:room_id, room_id)
-     |> assign(:messages, messages)
-     |> assign(:user, user)
-     |> assign(:topic, topic)
-     |> assign(:back_path, back_path)
-     |> assign(:other_user, other_user)
-     |> assign(:text, "")
-     |> assign(:input_version, 0)
-     |> assign(:pending_attachments, %{})
-     |> allow_attachments()}
+  # A room is a client's id. It belongs to that client, and to whichever
+  # trainer that client is assigned to -- nobody else. Without this, room_id
+  # coming straight off the URL let any signed-in user read (and send into)
+  # every conversation on the platform just by changing the number.
+  defp authorized_for_room?(user, room_id) do
+    with {client_id, ""} <- Integer.parse(room_id || ""),
+         %Client{} = client <- Repo.get(Client, client_id) do
+      case user.role do
+        "client" -> client.user_id == user.id
+        "trainer" -> Trainers.get_trainer_byUserId(user.id).id == client.trainer_id
+        _ -> false
+      end
+    else
+      _ -> false
+    end
   end
 
   defp allow_attachments(socket) do
