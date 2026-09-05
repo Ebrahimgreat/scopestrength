@@ -70,7 +70,7 @@ tier, no feature flags and no phone-home.
 - **Installable.** A web manifest, icons, service worker and offline page mean it can
   be installed to a phone home screen and survives a flaky connection.
 - **Accounts.** Registration, login, email confirmation, password reset and email
-  change, with trainer, client and admin roles gating every route.
+  change, with trainer and client roles gating every route.
 
 ---
 

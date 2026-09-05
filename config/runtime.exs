@@ -18,6 +18,13 @@ if System.get_env("PHX_SERVER") do
   config :scopestrength, ScopestrengthWeb.Endpoint, server: true
 end
 
+# Public self-registration (/users/register) is on by default so a fresh
+# self-hosted install can create its first account. Set
+# REGISTRATION_ENABLED=false to close it once your accounts exist and you
+# add clients from the trainer dashboard instead -- the demo and login
+# pages stay reachable either way.
+config :scopestrength, :registration_enabled, System.get_env("REGISTRATION_ENABLED") != "false"
+
 if bucket = System.get_env("S3_BUCKET") do
   config :scopestrength, :storage,
     adapter: Scopestrength.Storage.S3,

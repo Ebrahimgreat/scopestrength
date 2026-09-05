@@ -25,7 +25,7 @@ defmodule ScopestrengthWeb.DemoController do
     case Reactor.run(ScopestrengthWeb.Demosignupflow.MainFlow, %{email: email}) do
       {:ok, user} ->
         conn
-        |> put_flash(:info, "Welcome to the demo! Your email: #{user.email} | Password: Demodemo1234")
+        |> put_flash(:info, "Welcome to the demo! Explore the app as a trainer with a few sample clients.")
         |> UserAuth.log_in_user(user)
 
       {:error, :already_tried} ->

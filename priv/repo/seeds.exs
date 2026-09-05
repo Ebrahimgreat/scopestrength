@@ -48,9 +48,9 @@ equipment_names = [
 trainer_user =
   %User{}
   |> User.registration_changeset(%{
-    name: "Ebrahim Arshad",
-    email: "ebrahim@scopestrength.com",
-    password: "REDACTED-PASSWORD",
+    name: "Sample Trainer",
+    email: "trainer@example.com",
+    password: "ChangeThisPassword123!",
     role: "trainer"
   })
   |> Repo.insert!()
@@ -67,9 +67,9 @@ trainer =
 client_user =
   %User{}
   |> User.registration_changeset(%{
-    name: "Ebrahim",
-    email: "ebbibest@gmail.com",
-    password: "REDACTED-PASSWORD",
+    name: "Alex Client",
+    email: "client@example.com",
+    password: "ChangeThisPassword123!",
     role: "client"
   })
   |> Repo.insert!()
