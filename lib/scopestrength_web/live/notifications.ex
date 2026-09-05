@@ -105,12 +105,18 @@ defmodule ScopestrengthWeb.Notifications do
   end
 
   def handle_event("delete_notification", %{"id" => notification_id}, socket) do
-    notification = Notifications.get_notification!(notification_id)
-    {:ok, _} = Notifications.delete_notification(notification)
+    id = String.to_integer(notification_id)
 
-    notifications = Enum.reject(socket.assigns.notifications, &(&1.id == String.to_integer(notification_id)))
+    if Enum.any?(socket.assigns.notifications, &(&1.id == id)) do
+      notification = Notifications.get_notification!(id)
+      {:ok, _} = Notifications.delete_notification(notification)
 
-    {:noreply, socket |> assign(notifications: notifications) |> put_flash(:info, "Notification deleted")}
+      notifications = Enum.reject(socket.assigns.notifications, &(&1.id == id))
+
+      {:noreply, socket |> assign(notifications: notifications) |> put_flash(:info, "Notification deleted")}
+    else
+      {:noreply, socket |> put_flash(:error, "Notification not found")}
+    end
   end
 
   def handle_info({:notification, %Notification{} = notification}, socket) do

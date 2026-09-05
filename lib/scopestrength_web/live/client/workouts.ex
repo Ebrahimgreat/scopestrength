@@ -173,15 +173,20 @@ defmodule ScopestrengthWeb.Client.Workouts do
   end
   def handle_event("deleteWorkout", %{"id" => id}, socket) do
     id = ScopestrengthWeb.Params.to_integer(id)
-    workout = Training.get_workout!(id)
 
-    case Training.delete_workout(workout) do
-      {:ok, _deleted} ->
-        all_workouts = Enum.reject(socket.assigns.all_workouts, &(&1.id == id))
-        {:noreply, socket |> assign(:all_workouts, all_workouts) |> paginate()}
+    if Enum.any?(socket.assigns.all_workouts, &(&1.id == id)) do
+      workout = Training.get_workout!(id)
 
-      {:error, _changeset} ->
-        {:noreply, socket |> put_flash(:error, "Cannot delete")}
+      case Training.delete_workout(workout) do
+        {:ok, _deleted} ->
+          all_workouts = Enum.reject(socket.assigns.all_workouts, &(&1.id == id))
+          {:noreply, socket |> assign(:all_workouts, all_workouts) |> paginate()}
+
+        {:error, _changeset} ->
+          {:noreply, socket |> put_flash(:error, "Cannot delete")}
+      end
+    else
+      {:noreply, socket |> put_flash(:error, "Workout not found")}
     end
   end
 

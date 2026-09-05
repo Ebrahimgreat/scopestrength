@@ -108,13 +108,17 @@ defmodule ScopestrengthWeb.Client.Weight do
     id = ScopestrengthWeb.Params.to_integer(id)
     weight = ClientWeight.get_client_weights!(id)
 
-    case ClientWeight.delete_client_weights(weight) do
-      {:ok, _} ->
-        weights = Enum.reject(socket.assigns.weights, &(&1.id == id))
-        {:noreply, assign(socket, weights: weights)}
+    if weight.client_id == socket.assigns.client.id do
+      case ClientWeight.delete_client_weights(weight) do
+        {:ok, _} ->
+          weights = Enum.reject(socket.assigns.weights, &(&1.id == id))
+          {:noreply, assign(socket, weights: weights)}
 
-      _ ->
-        {:noreply, socket |> put_flash(:error, "Failed to delete weight")}
+        _ ->
+          {:noreply, socket |> put_flash(:error, "Failed to delete weight")}
+      end
+    else
+      {:noreply, socket |> put_flash(:error, "Weight entry not found")}
     end
   end
 
