@@ -38,22 +38,6 @@ defmodule ScopestrengthWeb.Router do
 
 
 
-  scope "/admin", ScopestrengthWeb do
-    pipe_through [:browser, :require_authenticated_user]
-
-    live_session :admin_session,
-      on_mount: [
-        {ScopestrengthWeb.UserAuth, :ensure_authenticated},
-        {ScopestrengthWeb.RequireRole, "admin"},
-        ScopestrengthWeb.ActivePath
-      ],
-      layout: {ScopestrengthWeb.Layouts, :admin}
-       do
-      live "/", Admin.Dashboard
-    end
-  end
-
-
   scope "/client", ScopestrengthWeb do
     pipe_through [:browser, :require_authenticated_user]
 

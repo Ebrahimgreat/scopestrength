@@ -25,7 +25,6 @@ defmodule ScopestrengthWeb.RequireRole do
   Usage:
       on_mount {ScopestrengthWeb.RequireRole, "trainer"}
       on_mount {ScopestrengthWeb.RequireRole, "client"}
-      on_mount {ScopestrengthWeb.RequireRole, "admin"}
   """
 
   def on_mount(role, _params, _session, socket) when is_binary(role) do
@@ -42,7 +41,6 @@ defmodule ScopestrengthWeb.RequireRole do
     end
   end
 
-  defp role_home("admin"), do: "/admin"
   defp role_home("trainer"), do: "/trainer"
   defp role_home("client"), do: "/client"
   defp role_home(_), do: "/users/log_in"

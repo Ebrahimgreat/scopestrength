@@ -41,12 +41,6 @@ defmodule Scopestrength.Account do
 
   """
 
-  def get_admin_by_role(role) do
-    Repo.get_by(User, role: "admin")
-
-  end
-
-
   def get_user_by_email(email) when is_binary(email) do
     Repo.get_by(User, email: email)
   end

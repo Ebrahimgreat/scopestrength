@@ -123,20 +123,27 @@ alias Scopestrength.Clients
   end
 
   def mount(params, _session, socket) do
-    changeset = Account.change_user_registration(%User{})
+    if Application.get_env(:scopestrength, :registration_enabled, true) do
+      changeset = Account.change_user_registration(%User{})
 
-    invite_code = params["invite"]
+      invite_code = params["invite"]
 
-    socket =
-      socket
-      |> assign(trigger_submit: false, check_errors: false)
-      |> assign(selected_role: "client")
-      |> assign(invite_code: invite_code)
-      |> assign(invite_status: nil)
-      |> assign(trainer_name: nil)
-      |> assign_form(changeset)
+      socket =
+        socket
+        |> assign(trigger_submit: false, check_errors: false)
+        |> assign(selected_role: "client")
+        |> assign(invite_code: invite_code)
+        |> assign(invite_status: nil)
+        |> assign(trainer_name: nil)
+        |> assign_form(changeset)
 
-    {:ok, socket, temporary_assigns: [form: nil]}
+      {:ok, socket, temporary_assigns: [form: nil]}
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, "Registration is closed. Ask your trainer for an invite, or log in below.")
+       |> redirect(to: ~p"/users/log_in")}
+    end
   end
 
   def handle_event("role_changed", %{"user" => %{"role" => role}}, socket) do
