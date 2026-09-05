@@ -93,7 +93,9 @@ defmodule ScopestrengthWeb.Exercises do
   def handle_event("deleteExercise", %{"id" => id}, socket) do
     exercise_id = ScopestrengthWeb.Params.to_integer(id)
     exercise = ExerciseContext.get_exercise!(exercise_id)
+    user = socket.assigns.current_user
 
+    if exercise.is_custom and exercise.user_id == user.id do
     case ExerciseContext.delete_exercise(exercise) do
       {:ok, _} ->
         all_exercises = Enum.reject(socket.assigns.allExercises, &(&1.id == exercise_id))
@@ -112,6 +114,9 @@ defmodule ScopestrengthWeb.Exercises do
 
       _ ->
         {:noreply, socket |> put_flash(:error, "Something happened")}
+    end
+    else
+      {:noreply, socket |> put_flash(:error, "Exercise not found")}
     end
   end
 

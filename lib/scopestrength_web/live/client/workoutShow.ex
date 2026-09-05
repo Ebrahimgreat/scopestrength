@@ -156,10 +156,17 @@ alias Scopestrength.Exercises
   def handle_event("deleteExercise", %{"id" => id_param}, socket) do
     case Integer.parse(to_string(id_param)) do
       {id, ""} ->
-        workout_detail = Training.get_workout_details!(id)
-        exercise_id = workout_detail.exercise_id
+        belongs_to_this_workout? =
+          socket.assigns.workouts
+          |> Map.values()
+          |> List.flatten()
+          |> Enum.any?(&(&1.data.id == id))
 
-        case Training.delete_workout_details(workout_detail) do
+        if belongs_to_this_workout? do
+          workout_detail = Training.get_workout_details!(id)
+          exercise_id = workout_detail.exercise_id
+
+          case Training.delete_workout_details(workout_detail) do
           {:ok, _deleted} ->
             updated_workouts =
               socket.assigns.workouts
@@ -191,6 +198,11 @@ alias Scopestrength.Exercises
             {:noreply,
              socket
              |> put_flash(:error, "Failed to remove exercise")}
+          end
+        else
+          {:noreply,
+           socket
+           |> put_flash(:error, "Exercise not found")}
         end
 
       _ ->

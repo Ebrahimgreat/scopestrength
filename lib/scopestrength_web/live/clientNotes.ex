@@ -62,14 +62,18 @@ defmodule ScopestrengthWeb.ClientNotes do
 
     def handle_event("deleteNote", params, socket) do
       id = ScopestrengthWeb.Params.to_integer(params["id"])
-      notes = ClientNote.get_client_notes!(id)
-      case ClientNote.delete_client_notes(notes) do
-        {:ok, _notes}->
-          updatedNotes = Enum.reject(socket.assigns.notes, &(&1.id== id))
-          {:noreply,assign(socket, notes: updatedNotes)}
-          _ ->{:noreply,socket|>put_flash(:error, "An error has occured")}
-      end
 
+      if Enum.any?(socket.assigns.notes, &(&1.id == id)) do
+        notes = ClientNote.get_client_notes!(id)
+        case ClientNote.delete_client_notes(notes) do
+          {:ok, _notes}->
+            updatedNotes = Enum.reject(socket.assigns.notes, &(&1.id== id))
+            {:noreply,assign(socket, notes: updatedNotes)}
+          _ ->{:noreply,socket|>put_flash(:error, "An error has occured")}
+        end
+      else
+        {:noreply, socket |> put_flash(:error, "Note not found")}
+      end
     end
 
 

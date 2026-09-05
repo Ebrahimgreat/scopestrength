@@ -26,22 +26,30 @@ defmodule ScopestrengthWeb.Client.ProgrammeShow do
 
   def handle_event("deleteTemplate", params, socket) do
     id = ScopestrengthWeb.Params.to_integer(params["id"])
-    programme_template = Programmes.get_programme_template!(id)
 
-    case Programmes.delete_programme_template(programme_template) do
-      {:ok, _template} ->
-        programme = %{
-          socket.assigns.programme.data
-          | programmeTemplates:
-              Enum.reject(socket.assigns.programme.data.programmeTemplates, &(&1.id == id))
-        }
+    belongs_to_this_programme? =
+      Enum.any?(socket.assigns.programme.data.programmeTemplates, &(&1.id == id))
 
-        updated_form = Programmes.change_programme(programme) |> to_form()
+    if belongs_to_this_programme? do
+      programme_template = Programmes.get_programme_template!(id)
 
-        {:noreply,
-         socket
-         |> put_flash(:info, "Template Deleted")
-         |> assign(:programme, updated_form)}
+      case Programmes.delete_programme_template(programme_template) do
+        {:ok, _template} ->
+          programme = %{
+            socket.assigns.programme.data
+            | programmeTemplates:
+                Enum.reject(socket.assigns.programme.data.programmeTemplates, &(&1.id == id))
+          }
+
+          updated_form = Programmes.change_programme(programme) |> to_form()
+
+          {:noreply,
+           socket
+           |> put_flash(:info, "Template Deleted")
+           |> assign(:programme, updated_form)}
+      end
+    else
+      {:noreply, socket |> put_flash(:error, "Template not found")}
     end
   end
 
