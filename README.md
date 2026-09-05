@@ -5,7 +5,7 @@ build programmes and track progress; clients log their own workouts, weight and 
 and message their trainer. Everything runs in one Phoenix application backed by
 PostgreSQL.
 
-Hosted version: [scopestrength.com](https://scopestrength.com). You can also host it
+Demo version: [app.scopestrength.com](https://scopestrength.com). You can also host it
 yourself — the whole application is in this repository under the AGPL, with no paid
 tier, no feature flags and no phone-home.
 
