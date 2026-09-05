@@ -28,20 +28,26 @@ alias Scopestrength.Repo
     user = socket.assigns.current_user
     trainer = Trainers.get_trainer_byUserId(user.id)
     client_id = String.to_integer(params["id"])
-    case Repo.get(Clients.Client,client_id) do
-      nil->
-        {:ok, socket|>put_flash(:error, "Client Not found")}
-    client->
-      case client.trainer_id == trainer.id do
-        true->
-    client = Clients.get_client!(client_id)|>Repo.preload(:user)
-    workouts = Repo.all(from w in Scopestrength.Training.Workout, where: w.client_id == ^client_id)
-    {:ok,assign(socket,workouts: workouts, client_id: client_id, client: client)}
-    false ->
-      {:ok, socket|>put_flash(:error, "Client Does not exist")}
-    end
-  end
 
+    case Repo.get(Clients.Client, client_id) do
+      nil ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Client not found")
+         |> redirect(to: "/trainer/clients")}
+
+      client ->
+        if client.trainer_id == trainer.id do
+          client = Clients.get_client!(client_id) |> Repo.preload(:user)
+          workouts = Repo.all(from w in Scopestrength.Training.Workout, where: w.client_id == ^client_id)
+          {:ok, assign(socket, workouts: workouts, client_id: client_id, client: client)}
+        else
+          {:ok,
+           socket
+           |> put_flash(:error, "Client not found")
+           |> redirect(to: "/trainer/clients")}
+        end
+    end
   end
 
   def render(assigns) do
