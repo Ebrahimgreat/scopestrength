@@ -42,26 +42,7 @@ defmodule Scopestrength.Application do
     ]
 
     opts = [strategy: :one_for_one, name: Scopestrength.Supervisor]
-    {:ok, pid} = Supervisor.start_link(children, opts)
-
-    try do
-      if Scopestrength.Repo.aggregate(Scopestrength.Account.User, :count) == 0 do
-        require Logger
-        Logger.info("Database is empty, running seeds...")
-        seed_file = Application.app_dir(:scopestrength, "priv/repo/seeds.exs")
-
-        if File.exists?(seed_file) do
-          Code.eval_file(seed_file)
-          Logger.info("Seeds completed successfully!")
-        end
-      end
-    rescue
-      e ->
-        require Logger
-        Logger.error("Auto-seed failed: #{inspect(e)}")
-    end
-
-    {:ok, pid}
+    Supervisor.start_link(children, opts)
   end
 
   @impl true

@@ -147,6 +147,7 @@ Set these, then run the release:
 | `PHX_HOST` | yes | the public hostname, e.g. `app.example.com` |
 | `PORT` | no | the port to listen on |
 | `POOL_SIZE` | no | database connections, defaults to 2 |
+| `REGISTRATION_ENABLED` | no | set to `false` to close public sign-up once your accounts exist |
 
 Then choose an email adapter and, optionally, object storage. Both are described in
 [`.env.example`](.env.example) and configured in [`config/runtime.exs`](config/runtime.exs).
