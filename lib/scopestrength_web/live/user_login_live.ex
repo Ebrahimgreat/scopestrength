@@ -96,7 +96,7 @@ defmodule ScopestrengthWeb.UserLoginLive do
           </button>
         </.form>
 
-        <p class="mt-6 text-center text-sm text-dim">
+        <p :if={@registration_enabled} class="mt-6 text-center text-sm text-dim">
           Don't have an account?
           <.link navigate={~p"/users/register"} class="font-semibold text-primary hover:underline">
             Sign up
@@ -134,6 +134,11 @@ defmodule ScopestrengthWeb.UserLoginLive do
   def mount(_params, _session, socket) do
     email = Phoenix.Flash.get(socket.assigns.flash, :email)
     form = to_form(%{"email" => email}, as: "user")
-    {:ok, assign(socket, form: form), temporary_assigns: [form: form]}
+
+    {:ok,
+     assign(socket,
+       form: form,
+       registration_enabled: Application.get_env(:scopestrength, :registration_enabled, true)
+     ), temporary_assigns: [form: form]}
   end
 end
