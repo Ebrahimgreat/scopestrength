@@ -24,7 +24,6 @@ defmodule ScopestrengthWeb.Exercises do
   alias Scopestrength.Exercise, as: ExerciseContext
   alias Scopestrength.Exercises
   alias Scopestrength.Exercises.Exercise
-  alias Scopestrength.Trainers
   alias Scopestrength.Repo
 
   def handle_event("addExercise", params, socket) do
@@ -43,14 +42,14 @@ defmodule ScopestrengthWeb.Exercises do
 
     case ExerciseContext.create_exercise(attrs) do
       {:ok, exercise} ->
-        trainer = Trainers.get_trainer_byUserId(user.id)
+        trainer_id = trainer_id_for(user)
 
         Exercises.create_exercise_muscle_contribution(%{
           exercise_id: exercise.id,
           muscle_id: primary_muscle_id,
           role: "primary",
           multiplier: 1.0,
-          trainer_id: trainer.id
+          trainer_id: trainer_id
         })
 
         Enum.each(socket.assigns.secondary_muscles, fn muscle_id ->
@@ -59,7 +58,7 @@ defmodule ScopestrengthWeb.Exercises do
             muscle_id: muscle_id,
             role: "secondary",
             multiplier: 0.5,
-            trainer_id: trainer.id
+            trainer_id: trainer_id
           })
         end)
 
@@ -189,7 +188,7 @@ defmodule ScopestrengthWeb.Exercises do
 
     case ExerciseContext.update_exercise(exercise, attrs) do
       {:ok, updated_exercise} ->
-        trainer = Trainers.get_trainer_byUserId(user.id)
+        trainer_id = trainer_id_for(user)
 
         Repo.delete_all(
           from ec in Scopestrength.Exercises.ExerciseMuscleContribution,
@@ -202,7 +201,7 @@ defmodule ScopestrengthWeb.Exercises do
             muscle_id: primary_muscle_id,
             role: "primary",
             multiplier: 1.0,
-            trainer_id: trainer.id
+            trainer_id: trainer_id
           })
         end
 
@@ -212,7 +211,7 @@ defmodule ScopestrengthWeb.Exercises do
             muscle_id: muscle_id,
             role: "secondary",
             multiplier: 0.5,
-            trainer_id: trainer.id
+            trainer_id: trainer_id
           })
         end)
 
@@ -596,6 +595,15 @@ defmodule ScopestrengthWeb.Exercises do
     </div>
     """
   end
+
+  defp trainer_id_for(%{role: "trainer"} = user) do
+    case Repo.get_by(Scopestrength.Trainers.Trainer, user_id: user.id) do
+      nil -> nil
+      trainer -> trainer.id
+    end
+  end
+
+  defp trainer_id_for(_user), do: nil
 
   defp apply_filters(exercises, filter_applied, search) do
     exercises
