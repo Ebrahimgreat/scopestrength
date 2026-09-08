@@ -68,4 +68,23 @@ defmodule ScopestrengthWeb.ClientWorkoutsLiveTest do
     assert updated.name == "Renamed"
     assert updated.date == ~U[2026-04-01 08:00:00Z]
   end
+
+  test "the confirm dialog's remove button actually deletes the set", %{conn: conn, client: client} do
+    workout = workout_fixture(%{client_id: client.id})
+    exercise = exercise_fixture(%{name: "Squat"})
+    {:ok, view, _html} = live(conn, ~p"/client/workouts/#{workout.id}")
+
+    render_click(view, "addExercise", %{"id" => to_string(exercise.id)})
+    [detail] = Repo.all(Scopestrength.Training.WorkoutDetails)
+    render_click(view, "toggle_edit_mode", %{})
+
+    doc = render(view) |> Floki.parse_document!()
+    target = Floki.find(doc, "#remove-set-#{detail.id}-action")
+
+    assert [action] = Floki.attribute(target, "data-confirm-action")
+    assert action =~ "deleteExercise"
+
+    render_click(view, "deleteExercise", %{"id" => detail.id})
+    assert Repo.all(Scopestrength.Training.WorkoutDetails) == []
+  end
 end

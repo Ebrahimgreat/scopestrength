@@ -174,7 +174,8 @@ defmodule ScopestrengthWeb.CoreComponents do
             </button>
             <button
               type="button"
-              phx-click={JS.hide(to: "##{@id}") |> JS.exec("data-confirm-action", to: "##{@id}")}
+              phx-click={JS.hide(to: "##{@id}") |> JS.exec("data-confirm-action", to: "##{@id}-action")}
+              id={"#{@id}-action"}
               data-confirm-action={@on_confirm}
               class="rounded-md bg-danger px-4 py-2 text-sm font-semibold text-foreground transition hover:opacity-90"
             >
