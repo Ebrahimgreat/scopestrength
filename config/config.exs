@@ -51,4 +51,9 @@ config :logger, :console,
 
 config :phoenix, :json_library, Jason
 
+# Read-only client API. Both are set per environment (see runtime.exs); with no
+# token configured the API refuses every request.
+config :scopestrength, :api_token, nil
+config :scopestrength, :api_user_email, nil
+
 import_config "#{config_env()}.exs"

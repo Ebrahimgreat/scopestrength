@@ -55,6 +55,34 @@ defmodule Scopestrength.Exercise do
   def get_exercise!(id), do: Repo.get!(Exercise, id)
 
   @doc """
+  Searches exercises by name, case-insensitively.
+
+  Callers know an exercise by name ("incline dumbbell press") while the rest of
+  the training data keys off ids, so this is the lookup that bridges the two.
+  A blank term returns the first `:limit` exercises rather than everything.
+
+  ## Examples
+
+      iex> search_exercises_by_name("bench")
+      [%Exercise{name: "Barbell Bench Press"}, ...]
+
+  """
+  def search_exercises_by_name(term, opts \\ []) when is_binary(term) do
+    limit = Keyword.get(opts, :limit, 20)
+
+    query =
+      case String.trim(term) do
+        "" -> Exercise
+        trimmed -> where(Exercise, [e], ilike(e.name, ^"%#{trimmed}%"))
+      end
+
+    query
+    |> order_by([e], asc: e.name)
+    |> limit(^limit)
+    |> Repo.all()
+  end
+
+  @doc """
   Creates a exercise.
 
   ## Examples

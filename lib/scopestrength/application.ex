@@ -38,6 +38,7 @@ defmodule Scopestrength.Application do
       {Oban, Application.fetch_env!(:scopestrength, Oban)},
       {Phoenix.PubSub, name: Scopestrength.PubSub},
       {Finch, name: Scopestrength.Finch},
+      ScopestrengthWeb.Plugs.ApiRateLimit.Table,
       ScopestrengthWeb.Endpoint
     ]
 

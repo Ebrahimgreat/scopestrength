@@ -40,6 +40,32 @@ defmodule Scopestrength.Training do
   end
 
   @doc """
+  Returns one client's most recent workouts, newest first, with their sets and
+  each set's exercise preloaded.
+
+  Workouts are dated by `date`, which older rows may leave blank, so ordering
+  falls back to `inserted_at` the way `progress_summary/1` does.
+
+  ## Examples
+
+      iex> list_workouts_for_client(123, limit: 5)
+      [%Workout{}, ...]
+
+  """
+  def list_workouts_for_client(client_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 10)
+
+    details_query = from wd in Scopestrength.Training.WorkoutDetails, order_by: [asc: wd.set]
+
+    Workout
+    |> where([w], w.client_id == ^client_id)
+    |> order_by([w], desc: fragment("COALESCE(?, ?)", w.date, w.inserted_at))
+    |> limit(^limit)
+    |> preload(workoutDetails: ^{details_query, [:exercise]})
+    |> Repo.all()
+  end
+
+  @doc """
   Gets a single workout.
 
   Raises `Ecto.NoResultsError` if the Workout does not exist.
@@ -105,6 +131,72 @@ defmodule Scopestrength.Training do
   """
   def delete_workout(%Workout{} = workout) do
     Repo.delete(workout)
+  end
+
+  @doc """
+  Creates a workout and its sets for one client, in a single transaction.
+
+  A workout whose sets failed to insert is worse than no workout at all -- it
+  reads as a session where nothing was lifted -- so the two are written
+  together or not at all.
+
+  `sets` is a list of maps accepted by `WorkoutDetails.changeset/2`; each is
+  scoped to the new workout automatically.
+
+  ## Examples
+
+      iex> create_workout_with_sets(%{client_id: 3, name: "Lower"}, [
+      ...>   %{exercise_id: 17, set: 1, reps: 5, weight: 100.0}
+      ...> ])
+      {:ok, %Workout{}}
+
+  """
+  def create_workout_with_sets(workout_attrs, sets) when is_list(sets) do
+    Repo.transaction(fn ->
+      with {:ok, workout} <- create_workout(workout_attrs),
+           :ok <- insert_sets(workout, sets) do
+        get_workout_with_sets(workout.id)
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
+  end
+
+  defp insert_sets(workout, sets) do
+    Enum.reduce_while(sets, :ok, fn attrs, :ok ->
+      attrs = Map.put(attrs, :workout_id, workout.id)
+
+      case create_workout_details(attrs) do
+        {:ok, _} -> {:cont, :ok}
+        {:error, changeset} -> {:halt, {:error, changeset}}
+      end
+    end)
+  end
+
+  @doc """
+  Loads one workout with its sets and each set's exercise.
+  """
+  def get_workout_with_sets(id) do
+    details_query = from wd in Scopestrength.Training.WorkoutDetails, order_by: [asc: wd.set]
+
+    Workout
+    |> where([w], w.id == ^id)
+    |> preload(workoutDetails: ^{details_query, [:exercise]})
+    |> Repo.one()
+  end
+
+  @doc """
+  Fetches a workout only if it belongs to `client_id`.
+
+  Returns `{:error, :not_found}` for both a missing workout and one belonging
+  to somebody else: a caller must not be able to tell the difference, or the
+  API becomes a way to probe which workout ids exist.
+  """
+  def fetch_client_workout(client_id, id) do
+    case Repo.get_by(Workout, id: id, client_id: client_id) do
+      nil -> {:error, :not_found}
+      workout -> {:ok, workout}
+    end
   end
 
   @doc """

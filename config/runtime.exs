@@ -25,6 +25,17 @@ end
 # pages stay reachable either way.
 config :scopestrength, :registration_enabled, System.get_env("REGISTRATION_ENABLED") != "false"
 
+# Read-only client API, consumed by the my_app agent. Both must be set for the
+# API to answer at all: the token authenticates the caller, and the email picks
+# the client whose data it may read. Unset, every /api request gets a 401.
+if token = System.get_env("API_TOKEN") do
+  config :scopestrength, :api_token, token
+end
+
+if email = System.get_env("API_USER_EMAIL") do
+  config :scopestrength, :api_user_email, email
+end
+
 if bucket = System.get_env("S3_BUCKET") do
   config :scopestrength, :storage,
     adapter: Scopestrength.Storage.S3,

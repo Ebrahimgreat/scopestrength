@@ -36,6 +36,37 @@ defmodule ScopestrengthWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :api_auth do
+    # Rate limit before authenticating, so token guessing is capped too.
+    plug ScopestrengthWeb.Plugs.ApiRateLimit
+    plug ScopestrengthWeb.Plugs.ApiAuth
+  end
+
+  # Pipelines apply per scope, so the routes that change data live in their own
+  # scope with this extra check rather than alongside the reads.
+  pipeline :api_write do
+    plug ScopestrengthWeb.Plugs.RequireWriteScope
+  end
+
+  # Read-only API over the API user's own training data. Every action scopes to
+  # the client resolved from the bearer token, so no route takes a client id.
+  scope "/api", ScopestrengthWeb.Api do
+    pipe_through [:api, :api_auth]
+
+    get "/me/summary", ClientController, :summary
+    get "/me/workouts", ClientController, :workouts
+    get "/me/exercises", ClientController, :exercises
+    get "/me/progressions/:exercise_id", ClientController, :progressions
+  end
+
+  # Same auth, plus a scope check: a read-only token must not create or delete.
+  scope "/api", ScopestrengthWeb.Api do
+    pipe_through [:api, :api_auth, :api_write]
+
+    post "/me/workouts", ClientController, :create_workout
+    delete "/me/workouts/:id", ClientController, :delete_workout
+  end
+
 
 
   scope "/client", ScopestrengthWeb do
@@ -60,6 +91,7 @@ defmodule ScopestrengthWeb.Router do
       live "/volumeTracking",Client.VolumeTracking
       live "/exercises", Exercises
       live "/settings", Client.ClientSettings
+      live "/settings/api-tokens", Client.ApiTokens
       live "/progress-photos", Client.ProgressPhotos
       live "/programmes", Client.Programmes
       live "/programmes/:id", Client.ProgrammeShow
