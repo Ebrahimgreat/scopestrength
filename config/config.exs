@@ -51,6 +51,9 @@ config :logger, :console,
 
 config :phoenix, :json_library, Jason
 
+# The MCP route takes its API token as a path parameter; keep it out of logs.
+config :phoenix, :filter_parameters, ["password", "token"]
+
 # Read-only client API. Both are set per environment (see runtime.exs); with no
 # token configured the API refuses every request.
 config :scopestrength, :api_token, nil

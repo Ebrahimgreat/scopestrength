@@ -42,6 +42,15 @@ defmodule ScopestrengthWeb.Router do
     plug ScopestrengthWeb.Plugs.ApiAuth
   end
 
+  # MCP (Model Context Protocol) endpoint, so an assistant such as Claude can
+  # read the programme and log workouts. claude.ai connectors cannot send
+  # custom headers, so the token may ride in the path; a bearer header works
+  # too. Same tokens, same rate limit, same one-client scoping as /api.
+  pipeline :mcp do
+    plug ScopestrengthWeb.Plugs.ApiRateLimit
+    plug ScopestrengthWeb.Plugs.McpAuth
+  end
+
   # Pipelines apply per scope, so the routes that change data live in their own
   # scope with this extra check rather than alongside the reads.
   pipeline :api_write do
@@ -65,6 +74,16 @@ defmodule ScopestrengthWeb.Router do
 
     post "/me/workouts", ClientController, :create_workout
     delete "/me/workouts/:id", ClientController, :delete_workout
+  end
+
+  scope "/mcp", ScopestrengthWeb do
+    pipe_through :mcp
+
+    post "/", McpController, :handle
+    get "/", McpController, :method_not_allowed
+    post "/:token", McpController, :handle
+    get "/:token", McpController, :method_not_allowed
+    delete "/:token", McpController, :method_not_allowed
   end
 
 

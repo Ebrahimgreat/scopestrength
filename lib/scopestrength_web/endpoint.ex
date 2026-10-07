@@ -52,7 +52,7 @@ defmodule ScopestrengthWeb.Endpoint do
     cookie_key: "request_logger"
 
   plug Plug.RequestId
-  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint], log: {__MODULE__, :log_level, []}
 
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
@@ -63,4 +63,10 @@ defmodule ScopestrengthWeb.Endpoint do
   plug Plug.Head
   plug Plug.Session, @session_options
   plug ScopestrengthWeb.Router
+
+  @doc false
+  # The MCP endpoint carries its token in the path, so its request line must
+  # not reach the logs. Everything else logs as before.
+  def log_level(%{path_info: ["mcp" | _]}), do: false
+  def log_level(_conn), do: :info
 end

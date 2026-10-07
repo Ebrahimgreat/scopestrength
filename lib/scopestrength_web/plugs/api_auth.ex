@@ -53,9 +53,15 @@ defmodule ScopestrengthWeb.Plugs.ApiAuth do
     end
   end
 
-  # Database tokens carry their own identity; the static token has to look its
-  # client up from config.
-  defp authenticate("sst_" <> _ = presented) do
+  @doc """
+  Resolves a presented token to its user, client and (for database tokens)
+  token row. Shared with `ScopestrengthWeb.Plugs.McpAuth`, which takes the
+  token from the URL rather than a header.
+
+  Database tokens carry their own identity; the static token has to look its
+  client up from config.
+  """
+  def authenticate("sst_" <> _ = presented) do
     case ApiTokens.verify_token(presented) do
       {:ok, token} ->
         {:ok, %{user: token.user, client: token.client, token: token}}
@@ -67,7 +73,7 @@ defmodule ScopestrengthWeb.Plugs.ApiAuth do
     end
   end
 
-  defp authenticate(presented) do
+  def authenticate(presented) do
     with {:ok, configured} <- configured_token(),
          true <- Plug.Crypto.secure_compare(presented, configured),
          {:ok, user} <- configured_user(),

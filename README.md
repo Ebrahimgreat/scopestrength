@@ -195,6 +195,29 @@ rewrite existing rows.
 Adding another backend means implementing three functions of the
 `Scopestrength.Storage` behaviour.
 
+## Using it from Claude (MCP)
+
+ScopeStrength runs an MCP server at `/mcp`, so an assistant such as Claude can read
+your programme and log workouts for you: ask "what's today's workout?" from the gym
+and tell it your sets as you go.
+
+1. Sign in as the client and open `/client/settings/api-tokens`. Create a token with
+   **Read and write** scope (read-only tokens can look but not log).
+2. In Claude, add a custom connector with the URL
+   `https://your-domain/mcp/<token>`. claude.ai connectors cannot send headers, so
+   the token goes in the path; clients that can send headers may post to `/mcp`
+   with `Authorization: Bearer <token>` instead.
+
+Tools: `get_programme`, `list_programmes`, `recent_workouts`, `exercise_history`,
+`search_exercises`, `log_workout`, `add_sets`, `delete_workout`. Everything is scoped
+to the token's client, and logged sets update progression targets exactly as saving
+them in the app does.
+
+Treat the URL like a password. Phoenix keeps `/mcp` request lines and the token
+parameter out of its logs, but a reverse proxy's access log will still record the
+path, so turn that off for `/mcp` (in nginx, `access_log off;` in a `location /mcp`
+block). Revoke the token from the same settings page if it leaks.
+
 ---
 
 ## Finding your way around the code
