@@ -145,9 +145,14 @@ defmodule Scopestrength.ApiTokens do
     %{updated | client: token.client, user: token.user}
   end
 
+  # The prefix is url-safe base64 and can itself contain "_", so the token is
+  # split at the prefix's fixed length rather than at the first underscore.
+  # Splitting on "_" made roughly one token in eight unverifiable.
+  @prefix_length 8
+
   defp split("sst_" <> rest) do
-    case String.split(rest, "_", parts: 2) do
-      [prefix, secret] when byte_size(prefix) > 0 and byte_size(secret) > 0 ->
+    case rest do
+      <<prefix::binary-size(@prefix_length), "_", secret::binary>> when byte_size(secret) > 0 ->
         {:ok, prefix, secret}
 
       _ ->
