@@ -1123,8 +1123,10 @@ alias Scopestrength.Exercises
   defp parse_datetime_local(""), do: nil
 
   defp parse_datetime_local(value) do
+    value = if String.length(value) == 16, do: value <> ":00", else: value
+
     case NaiveDateTime.from_iso8601(value) do
-      {:ok, naive} -> DateTime.from_naive!(naive, "Etc/UTC")
+      {:ok, naive} -> naive |> NaiveDateTime.truncate(:second) |> DateTime.from_naive!("Etc/UTC")
       _ -> value
     end
   end
