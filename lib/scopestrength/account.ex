@@ -343,6 +343,50 @@ defmodule Scopestrength.Account do
   end
 
   @doc """
+  Registers a user together with the trainer or client record their role requires.
+
+  Every user must have the profile row matching their role: the `users` row
+  authenticates them, and the `trainers` or `clients` row is what the rest of the
+  app reads. Creating one without the other leaves an account that can log in but
+  crashes on nearly every page, so both are written in a single transaction.
+
+  Pass `:trainer_id` to link a new client to the trainer whose invite they used.
+
+  ## Examples
+
+      iex> register_user_with_profile(%{email: ..., password: ..., role: "trainer"})
+      {:ok, %{user: %User{}, profile: %Trainer{}}}
+
+      iex> register_user_with_profile(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def register_user_with_profile(attrs, opts \\ []) do
+    trainer_id = Keyword.get(opts, :trainer_id)
+
+    Ecto.Multi.new()
+    |> Ecto.Multi.insert(:user, User.registration_changeset(%User{}, attrs))
+    |> Ecto.Multi.run(:profile, fn _repo, %{user: user} ->
+      case user.role do
+        "trainer" ->
+          Scopestrength.Trainers.create_trainer(%{user_id: user.id})
+
+        "client" ->
+          Scopestrength.Clients.create_client(%{user_id: user.id, trainer_id: trainer_id})
+
+        other ->
+          {:error, "unknown role #{inspect(other)}"}
+      end
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{user: user, profile: profile}} -> {:ok, %{user: user, profile: profile}}
+      {:error, _step, %Ecto.Changeset{} = changeset, _changes} -> {:error, changeset}
+      {:error, _step, reason, _changes} -> {:error, reason}
+    end
+  end
+
+  @doc """
   Returns an `%Ecto.Changeset{}` for tracking user changes.
 
   ## Examples

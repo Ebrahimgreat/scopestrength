@@ -17,12 +17,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 defmodule ScopestrengthWeb.UserRegistrationLive do
-alias Scopestrength.Clients
   use ScopestrengthWeb, :live_view
 
   alias Scopestrength.Account
   alias Scopestrength.Account.User
-  alias Scopestrength.Trainers
   alias Scopestrength.Invites
 
   def render(assigns) do
@@ -171,8 +169,8 @@ alias Scopestrength.Clients
 
       {:ok, trainer_id} ->
         user_params = Map.put(user_params, "type", "normal")
-        case Account.register_user(user_params) do
-          {:ok, user} ->
+        case Account.register_user_with_profile(user_params, trainer_id: trainer_id) do
+          {:ok, %{user: user}} ->
             {:ok, _} =
               Account.deliver_user_confirmation_instructions(
                 user,
@@ -181,22 +179,14 @@ alias Scopestrength.Clients
 
             changeset = Account.change_user_registration(user)
 
-            case user.role do
-              "trainer" ->
-                Trainers.create_trainer(%{user_id: user.id})
-
-              "client" ->
-                {:ok, client} = Clients.create_client(%{user_id: user.id})
-
-                if trainer_id do
-                  Invites.link_client_to_trainer(client.id, trainer_id)
-                end
-            end
-
             {:noreply, socket |> assign(trigger_submit: true) |> assign_form(changeset)}
 
           {:error, %Ecto.Changeset{} = changeset} ->
             {:noreply, socket |> assign(check_errors: true) |> assign_form(changeset)}
+
+          {:error, _reason} ->
+            {:noreply,
+             put_flash(socket, :error, "We could not create your account. Please try again.")}
         end
     end
   end
