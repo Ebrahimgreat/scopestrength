@@ -10,7 +10,7 @@ defmodule ScopestrengthWeb.ParamsTest do
 
   test "rejects anything else" do
     assert_raise ArgumentError, fn -> Params.to_integer("abc") end
-    assert_raise FunctionClauseError, fn -> Params.to_integer(nil) end
+    assert_raise FunctionClauseError, fn -> apply(Params, :to_integer, [nil]) end
   end
 
   test "parses complete route ids without raising" do

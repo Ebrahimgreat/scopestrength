@@ -274,7 +274,7 @@ defmodule ScopestrengthWeb.Dashboard do
   """
 end
 
-  defp notification_time(%Notification{inserted_at: %DateTime{} = inserted_at}) do
+  defp notification_time(%{inserted_at: inserted_at}) when not is_nil(inserted_at) do
     Calendar.strftime(inserted_at, "%b %d, %Y at %I:%M %p")
   end
 

@@ -123,18 +123,6 @@ defmodule ScopestrengthWeb.UserSettingsLive do
     guard_against_demo(socket, fn socket -> do_update_name(socket, name) end)
   end
 
-  defp do_update_name(socket, name) do
-    user = socket.assigns.current_user
-
-    case Account.update_name(user, %{"name" => name}) do
-      {:ok, user} ->
-        {:noreply, socket |> put_flash(:info, "Name updated") |> assign(:name, user.name)}
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, :name_form, to_form(changeset))}
-    end
-  end
-
   def handle_event("validate_email", params, socket) do
     %{"current_password" => password, "user" => user_params} = params
 
@@ -149,6 +137,34 @@ defmodule ScopestrengthWeb.UserSettingsLive do
 
   def handle_event("update_email", params, socket) do
     guard_against_demo(socket, fn socket -> do_update_email(socket, params) end)
+  end
+
+  def handle_event("validate_password", params, socket) do
+    %{"current_password" => password, "user" => user_params} = params
+
+    password_form =
+      socket.assigns.current_user
+      |> Account.change_user_password(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, password_form: password_form, current_password: password)}
+  end
+
+  def handle_event("update_password", params, socket) do
+    guard_against_demo(socket, fn socket -> do_update_password(socket, params) end)
+  end
+
+  defp do_update_name(socket, name) do
+    user = socket.assigns.current_user
+
+    case Account.update_name(user, %{"name" => name}) do
+      {:ok, user} ->
+        {:noreply, socket |> put_flash(:info, "Name updated") |> assign(:name, user.name)}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :name_form, to_form(changeset))}
+    end
   end
 
   defp do_update_email(socket, params) do
@@ -169,22 +185,6 @@ defmodule ScopestrengthWeb.UserSettingsLive do
       {:error, changeset} ->
         {:noreply, assign(socket, :email_form, to_form(Map.put(changeset, :action, :insert)))}
     end
-  end
-
-  def handle_event("validate_password", params, socket) do
-    %{"current_password" => password, "user" => user_params} = params
-
-    password_form =
-      socket.assigns.current_user
-      |> Account.change_user_password(user_params)
-      |> Map.put(:action, :validate)
-      |> to_form()
-
-    {:noreply, assign(socket, password_form: password_form, current_password: password)}
-  end
-
-  def handle_event("update_password", params, socket) do
-    guard_against_demo(socket, fn socket -> do_update_password(socket, params) end)
   end
 
   defp do_update_password(socket, params) do

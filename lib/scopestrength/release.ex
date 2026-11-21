@@ -36,7 +36,7 @@ defmodule Scopestrength.Release do
 
     for repo <- repos() do
       {:ok, _, _} =
-        Ecto.Migrator.with_repo(repo, fn repo ->
+        Ecto.Migrator.with_repo(repo, fn _repo ->
           seed_file = Application.app_dir(@app, "priv/repo/seeds.exs")
 
           if File.exists?(seed_file) do
