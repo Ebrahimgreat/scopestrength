@@ -50,12 +50,11 @@ defmodule Scopestrength.MixProject do
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.26"},
-      {:httpoison, "~> 2.2"},
       {:jason, "~> 1.2"},
-      {:ex_aws, "~> 2.5"},
+      {:ex_aws, "~> 2.7"},
       {:ex_aws_s3, "~> 2.5"},
+      {:req, "~> 0.6"},
       {:sweet_xml, "~> 0.7"},
-      {:hackney, "~> 1.20"},
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
       {:oban, "~> 2.14"},
@@ -67,7 +66,6 @@ defmodule Scopestrength.MixProject do
       {:kino, "~> 0.12"},
       {:vega_lite, "~> 0.1.0"},
       {:reactor, "~> 0.9"}
-
     ]
   end
 
