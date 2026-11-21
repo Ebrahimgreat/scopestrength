@@ -91,6 +91,16 @@ defmodule Scopestrength.Notifications do
     |> Repo.update()
   end
 
+  def mark_read_for_trainer(notification_id, trainer_id) do
+    from(n in Notification,
+      where:
+        n.id == ^notification_id and
+          n.recipient_type == "trainer" and
+          n.recipient_id == ^trainer_id
+    )
+    |> Repo.update_all(set: [read_at: DateTime.utc_now()])
+  end
+
   @doc """
   Deletes a notification.
 

@@ -43,6 +43,14 @@ defmodule Scopestrength.Storage.Local do
   def url(key), do: "/files/" <> key
 
   @impl true
+  def delivery(key) do
+    case path(key) do
+      {:ok, file_path} -> {:file, file_path}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @impl true
   def delete(key) do
     case path(key) do
       {:ok, file_path} -> _ = File.rm(file_path)

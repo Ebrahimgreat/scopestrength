@@ -67,6 +67,15 @@ defmodule ScopestrengthWeb.NotificationsLiveTest do
       render_click(view, "delete_notification", %{"id" => to_string(n1.id)})
       assert_raise Ecto.NoResultsError, fn -> Notifications.get_notification!(n1.id) end
     end
+
+    test "a trainer cannot mark another trainer's notification read", %{conn: conn} do
+      other_notification = notification_fixture(%{recipient_id: 999_999, recipient_type: "trainer"})
+
+      {:ok, view, _html} = live(conn, ~p"/trainer/notifications")
+      render_click(view, "mark_notification_read", %{"id" => to_string(other_notification.id)})
+
+      refute Notifications.get_notification!(other_notification.id).read_at
+    end
   end
 
   describe "client" do

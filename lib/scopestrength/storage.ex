@@ -50,6 +50,9 @@ defmodule Scopestrength.Storage do
   @doc "Removes the object. Missing objects are not an error."
   @callback delete(key()) :: :ok
 
+  @callback delivery(key()) ::
+              {:file, Path.t()} | {:redirect, String.t()} | {:error, term()}
+
   @doc """
   A URL the browser can PUT a file to directly, bypassing this server.
 
@@ -95,6 +98,10 @@ defmodule Scopestrength.Storage do
   @spec delete(key() | nil) :: :ok
   def delete(nil), do: :ok
   def delete(key), do: adapter().delete(key)
+
+  @doc "Resolves an authorized key to a local file or short-lived redirect."
+  @spec delivery(key()) :: {:file, Path.t()} | {:redirect, String.t()} | {:error, term()}
+  def delivery(key), do: adapter().delivery(key)
 
   @doc """
   Whether the current adapter can hand the browser a URL to upload to directly.

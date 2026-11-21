@@ -39,6 +39,11 @@ defmodule Scopestrength.StorageTest do
     assert {:error, :invalid_key} = Storage.Local.path("../secrets.txt")
   end
 
+  test "delivery/1 resolves local files under the private root", %{root: root} do
+    assert {:file, expected} = Storage.delivery("progress_photos/abc.jpg")
+    assert expected == Path.join(root, "progress_photos/abc.jpg")
+  end
+
   test "delete/1 removes the object and tolerates missing ones", %{root: root} do
     source = Path.join(root, "s.txt")
     File.mkdir_p!(root)
