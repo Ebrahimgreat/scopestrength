@@ -21,6 +21,7 @@ defmodule ScopestrengthWeb.Client.StrengthProgress do
   alias Scopestrength.Training.WorkoutDetails
   alias Scopestrength.Repo
   alias Scopestrength.ClientProgressions
+  alias ScopestrengthWeb.Params
   use ScopestrengthWeb, :live_view
   import Ecto.Query
 
@@ -29,10 +30,10 @@ defmodule ScopestrengthWeb.Client.StrengthProgress do
   end
 
   def mount(params, _session, socket) do
-    exercise_id = String.to_integer(params["exercise_id"])
     user = socket.assigns.current_user
-    client = Repo.get_by(Scopestrength.Clients.Client, %{user_id: user.id})
-    exercise_progression= ClientProgressions.get_client_progression_with_exercise(client.id,exercise_id)
+    with {:ok, exercise_id} <- Params.parse_integer(params["exercise_id"]) do
+      client = Repo.get_by(Scopestrength.Clients.Client, %{user_id: user.id})
+      exercise_progression = ClientProgressions.get_client_progression_with_exercise(client.id, exercise_id)
 
     workout_details =
       Repo.all(
@@ -79,18 +80,25 @@ defmodule ScopestrengthWeb.Client.StrengthProgress do
         0.0
       end
 
-    {:ok,
-     assign(socket,
-       exercise_name: exercise_name,
-       pr: pr,
-       grouped_workouts: grouped_workouts,
-       overall_avg_reps: overall_avg_reps,
-       exercise_progression: exercise_progression,
-       last_session: List.first(sessions),
-       client_id: client.id,
-       exercise_id: exercise_id,
-       progression_form: progression_form(exercise_progression)
-     )}
+      {:ok,
+       assign(socket,
+         exercise_name: exercise_name,
+         pr: pr,
+         grouped_workouts: grouped_workouts,
+         overall_avg_reps: overall_avg_reps,
+         exercise_progression: exercise_progression,
+         last_session: List.first(sessions),
+         client_id: client.id,
+         exercise_id: exercise_id,
+         progression_form: progression_form(exercise_progression)
+       )}
+    else
+      :error ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Exercise not found")
+         |> push_navigate(to: "/client")}
+    end
   end
 
   defp progression_form([]), do: nil

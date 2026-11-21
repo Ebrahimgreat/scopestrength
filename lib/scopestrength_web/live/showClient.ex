@@ -22,6 +22,7 @@ defmodule ScopestrengthWeb.ShowClient do
   alias Scopestrength.Clients.Client
   alias Scopestrength.Repo
   alias Scopestrength.Programmes.ProgrammeUser
+  alias ScopestrengthWeb.Params
   import Ecto.Query
   use ScopestrengthWeb, :live_view
 
@@ -29,9 +30,8 @@ defmodule ScopestrengthWeb.ShowClient do
     user = socket.assigns.current_user
     trainer = Trainers.get_trainer_byUserId(user.id)
 
-    id = String.to_integer(params["id"])
-
-    case Repo.get(Client, id) |> Repo.preload(:user) do
+    with {:ok, id} <- Params.parse_integer(params["id"]) do
+      case Repo.get(Client, id) |> Repo.preload(:user) do
       nil ->
         {:ok, socket |> put_flash(:error, "Client Not found") |> redirect(to: "/clients")}
 
@@ -66,6 +66,10 @@ defmodule ScopestrengthWeb.ShowClient do
           false ->
             {:ok, socket |> put_flash(:error, "Client Does not Exist")}
         end
+      end
+    else
+      :error ->
+        {:ok, socket |> put_flash(:error, "Client not found") |> redirect(to: "/clients")}
     end
   end
 

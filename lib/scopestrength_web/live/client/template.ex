@@ -23,6 +23,7 @@ defmodule ScopestrengthWeb.Client.Template do
   alias Scopestrength.Programmes.Programme
   alias Scopestrength.Programmes.ProgrammeTemplate
   alias Scopestrength.Repo
+  alias ScopestrengthWeb.Params
   import Ecto.Query
 
   def handle_event("updateForm", params, socket) do
@@ -40,9 +41,8 @@ defmodule ScopestrengthWeb.Client.Template do
 
   def mount(params, _session, socket) do
     user = socket.assigns.current_user
-    template_id = String.to_integer(params["template_id"])
-
-    case Repo.get(ProgrammeTemplate, template_id) do
+    with {:ok, template_id} <- Params.parse_integer(params["template_id"]) do
+      case Repo.get(ProgrammeTemplate, template_id) do
       nil ->
         {:ok,
          socket
@@ -110,6 +110,13 @@ defmodule ScopestrengthWeb.Client.Template do
              |> put_flash(:error, "Template not found")
              |> redirect(to: "/client/programmes")}
         end
+      end
+    else
+      :error ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Template not found")
+         |> redirect(to: "/client/programmes")}
     end
   end
 
