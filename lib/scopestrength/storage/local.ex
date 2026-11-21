@@ -21,9 +21,9 @@ defmodule Scopestrength.Storage.Local do
   Stores uploads on the local filesystem. This is the default, so a fresh
   self-hosted install works with nothing configured.
 
-  Files live under `priv/static/uploads` and are served by the static plug at
-  `/uploads`. Note this directory is **ephemeral in a container** unless it is
-  mounted as a volume -- see the self-hosting notes in the README.
+  Files live under `priv/uploads` and are served only through the authenticated
+  file controller. Note this directory is **ephemeral in a container** unless
+  it is mounted as a volume -- see the self-hosting notes in the README.
   """
 
   @behaviour Scopestrength.Storage
@@ -40,18 +40,45 @@ defmodule Scopestrength.Storage.Local do
   end
 
   @impl true
-  def url(key), do: "/uploads/" <> key
+  def url(key), do: "/files/" <> key
 
   @impl true
   def delete(key) do
-    relative = String.replace_prefix(key, "/uploads/", "")
+    case path(key) do
+      {:ok, file_path} -> _ = File.rm(file_path)
+      {:error, _reason} -> :ok
+    end
 
-    _ = File.rm(Path.join(root(), relative))
     :ok
   end
 
+  @doc false
+  def path(key) when is_binary(key) do
+    key = normalize_key(key)
+
+    if key == nil or String.starts_with?(key, "/") do
+      {:error, :invalid_key}
+    else
+      expanded_root = Path.expand(root())
+      expanded_path = Path.expand(Path.join(expanded_root, key))
+
+      if expanded_path == expanded_root or
+           String.starts_with?(expanded_path, expanded_root <> Path.sep) do
+        {:ok, expanded_path}
+      else
+        {:error, :invalid_key}
+      end
+    end
+  end
+
+  def path(_key), do: {:error, :invalid_key}
+
+  defp normalize_key("/uploads/" <> key), do: key
+  defp normalize_key("/files/" <> key), do: key
+  defp normalize_key(key), do: key
+
   defp root do
     Application.get_env(:scopestrength, :storage, [])
-    |> Keyword.get(:local_root, Path.join(["priv", "static", "uploads"]))
+    |> Keyword.get(:local_root, Path.join(["priv", "uploads"]))
   end
 end

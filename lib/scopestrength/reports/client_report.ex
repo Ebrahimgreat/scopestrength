@@ -19,18 +19,43 @@
 defmodule Scopestrength.Reports.ClientReport do
   import Ecto.Query
   alias Scopestrength.Repo
+  alias Scopestrength.Account.User
   alias Scopestrength.Clients.Client
   alias Scopestrength.ClientWeight.ClientWeights
   alias Scopestrength.Training.{Workout, WorkoutDetails}
   alias Scopestrength.Exercises.Exercise
+  alias Scopestrength.Trainers.Trainer
   alias Elixlsx.{Workbook, Sheet}
+
+  def generate_for_trainer(trainer_user_id, client_id) do
+    client =
+      from(c in Client,
+        join: t in Trainer,
+        on: t.id == c.trainer_id,
+        join: u in User,
+        on: u.id == t.user_id,
+        where: c.id == ^client_id and u.id == ^trainer_user_id and u.role == "trainer",
+        preload: [:user]
+      )
+      |> Repo.one()
+
+    if client do
+      generate(client)
+    else
+      {:error, :unauthorized}
+    end
+  end
 
   def generate(client_id) do
     client = Repo.get!(Client, client_id) |> Repo.preload(:user)
+    generate(client)
+  end
+
+  defp generate(client) do
     client_name = client.user.name || "Client"
 
-    weight_sheet = build_weight_sheet(client_id)
-    workout_sheet = build_workout_sheet(client_id)
+    weight_sheet = build_weight_sheet(client.id)
+    workout_sheet = build_workout_sheet(client.id)
 
     workbook = %Workbook{sheets: [weight_sheet, workout_sheet]}
 

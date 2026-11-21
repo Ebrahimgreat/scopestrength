@@ -21,8 +21,8 @@ defmodule Scopestrength.Storage do
   Uploaded file storage, behind a swappable adapter.
 
   A self-hosted install needs nothing configured: the default adapter writes
-  to `priv/static/uploads` exactly as this app always has. Setting `S3_BUCKET`
-  switches to object storage without touching application code.
+  to a private directory under `priv/uploads`. Setting `S3_BUCKET` switches to
+  private object storage without touching application code.
 
   What goes in the database is a **key** -- `"progress_photos/<uuid>.jpg"` --
   never a URL. URLs are derived at render time by `url/1`, so the same rows
@@ -86,6 +86,8 @@ defmodule Scopestrength.Storage do
   @spec url(key() | nil) :: String.t() | nil
   def url(nil), do: nil
   def url("http" <> _ = url), do: url
+  def url("/uploads/" <> key), do: "/files/" <> key
+  def url("/files/" <> _ = path), do: path
   def url("/" <> _ = legacy_path), do: legacy_path
   def url(key), do: adapter().url(key)
 

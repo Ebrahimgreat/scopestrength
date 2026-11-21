@@ -62,15 +62,38 @@ defmodule Scopestrength.ProgrammesTest do
   end
 
   describe "assignment" do
+    test "requires the same trainer to own the programme and client" do
+      trainer = trainer_fixture()
+      other_trainer = trainer_fixture()
+      client = client_fixture(%{trainer: trainer})
+      programme = programme_fixture(%{user_id: trainer.user_id})
+      other_programme = programme_fixture(%{user_id: other_trainer.user_id})
+
+      assert {:error, :unauthorized} =
+               Programmes.assign_client_to_programme(other_trainer.user_id, programme.id, client.id)
+
+      assert {:error, :unauthorized} =
+               Programmes.assign_client_to_programme(trainer.user_id, other_programme.id, client.id)
+
+      {:ok, _} = Programmes.assign_client_to_programme(trainer.user_id, programme.id, client.id)
+
+      assert {:error, :unauthorized} =
+               Programmes.unassign_client_from_programme(other_trainer.user_id, programme.id, client.id)
+
+      assert Programmes.assigned_client_ids(programme.id) == MapSet.new([client.id])
+      assert Programmes.assigned_client_ids(other_programme.id) == MapSet.new()
+    end
+
     test "a client has one active programme at a time" do
       client = client_fixture()
       first = programme_fixture()
       second = programme_fixture()
 
-      {:ok, %ProgrammeUser{is_active: true}} = Programmes.assign_client_to_programme(first.id, client.id)
+      {:ok, %ProgrammeUser{is_active: true}} =
+        Programmes.assign_client_to_programme(client.trainer.user_id, first.id, client.id)
       assert MapSet.to_list(Programmes.assigned_client_ids(first.id)) == [client.id]
 
-      {:ok, _} = Programmes.assign_client_to_programme(second.id, client.id)
+      {:ok, _} = Programmes.assign_client_to_programme(client.trainer.user_id, second.id, client.id)
       assert MapSet.to_list(Programmes.assigned_client_ids(first.id)) == []
       assert MapSet.to_list(Programmes.assigned_client_ids(second.id)) == [client.id]
 
@@ -81,10 +104,13 @@ defmodule Scopestrength.ProgrammesTest do
     test "unassign deactivates and reports the count" do
       client = client_fixture()
       programme = programme_fixture()
-      {:ok, _} = Programmes.assign_client_to_programme(programme.id, client.id)
+      {:ok, _} = Programmes.assign_client_to_programme(client.trainer.user_id, programme.id, client.id)
 
-      assert {:ok, 1} = Programmes.unassign_client_from_programme(programme.id, client.id)
-      assert {:ok, 0} = Programmes.unassign_client_from_programme(programme.id, client.id)
+      assert {:ok, 1} =
+               Programmes.unassign_client_from_programme(client.trainer.user_id, programme.id, client.id)
+
+      assert {:ok, 0} =
+               Programmes.unassign_client_from_programme(client.trainer.user_id, programme.id, client.id)
       assert MapSet.to_list(Programmes.assigned_client_ids(programme.id)) == []
     end
   end
@@ -119,7 +145,7 @@ defmodule Scopestrength.ProgrammesTest do
       assert {:error, :not_assigned} =
                Programmes.clone_assigned_programme(client.user_id, client.id, programme.id)
 
-      {:ok, _} = Programmes.assign_client_to_programme(programme.id, client.id)
+      {:ok, _} = Programmes.assign_client_to_programme(client.trainer.user_id, programme.id, client.id)
       {:ok, copy} = Programmes.clone_assigned_programme(client.user_id, client.id, programme.id)
       assert copy.user_id == client.user_id
       assert Enum.map(Programmes.list_user_programmes(client.user_id), & &1.id) == [copy.id]

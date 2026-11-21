@@ -183,9 +183,9 @@ Progress photos, chat attachments and profile pictures are stored through a swap
 adapter. What goes in the database is a key, never a URL, so switching adapters does not
 rewrite existing rows.
 
-- **Local disk (default).** Files land in `priv/static/uploads`. Nothing to configure.
-  If you run in a container, mount that directory as a volume or uploads are lost on
-  restart.
+- **Local disk (default).** Files land in private `priv/uploads` and are delivered only
+  through authenticated, ownership-checked `/files/*` routes. Nothing to configure. If
+  you run in a container, mount that directory as a volume or uploads are lost on restart.
 - **Object storage.** Set `S3_BUCKET` with `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`
   to use AWS S3, Cloudflare R2, Backblaze B2, MinIO or DigitalOcean Spaces. Non-AWS
   providers also need `S3_HOST`. Keep the bucket private; files are served through

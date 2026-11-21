@@ -143,7 +143,7 @@ defmodule ScopestrengthWeb.ProgrammeShow do
 
     programme_id = String.to_integer(socket.assigns.programmeId)
 
-    case Programmes.assign_client_to_programme(programme_id, client_id) do
+    case Programmes.assign_client_to_programme(socket.assigns.current_user.id, programme_id, client_id) do
       {:ok, _programme_user} ->
         {:ok, seeded} =
           ClientProgressions.seed_from_programme(client_id, socket.assigns.programme.data)
@@ -172,7 +172,7 @@ defmodule ScopestrengthWeb.ProgrammeShow do
     {client_id, _name} = socket.assigns.unassign_confirm
     programme_id = String.to_integer(socket.assigns.programmeId)
 
-    case Programmes.unassign_client_from_programme(programme_id, client_id) do
+    case Programmes.unassign_client_from_programme(socket.assigns.current_user.id, programme_id, client_id) do
       {:ok, 0} ->
         {:noreply,
          socket
@@ -187,6 +187,12 @@ defmodule ScopestrengthWeb.ProgrammeShow do
          |> assign_clients()
          |> assign(unassign_confirm: nil)
          |> put_flash(:info, "Client removed from programme")}
+
+      {:error, :unauthorized} ->
+        {:noreply,
+         socket
+         |> assign(unassign_confirm: nil)
+         |> put_flash(:error, "Client not found")}
     end
   end
 

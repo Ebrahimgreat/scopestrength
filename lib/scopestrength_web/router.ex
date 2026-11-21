@@ -173,6 +173,8 @@ defmodule ScopestrengthWeb.Router do
   scope "/", ScopestrengthWeb do
     pipe_through [:browser, :require_authenticated_user]
 
+    get "/files/*path", FileController, :show
+
     live_session :authenticated,
       on_mount: [{ScopestrengthWeb.UserAuth, :ensure_authenticated}] do
       live "/chat/:room", Chat
