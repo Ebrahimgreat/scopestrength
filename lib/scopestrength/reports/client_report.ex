@@ -46,11 +46,6 @@ defmodule Scopestrength.Reports.ClientReport do
     end
   end
 
-  def generate(client_id) do
-    client = Repo.get!(Client, client_id) |> Repo.preload(:user)
-    generate(client)
-  end
-
   defp generate(client) do
     client_name = client.user.name || "Client"
 
@@ -59,7 +54,9 @@ defmodule Scopestrength.Reports.ClientReport do
 
     workbook = %Workbook{sheets: [weight_sheet, workout_sheet]}
 
-    file_name = "#{String.replace(client_name, " ", "_")}_report_#{Date.to_string(Date.utc_today())}.xlsx"
+    file_name =
+      "#{String.replace(client_name, " ", "_")}_report_#{Date.to_string(Date.utc_today())}.xlsx"
+
     tmp_path = Path.join(System.tmp_dir!(), file_name)
 
     {:ok, _} = Elixlsx.write_to(workbook, tmp_path)

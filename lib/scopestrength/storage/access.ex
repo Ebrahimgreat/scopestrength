@@ -47,7 +47,9 @@ defmodule Scopestrength.Storage.Access do
   defp profile_picture_authorized?(key, user_id, "client") do
     keys = stored_keys(key)
 
-    Repo.exists?(from c in Client, where: c.profile_picture_url in ^keys and c.user_id == ^user_id) or
+    Repo.exists?(
+      from c in Client, where: c.profile_picture_url in ^keys and c.user_id == ^user_id
+    ) or
       Repo.exists?(
         from t in Trainer,
           join: c in Client,
@@ -65,7 +67,9 @@ defmodule Scopestrength.Storage.Access do
         on: t.id == c.trainer_id,
         where: c.profile_picture_url in ^keys and t.user_id == ^user_id
     ) or
-      Repo.exists?(from t in Trainer, where: t.profile_picture_url in ^keys and t.user_id == ^user_id)
+      Repo.exists?(
+        from t in Trainer, where: t.profile_picture_url in ^keys and t.user_id == ^user_id
+      )
   end
 
   defp profile_picture_authorized?(_key, _user_id, _role), do: false
@@ -79,8 +83,8 @@ defmodule Scopestrength.Storage.Access do
              where: a.file_url in ^keys,
              select: m.room_id
          ) do
-      room_id -> room_authorized?(room_id, user_id, role)
-      nil -> false
+      room_id when is_binary(room_id) -> room_authorized?(room_id, user_id, role)
+      _ -> false
     end
   end
 

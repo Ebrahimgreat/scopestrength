@@ -71,7 +71,7 @@ defmodule Scopestrength.Storage.Local do
       expanded_path = Path.expand(Path.join(expanded_root, key))
 
       if expanded_path == expanded_root or
-           String.starts_with?(expanded_path, expanded_root <> Path.sep) do
+           String.starts_with?(expanded_path, expanded_root <> "/") do
         {:ok, expanded_path}
       else
         {:error, :invalid_key}
