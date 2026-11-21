@@ -50,15 +50,13 @@ defmodule ScopestrengthWeb.Client.Notifications do
   end
 
   def handle_event("mark_notification_read", %{"id" => notification_id}, socket) do
-    notification = Notifications.get_notification!(notification_id)
-
-    {:ok, _updated} = Notifications.update_notification(notification, %{
-      read_at: DateTime.utc_now()
-    })
+    {id, ""} = Integer.parse(notification_id)
+    client = socket.assigns.client
+    Notifications.mark_read_for_client(id, client.id)
 
     notifications =
       Enum.map(socket.assigns.notifications, fn n ->
-        if n.id == String.to_integer(notification_id) do
+        if n.id == id do
           %{n | read_at: DateTime.utc_now()}
         else
           n
