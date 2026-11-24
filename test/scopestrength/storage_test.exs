@@ -29,7 +29,8 @@ defmodule Scopestrength.StorageTest do
     assert Storage.url("progress_photos/abc.jpg") == "/files/progress_photos/abc.jpg"
     assert Storage.url("/uploads/old.jpg") == "/files/old.jpg"
     assert Storage.url("/files/current.jpg") == "/files/current.jpg"
-    assert Storage.url("https://cdn.example.com/x.jpg") == "https://cdn.example.com/x.jpg"
+    refute Storage.url("https://cdn.example.com/x.jpg")
+    refute Storage.url("/other-public-path/x.jpg")
     assert Storage.url(nil) == nil
   end
 

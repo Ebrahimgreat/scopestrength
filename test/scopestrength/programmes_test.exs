@@ -193,6 +193,18 @@ defmodule Scopestrength.ProgrammesTest do
       assert copy.user_id == client.user_id
       assert Enum.map(Programmes.list_user_programmes(client.user_id), & &1.id) == [copy.id]
     end
+
+    test "clone_assigned_programme/3 requires the caller to own the client" do
+      client = client_fixture()
+      attacker = client_fixture()
+      %{programme: programme} = full_programme_fixture(%{user_id: client.trainer.user_id})
+
+      {:ok, _} =
+        Programmes.assign_client_to_programme(client.trainer.user_id, programme.id, client.id)
+
+      assert {:error, :not_assigned} =
+               Programmes.clone_assigned_programme(attacker.user_id, client.id, programme.id)
+    end
   end
 
   test "exercise_fixture exercises can be reused across programmes" do

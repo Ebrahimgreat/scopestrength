@@ -106,8 +106,15 @@ defmodule Scopestrength.Programmes do
   """
   def clone_assigned_programme(user_id, client_id, programme_id) do
     assigned? =
-      Scopestrength.Programmes.ProgrammeUser
-      |> where([pu], pu.client_id == ^client_id and pu.programme_id == ^programme_id)
+      from(pu in Scopestrength.Programmes.ProgrammeUser,
+        join: c in Client,
+        on: c.id == pu.client_id,
+        join: u in User,
+        on: u.id == c.user_id,
+        where:
+          pu.client_id == ^client_id and pu.programme_id == ^programme_id and
+            c.user_id == ^user_id and u.role == "client"
+      )
       |> Repo.exists?()
 
     if assigned? do

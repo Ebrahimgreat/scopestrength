@@ -43,4 +43,21 @@ defmodule Scopestrength.Reports.ClientReportTest do
     assert File.exists?(path)
     File.rm(path)
   end
+
+  test "generate_for_trainer/2 sanitizes the client name in the download filename" do
+    client =
+      client_fixture(%{
+        user: Scopestrength.AccountFixtures.client_user_fixture(%{name: "../unsafe\nname"})
+      })
+
+    assert {:ok, path, file_name} =
+             ClientReport.generate_for_trainer(client.trainer.user.id, client.id)
+
+    assert file_name == "unsafe_name_report_#{Date.to_string(Date.utc_today())}.xlsx"
+    refute String.contains?(file_name, "..")
+    refute String.contains?(file_name, "\n")
+    assert File.exists?(path)
+
+    File.rm(path)
+  end
 end

@@ -55,9 +55,13 @@ defmodule Scopestrength.Reports.ClientReport do
     workbook = %Workbook{sheets: [weight_sheet, workout_sheet]}
 
     file_name =
-      "#{String.replace(client_name, " ", "_")}_report_#{Date.to_string(Date.utc_today())}.xlsx"
+      "#{safe_filename(client_name)}_report_#{Date.to_string(Date.utc_today())}.xlsx"
 
-    tmp_path = Path.join(System.tmp_dir!(), file_name)
+    tmp_path =
+      Path.join(
+        System.tmp_dir!(),
+        "scopestrength-report-#{Ecto.UUID.generate()}-#{file_name}"
+      )
 
     {:ok, _} = Elixlsx.write_to(workbook, tmp_path)
 
@@ -131,4 +135,16 @@ defmodule Scopestrength.Reports.ClientReport do
   defp format_datetime(%DateTime{} = dt), do: Calendar.strftime(dt, "%Y-%m-%d %H:%M")
   defp format_datetime(%Date{} = d), do: Date.to_string(d)
   defp format_datetime(val), do: to_string(val)
+
+  defp safe_filename(name) when is_binary(name) do
+    name =
+      name
+      |> String.replace(~r/[^A-Za-z0-9_-]+/, "_")
+      |> String.trim("_")
+      |> String.slice(0, 80)
+
+    if name == "", do: "Client", else: name
+  end
+
+  defp safe_filename(_name), do: "Client"
 end

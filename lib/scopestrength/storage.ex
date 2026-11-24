@@ -83,15 +83,16 @@ defmodule Scopestrength.Storage do
   Returns a browser-fetchable URL for a stored key.
 
   Passes `nil` through so templates can render optional images unguarded.
-  Legacy values that are already a path or URL are returned unchanged, so rows
-  written before this module existed keep working.
+  Legacy `/uploads/...` values are migrated to the authenticated file route.
+  Unknown paths and external URLs are not rendered because they cannot be
+  checked by the ownership layer.
   """
   @spec url(key() | nil) :: String.t() | nil
   def url(nil), do: nil
-  def url("http" <> _ = url), do: url
+  def url("http" <> _), do: nil
   def url("/uploads/" <> key), do: "/files/" <> key
   def url("/files/" <> _ = path), do: path
-  def url("/" <> _ = legacy_path), do: legacy_path
+  def url("/" <> _), do: nil
   def url(key), do: adapter().url(key)
 
   @doc "Deletes a stored object. Safe to call with nil or a legacy path."
