@@ -33,13 +33,16 @@ defmodule ScopestrengthWeb.DownloadController do
   end
 
   def client_report(conn, %{"client_id" => client_id}) do
-    client_id = String.to_integer(client_id)
-
-    {:ok, file_path, file_name} = Scopestrength.Reports.ClientReport.generate(client_id)
-
-    conn
-    |> put_resp_content_type("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    |> put_resp_header("content-disposition", "attachment; filename=\"#{file_name}\"")
-    |> send_file(200, file_path)
+    with {client_id, ""} <- Integer.parse(client_id),
+         %{role: "trainer", id: trainer_user_id} <- conn.assigns.current_user,
+         {:ok, file_path, file_name} <-
+           Scopestrength.Reports.ClientReport.generate_for_trainer(trainer_user_id, client_id) do
+      conn
+      |> put_resp_content_type("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+      |> put_resp_header("content-disposition", "attachment; filename=\"#{file_name}\"")
+      |> send_file(200, file_path)
+    else
+      _ -> send_resp(conn, :not_found, "Client report not found")
+    end
   end
 end

@@ -38,7 +38,7 @@ defmodule ScopestrengthWeb.McpControllerTest do
     pull = programme_template_fixture(%{programme_id: programme.id, name: "Pull"})
     programme_details_fixture(%{programme_template_id: push.id, exercise_id: bench.id, set: "3"})
     programme_details_fixture(%{programme_template_id: pull.id, exercise_id: row.id, set: "3"})
-    {:ok, _} = Programmes.assign_client_to_programme(programme.id, client.id)
+    {:ok, _} = Programmes.assign_client_to_programme(client.trainer.user_id, programme.id, client.id)
 
     {:ok, rw, _} =
       ApiTokens.create_token(%{

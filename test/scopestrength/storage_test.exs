@@ -25,11 +25,24 @@ defmodule Scopestrength.StorageTest do
     assert File.read!(Path.join([root, "progress_photos", "abc.txt"])) == "photo bytes"
   end
 
-  test "url/1 derives a browser path and passes legacy values through" do
-    assert Storage.url("progress_photos/abc.jpg") == "/uploads/progress_photos/abc.jpg"
-    assert Storage.url("/uploads/old.jpg") == "/uploads/old.jpg"
-    assert Storage.url("https://cdn.example.com/x.jpg") == "https://cdn.example.com/x.jpg"
+  test "url/1 derives a private browser path and migrates legacy paths" do
+    assert Storage.url("progress_photos/abc.jpg") == "/files/progress_photos/abc.jpg"
+    assert Storage.url("/uploads/old.jpg") == "/files/old.jpg"
+    assert Storage.url("/files/current.jpg") == "/files/current.jpg"
+    refute Storage.url("https://cdn.example.com/x.jpg")
+    refute Storage.url("/other-public-path/x.jpg")
     assert Storage.url(nil) == nil
+  end
+
+  test "path/1 rejects traversal outside the private root", %{root: root} do
+    assert {:ok, expected} = Storage.Local.path("progress_photos/abc.jpg")
+    assert expected == Path.join(root, "progress_photos/abc.jpg")
+    assert {:error, :invalid_key} = Storage.Local.path("../secrets.txt")
+  end
+
+  test "delivery/1 resolves local files under the private root", %{root: root} do
+    assert {:file, expected} = Storage.delivery("progress_photos/abc.jpg")
+    assert expected == Path.join(root, "progress_photos/abc.jpg")
   end
 
   test "delete/1 removes the object and tolerates missing ones", %{root: root} do

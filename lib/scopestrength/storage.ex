@@ -21,8 +21,8 @@ defmodule Scopestrength.Storage do
   Uploaded file storage, behind a swappable adapter.
 
   A self-hosted install needs nothing configured: the default adapter writes
-  to `priv/static/uploads` exactly as this app always has. Setting `S3_BUCKET`
-  switches to object storage without touching application code.
+  to a private directory under `priv/uploads`. Setting `S3_BUCKET` switches to
+  private object storage without touching application code.
 
   What goes in the database is a **key** -- `"progress_photos/<uuid>.jpg"` --
   never a URL. URLs are derived at render time by `url/1`, so the same rows
@@ -49,6 +49,9 @@ defmodule Scopestrength.Storage do
 
   @doc "Removes the object. Missing objects are not an error."
   @callback delete(key()) :: :ok
+
+  @callback delivery(key()) ::
+              {:file, Path.t()} | {:redirect, String.t()} | {:error, term()}
 
   @doc """
   A URL the browser can PUT a file to directly, bypassing this server.
@@ -80,19 +83,26 @@ defmodule Scopestrength.Storage do
   Returns a browser-fetchable URL for a stored key.
 
   Passes `nil` through so templates can render optional images unguarded.
-  Legacy values that are already a path or URL are returned unchanged, so rows
-  written before this module existed keep working.
+  Legacy `/uploads/...` values are migrated to the authenticated file route.
+  Unknown paths and external URLs are not rendered because they cannot be
+  checked by the ownership layer.
   """
   @spec url(key() | nil) :: String.t() | nil
   def url(nil), do: nil
-  def url("http" <> _ = url), do: url
-  def url("/" <> _ = legacy_path), do: legacy_path
+  def url("http" <> _), do: nil
+  def url("/uploads/" <> key), do: "/files/" <> key
+  def url("/files/" <> _ = path), do: path
+  def url("/" <> _), do: nil
   def url(key), do: adapter().url(key)
 
   @doc "Deletes a stored object. Safe to call with nil or a legacy path."
   @spec delete(key() | nil) :: :ok
   def delete(nil), do: :ok
   def delete(key), do: adapter().delete(key)
+
+  @doc "Resolves an authorized key to a local file or short-lived redirect."
+  @spec delivery(key()) :: {:file, Path.t()} | {:redirect, String.t()} | {:error, term()}
+  def delivery(key), do: adapter().delivery(key)
 
   @doc """
   Whether the current adapter can hand the browser a URL to upload to directly.

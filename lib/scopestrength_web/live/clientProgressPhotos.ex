@@ -19,6 +19,7 @@
 defmodule ScopestrengthWeb.ClientProgressPhotos do
   use ScopestrengthWeb, :live_view
   alias Scopestrength.Storage
+  alias ScopestrengthWeb.Params
 
   alias Scopestrength.Trainers
   alias Scopestrength.Clients.Client
@@ -28,9 +29,8 @@ defmodule ScopestrengthWeb.ClientProgressPhotos do
   def mount(params, _session, socket) do
     user = socket.assigns.current_user
     trainer = Trainers.get_trainer_byUserId(user.id)
-    client_id = String.to_integer(params["id"])
-
-    case Repo.get(Client, client_id) |> Repo.preload(:user) do
+    with {:ok, client_id} <- Params.parse_integer(params["id"]) do
+      case Repo.get(Client, client_id) |> Repo.preload(:user) do
       nil ->
         {:ok, socket |> put_flash(:error, "Client not found") |> redirect(to: "/trainer/clients")}
 
@@ -45,6 +45,10 @@ defmodule ScopestrengthWeb.ClientProgressPhotos do
         else
           {:ok, socket |> put_flash(:error, "Client not found") |> redirect(to: "/trainer/clients")}
         end
+      end
+    else
+      :error ->
+        {:ok, socket |> put_flash(:error, "Client not found") |> redirect(to: "/trainer/clients")}
     end
   end
 

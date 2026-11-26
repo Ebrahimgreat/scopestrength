@@ -23,14 +23,14 @@ defmodule ScopestrengthWeb.ClientNotes do
   alias Scopestrength.Trainers
   alias Scopestrength.Clients
   alias Scopestrength.Repo
+  alias ScopestrengthWeb.Params
     use ScopestrengthWeb, :live_view
 
     def mount(params, _session, socket) do
       user = socket.assigns.current_user
       trainer = Trainers.get_trainer_byUserId(user.id)
-      client_id = String.to_integer(params["id"])
-
-      case Repo.get(Clients.Client, client_id) do
+      with {:ok, client_id} <- Params.parse_integer(params["id"]) do
+        case Repo.get(Clients.Client, client_id) do
         nil ->
           {:ok,
            socket
@@ -50,6 +50,13 @@ defmodule ScopestrengthWeb.ClientNotes do
                |> put_flash(:error, "Client Does not exist")
                |> push_navigate(to: "/trainer/clients")}
           end
+        end
+      else
+        :error ->
+          {:ok,
+           socket
+           |> put_flash(:error, "Client not found")
+           |> push_navigate(to: "/trainer/clients")}
       end
     end
 

@@ -183,16 +183,16 @@ Progress photos, chat attachments and profile pictures are stored through a swap
 adapter. What goes in the database is a key, never a URL, so switching adapters does not
 rewrite existing rows.
 
-- **Local disk (default).** Files land in `priv/static/uploads`. Nothing to configure.
-  If you run in a container, mount that directory as a volume or uploads are lost on
-  restart.
+- **Local disk (default).** Files land in private `priv/uploads` and are delivered only
+  through authenticated, ownership-checked `/files/*` routes. Nothing to configure. If
+  you run in a container, mount that directory as a volume or uploads are lost on restart.
 - **Object storage.** Set `S3_BUCKET` with `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`
   to use AWS S3, Cloudflare R2, Backblaze B2, MinIO or DigitalOcean Spaces. Non-AWS
-  providers also need `S3_HOST`. Keep the bucket private; files are served through
-  presigned URLs that expire, and large uploads go straight from the browser to the
-  bucket rather than through the server.
+  providers also need `S3_HOST`. Keep the bucket private; `/files/*` checks ownership
+  before redirecting to a short-lived presigned URL, and large uploads go straight from
+  the browser to the bucket rather than through the server.
 
-Adding another backend means implementing three functions of the
+Adding another backend means implementing the required functions of the
 `Scopestrength.Storage` behaviour.
 
 ## Using it from Claude (MCP)

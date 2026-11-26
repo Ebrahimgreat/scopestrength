@@ -55,6 +55,7 @@ if bucket = System.get_env("S3_BUCKET") do
     access_key_id: System.fetch_env!("S3_ACCESS_KEY_ID"),
     secret_access_key: System.fetch_env!("S3_SECRET_ACCESS_KEY"),
     region: System.get_env("S3_REGION") || "us-east-1",
+    http_client: ExAws.Request.Req,
     json_codec: Jason
 
   if host = System.get_env("S3_HOST") do

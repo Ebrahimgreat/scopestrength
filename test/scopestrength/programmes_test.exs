@@ -18,12 +18,18 @@ defmodule Scopestrength.ProgrammesTest do
 
       assert Enum.map(Programmes.list_user_programmes(owner.id), & &1.id) == [mine.id]
       assert Programmes.get_user_programme!(owner.id, mine.id).id == mine.id
-      assert_raise Ecto.NoResultsError, fn -> Programmes.get_user_programme!(owner.id, theirs.id) end
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Programmes.get_user_programme!(owner.id, theirs.id)
+      end
     end
 
     test "update and delete" do
       programme = programme_fixture()
-      {:ok, programme} = Programmes.update_programme(programme, %{name: "Renamed", progression_method: "none"})
+
+      {:ok, programme} =
+        Programmes.update_programme(programme, %{name: "Renamed", progression_method: "none"})
+
       assert programme.name == "Renamed"
       assert programme.progression_method == "none"
       {:ok, _} = Programmes.delete_programme(programme)
@@ -33,7 +39,8 @@ defmodule Scopestrength.ProgrammesTest do
 
   describe "templates and details" do
     test "a template belongs to a programme and holds exercises" do
-      %{programme: programme, template: template, details: details, exercise: exercise} = full_programme_fixture()
+      %{programme: programme, template: template, details: details, exercise: exercise} =
+        full_programme_fixture()
 
       assert template.programme_id == programme.id
       assert details.exercise_id == exercise.id
@@ -46,7 +53,10 @@ defmodule Scopestrength.ProgrammesTest do
 
     test "details update rep range and delete" do
       details = programme_details_fixture()
-      {:ok, details} = Programmes.update_programme_details(details, %{min_reps: 6, max_reps: 10, set: "4"})
+
+      {:ok, details} =
+        Programmes.update_programme_details(details, %{min_reps: 6, max_reps: 10, set: "4"})
+
       assert details.min_reps == 6
       assert details.set == "4"
       {:ok, _} = Programmes.delete_programme_details(details)
@@ -62,15 +72,53 @@ defmodule Scopestrength.ProgrammesTest do
   end
 
   describe "assignment" do
+    test "requires the same trainer to own the programme and client" do
+      trainer = trainer_fixture()
+      other_trainer = trainer_fixture()
+      client = client_fixture(%{trainer: trainer})
+      programme = programme_fixture(%{user_id: trainer.user_id})
+      other_programme = programme_fixture(%{user_id: other_trainer.user_id})
+
+      assert {:error, :unauthorized} =
+               Programmes.assign_client_to_programme(
+                 other_trainer.user_id,
+                 programme.id,
+                 client.id
+               )
+
+      assert {:error, :unauthorized} =
+               Programmes.assign_client_to_programme(
+                 trainer.user_id,
+                 other_programme.id,
+                 client.id
+               )
+
+      {:ok, _} = Programmes.assign_client_to_programme(trainer.user_id, programme.id, client.id)
+
+      assert {:error, :unauthorized} =
+               Programmes.unassign_client_from_programme(
+                 other_trainer.user_id,
+                 programme.id,
+                 client.id
+               )
+
+      assert Programmes.assigned_client_ids(programme.id) == MapSet.new([client.id])
+      assert Programmes.assigned_client_ids(other_programme.id) == MapSet.new()
+    end
+
     test "a client has one active programme at a time" do
       client = client_fixture()
-      first = programme_fixture()
-      second = programme_fixture()
+      first = programme_fixture(%{user_id: client.trainer.user_id})
+      second = programme_fixture(%{user_id: client.trainer.user_id})
 
-      {:ok, %ProgrammeUser{is_active: true}} = Programmes.assign_client_to_programme(first.id, client.id)
+      {:ok, %ProgrammeUser{is_active: true}} =
+        Programmes.assign_client_to_programme(client.trainer.user_id, first.id, client.id)
+
       assert MapSet.to_list(Programmes.assigned_client_ids(first.id)) == [client.id]
 
-      {:ok, _} = Programmes.assign_client_to_programme(second.id, client.id)
+      {:ok, _} =
+        Programmes.assign_client_to_programme(client.trainer.user_id, second.id, client.id)
+
       assert MapSet.to_list(Programmes.assigned_client_ids(first.id)) == []
       assert MapSet.to_list(Programmes.assigned_client_ids(second.id)) == [client.id]
 
@@ -80,11 +128,25 @@ defmodule Scopestrength.ProgrammesTest do
 
     test "unassign deactivates and reports the count" do
       client = client_fixture()
-      programme = programme_fixture()
-      {:ok, _} = Programmes.assign_client_to_programme(programme.id, client.id)
+      programme = programme_fixture(%{user_id: client.trainer.user_id})
 
-      assert {:ok, 1} = Programmes.unassign_client_from_programme(programme.id, client.id)
-      assert {:ok, 0} = Programmes.unassign_client_from_programme(programme.id, client.id)
+      {:ok, _} =
+        Programmes.assign_client_to_programme(client.trainer.user_id, programme.id, client.id)
+
+      assert {:ok, 1} =
+               Programmes.unassign_client_from_programme(
+                 client.trainer.user_id,
+                 programme.id,
+                 client.id
+               )
+
+      assert {:ok, 0} =
+               Programmes.unassign_client_from_programme(
+                 client.trainer.user_id,
+                 programme.id,
+                 client.id
+               )
+
       assert MapSet.to_list(Programmes.assigned_client_ids(programme.id)) == []
     end
   end
@@ -92,7 +154,9 @@ defmodule Scopestrength.ProgrammesTest do
   describe "cloning" do
     test "clone_programme/2 copies templates and details to the owner" do
       owner = trainer_user_fixture()
-      %{programme: programme, exercise: exercise} = full_programme_fixture(%{user_id: owner.id, name: "PPL"})
+
+      %{programme: programme, exercise: exercise} =
+        full_programme_fixture(%{user_id: owner.id, name: "PPL"})
 
       {:ok, copy} = Programmes.clone_programme(owner.id, programme.id)
       assert %Programme{} = copy
@@ -109,20 +173,37 @@ defmodule Scopestrength.ProgrammesTest do
     test "clone_programme/2 refuses another user's programme" do
       other = trainer_user_fixture()
       programme = programme_fixture()
-      assert_raise Ecto.NoResultsError, fn -> Programmes.clone_programme(other.id, programme.id) end
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Programmes.clone_programme(other.id, programme.id)
+      end
     end
 
     test "clone_assigned_programme/3 only copies a programme the client is on" do
       client = client_fixture()
-      %{programme: programme} = full_programme_fixture()
+      %{programme: programme} = full_programme_fixture(%{user_id: client.trainer.user_id})
 
       assert {:error, :not_assigned} =
                Programmes.clone_assigned_programme(client.user_id, client.id, programme.id)
 
-      {:ok, _} = Programmes.assign_client_to_programme(programme.id, client.id)
+      {:ok, _} =
+        Programmes.assign_client_to_programme(client.trainer.user_id, programme.id, client.id)
+
       {:ok, copy} = Programmes.clone_assigned_programme(client.user_id, client.id, programme.id)
       assert copy.user_id == client.user_id
       assert Enum.map(Programmes.list_user_programmes(client.user_id), & &1.id) == [copy.id]
+    end
+
+    test "clone_assigned_programme/3 requires the caller to own the client" do
+      client = client_fixture()
+      attacker = client_fixture()
+      %{programme: programme} = full_programme_fixture(%{user_id: client.trainer.user_id})
+
+      {:ok, _} =
+        Programmes.assign_client_to_programme(client.trainer.user_id, programme.id, client.id)
+
+      assert {:error, :not_assigned} =
+               Programmes.clone_assigned_programme(attacker.user_id, client.id, programme.id)
     end
   end
 

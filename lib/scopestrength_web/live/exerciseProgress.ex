@@ -22,6 +22,7 @@ defmodule ScopestrengthWeb.ExerciseProgress do
   alias Scopestrength.Clients
   alias Scopestrength.Training.WorkoutDetails
   alias Scopestrength.Training.Workout
+  alias ScopestrengthWeb.Params
   import Ecto.Query
   use ScopestrengthWeb, :live_view
 
@@ -30,12 +31,12 @@ defmodule ScopestrengthWeb.ExerciseProgress do
   end
 
   def mount(params, _session, socket) do
-    exercise_id = String.to_integer(params["exercise_id"])
-    client_id = String.to_integer(params["id"])
     user = socket.assigns.current_user
     trainer = Trainers.get_trainer_byUserId(user.id)
 
-    case Repo.get(Clients.Client, client_id) do
+    with {:ok, exercise_id} <- Params.parse_integer(params["exercise_id"]),
+         {:ok, client_id} <- Params.parse_integer(params["id"]) do
+      case Repo.get(Clients.Client, client_id) do
       nil ->
         {:ok,
          socket
@@ -104,6 +105,13 @@ defmodule ScopestrengthWeb.ExerciseProgress do
              |> put_flash(:error, "Client Does not exist")
              |> push_navigate(to: "/trainer/clients")}
         end
+      end
+    else
+      :error ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Client not found")
+         |> push_navigate(to: "/trainer/clients")}
     end
   end
 

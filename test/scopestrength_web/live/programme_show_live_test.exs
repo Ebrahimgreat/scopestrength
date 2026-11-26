@@ -32,7 +32,7 @@ defmodule ScopestrengthWeb.ProgrammeShowLiveTest do
   test "removing a client notifies them", %{conn: conn, trainer: trainer, user: user} do
     client = client_fixture(%{trainer: trainer})
     %{programme: programme} = full_programme_fixture(%{user_id: user.id})
-    {:ok, _} = Programmes.assign_client_to_programme(programme.id, client.id)
+    {:ok, _} = Programmes.assign_client_to_programme(user.id, programme.id, client.id)
 
     {:ok, view, _html} = live(conn, ~p"/trainer/programmes/#{programme.id}")
     render_click(view, "unassignClient", %{"client_id" => to_string(client.id), "name" => "Client"})

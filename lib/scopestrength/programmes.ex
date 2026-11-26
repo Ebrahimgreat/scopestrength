@@ -24,7 +24,10 @@ defmodule Scopestrength.Programmes do
   import Ecto.Query, warn: false
   alias Scopestrength.Repo
 
+  alias Scopestrength.Account.User
+  alias Scopestrength.Clients.Client
   alias Scopestrength.Programmes.Programme
+  alias Scopestrength.Trainers.Trainer
 
 
  def get_programme_with_template(id) do
@@ -103,8 +106,15 @@ defmodule Scopestrength.Programmes do
   """
   def clone_assigned_programme(user_id, client_id, programme_id) do
     assigned? =
-      Scopestrength.Programmes.ProgrammeUser
-      |> where([pu], pu.client_id == ^client_id and pu.programme_id == ^programme_id)
+      from(pu in Scopestrength.Programmes.ProgrammeUser,
+        join: c in Client,
+        on: c.id == pu.client_id,
+        join: u in User,
+        on: u.id == c.user_id,
+        where:
+          pu.client_id == ^client_id and pu.programme_id == ^programme_id and
+            c.user_id == ^user_id and u.role == "client"
+      )
       |> Repo.exists?()
 
     if assigned? do
@@ -563,7 +573,7 @@ defmodule Scopestrength.Programmes do
   @doc """
   Takes a client off a programme, leaving them on nothing.
 
-  The counterpart to `assign_client_to_programme/2`, which always leaves the
+  The counterpart to `assign_client_to_programme/3`, which always leaves the
   client on something. This is the case that one cannot express: a client who
   is paused, injured or between blocks. The row is demoted rather than deleted,
   so their history on the programme survives.
@@ -572,21 +582,29 @@ defmodule Scopestrength.Programmes do
 
   ## Examples
 
-      iex> unassign_client_from_programme(16, 3)
+      iex> unassign_client_from_programme(8, 16, 3)
       {:ok, 1}
 
   """
-  def unassign_client_from_programme(programme_id, client_id) do
-    {count, _} =
-      from(pu in ProgrammeUser,
-        where:
-          pu.programme_id == ^programme_id and
-            pu.client_id == ^client_id and
-            pu.is_active == true
-      )
-      |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now(:second)])
+  def unassign_client_from_programme(trainer_user_id, programme_id, client_id) do
+    Repo.transaction(fn ->
+      case authorized_assignment_scope(trainer_user_id, programme_id, client_id) do
+        {:ok, _programme, _client} ->
+          {count, _} =
+            from(pu in ProgrammeUser,
+              where:
+                pu.programme_id == ^programme_id and
+                  pu.client_id == ^client_id and
+                  pu.is_active == true
+            )
+            |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now(:second)])
 
-    {:ok, count}
+          count
+
+        :error ->
+          Repo.rollback(:unauthorized)
+      end
+    end)
   end
 
   @doc """
@@ -599,93 +617,57 @@ defmodule Scopestrength.Programmes do
 
   ## Examples
 
-      iex> assign_client_to_programme(16, 3)
+      iex> assign_client_to_programme(8, 16, 3)
       {:ok, %ProgrammeUser{}}
 
   """
-  def assign_client_to_programme(programme_id, client_id) do
+  def assign_client_to_programme(trainer_user_id, programme_id, client_id) do
     Repo.transaction(fn ->
-      from(pu in ProgrammeUser,
-        where: pu.client_id == ^client_id and pu.is_active == true
-      )
-      |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now(:second)])
+      case authorized_assignment_scope(trainer_user_id, programme_id, client_id) do
+        {:ok, _programme, _client} ->
+          from(pu in ProgrammeUser,
+            where: pu.client_id == ^client_id and pu.is_active == true
+          )
+          |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now(:second)])
 
-      %ProgrammeUser{}
-      |> ProgrammeUser.changeset(%{
-        programme_id: programme_id,
-        client_id: client_id,
-        is_active: true
-      })
-      |> Repo.insert()
-      |> case do
-        {:ok, programme_user} -> programme_user
-        {:error, changeset} -> Repo.rollback(changeset)
+          %ProgrammeUser{}
+          |> ProgrammeUser.changeset(%{
+            programme_id: programme_id,
+            client_id: client_id,
+            is_active: true
+          })
+          |> Repo.insert()
+          |> case do
+            {:ok, programme_user} -> programme_user
+            {:error, changeset} -> Repo.rollback(changeset)
+          end
+
+        :error ->
+          Repo.rollback(:unauthorized)
       end
     end)
   end
 
-  @doc """
-  Creates a programme_user.
+  defp authorized_assignment_scope(trainer_user_id, programme_id, client_id) do
+    programme =
+      Repo.one(
+        from p in Programme,
+          join: u in User,
+          on: u.id == p.user_id,
+          where: p.id == ^programme_id and u.id == ^trainer_user_id and u.role == "trainer",
+          lock: "FOR UPDATE"
+      )
 
-  ## Examples
+    client =
+      Repo.one(
+        from c in Client,
+          join: t in Trainer,
+          on: t.id == c.trainer_id,
+          where: c.id == ^client_id and t.user_id == ^trainer_user_id,
+          lock: "FOR UPDATE"
+      )
 
-      iex> create_programme_user(%{field: value})
-      {:ok, %ProgrammeUser{}}
-
-      iex> create_programme_user(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def create_programme_user(attrs \\ %{}) do
-    %ProgrammeUser{}
-    |> ProgrammeUser.changeset(attrs)
-    |> Repo.insert()
+    if programme && client, do: {:ok, programme, client}, else: :error
   end
 
-  @doc """
-  Updates a programme_user.
-
-  ## Examples
-
-      iex> update_programme_user(programme_user, %{field: new_value})
-      {:ok, %ProgrammeUser{}}
-
-      iex> update_programme_user(programme_user, %{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def update_programme_user(%ProgrammeUser{} = programme_user, attrs) do
-    programme_user
-    |> ProgrammeUser.changeset(attrs)
-    |> Repo.update()
-  end
-
-  @doc """
-  Deletes a programme_user.
-
-  ## Examples
-
-      iex> delete_programme_user(programme_user)
-      {:ok, %ProgrammeUser{}}
-
-      iex> delete_programme_user(programme_user)
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def delete_programme_user(%ProgrammeUser{} = programme_user) do
-    Repo.delete(programme_user)
-  end
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking programme_user changes.
-
-  ## Examples
-
-      iex> change_programme_user(programme_user)
-      %Ecto.Changeset{data: %ProgrammeUser{}}
-
-  """
-  def change_programme_user(%ProgrammeUser{} = programme_user, attrs \\ %{}) do
-    ProgrammeUser.changeset(programme_user, attrs)
-  end
 end

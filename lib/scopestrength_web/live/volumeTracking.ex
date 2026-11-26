@@ -26,14 +26,15 @@ defmodule ScopestrengthWeb.VolumeTracking do
   alias Scopestrength.Exercises.Exercise
   alias Scopestrength.Exercises.Muscles
   alias Scopestrength.Exercises.ExerciseMuscleContribution
+  alias ScopestrengthWeb.Params
   import Ecto.Query
 
   def mount(params, _session, socket) do
-    client_id = String.to_integer(params["id"])
     user = socket.assigns.current_user
     trainer = Trainers.get_trainer_byUserId(user.id)
 
-    case Repo.get(Clients.Client, client_id) do
+    with {:ok, client_id} <- Params.parse_integer(params["id"]) do
+      case Repo.get(Clients.Client, client_id) do
       nil ->
         {:ok,
          socket
@@ -62,6 +63,13 @@ defmodule ScopestrengthWeb.VolumeTracking do
              |> put_flash(:error, "Client does not exist")
              |> push_navigate(to: "/trainer/clients")}
         end
+      end
+    else
+      :error ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Client not found")
+         |> push_navigate(to: "/trainer/clients")}
     end
   end
 

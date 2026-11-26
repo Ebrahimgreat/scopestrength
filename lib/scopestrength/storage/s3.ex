@@ -46,14 +46,17 @@ defmodule Scopestrength.Storage.S3 do
   end
 
   @impl true
-  def url(key) do
+  def url(key), do: "/files/" <> key
+
+  @impl true
+  def delivery(key) do
     config = ExAws.Config.new(:s3)
 
     case ExAws.S3.presigned_url(config, :get, bucket(), key,
            expires_in: @url_expires_in_seconds
          ) do
-      {:ok, url} -> url
-      {:error, _reason} -> nil
+      {:ok, url} -> {:redirect, url}
+      {:error, reason} -> {:error, reason}
     end
   end
 

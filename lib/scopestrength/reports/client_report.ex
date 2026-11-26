@@ -19,23 +19,49 @@
 defmodule Scopestrength.Reports.ClientReport do
   import Ecto.Query
   alias Scopestrength.Repo
+  alias Scopestrength.Account.User
   alias Scopestrength.Clients.Client
   alias Scopestrength.ClientWeight.ClientWeights
   alias Scopestrength.Training.{Workout, WorkoutDetails}
   alias Scopestrength.Exercises.Exercise
+  alias Scopestrength.Trainers.Trainer
   alias Elixlsx.{Workbook, Sheet}
 
-  def generate(client_id) do
-    client = Repo.get!(Client, client_id) |> Repo.preload(:user)
+  def generate_for_trainer(trainer_user_id, client_id) do
+    client =
+      from(c in Client,
+        join: t in Trainer,
+        on: t.id == c.trainer_id,
+        join: u in User,
+        on: u.id == t.user_id,
+        where: c.id == ^client_id and u.id == ^trainer_user_id and u.role == "trainer",
+        preload: [:user]
+      )
+      |> Repo.one()
+
+    if client do
+      generate(client)
+    else
+      {:error, :unauthorized}
+    end
+  end
+
+  defp generate(client) do
     client_name = client.user.name || "Client"
 
-    weight_sheet = build_weight_sheet(client_id)
-    workout_sheet = build_workout_sheet(client_id)
+    weight_sheet = build_weight_sheet(client.id)
+    workout_sheet = build_workout_sheet(client.id)
 
     workbook = %Workbook{sheets: [weight_sheet, workout_sheet]}
 
-    file_name = "#{String.replace(client_name, " ", "_")}_report_#{Date.to_string(Date.utc_today())}.xlsx"
-    tmp_path = Path.join(System.tmp_dir!(), file_name)
+    file_name =
+      "#{safe_filename(client_name)}_report_#{Date.to_string(Date.utc_today())}.xlsx"
+
+    tmp_path =
+      Path.join(
+        System.tmp_dir!(),
+        "scopestrength-report-#{Ecto.UUID.generate()}-#{file_name}"
+      )
 
     {:ok, _} = Elixlsx.write_to(workbook, tmp_path)
 
@@ -109,4 +135,16 @@ defmodule Scopestrength.Reports.ClientReport do
   defp format_datetime(%DateTime{} = dt), do: Calendar.strftime(dt, "%Y-%m-%d %H:%M")
   defp format_datetime(%Date{} = d), do: Date.to_string(d)
   defp format_datetime(val), do: to_string(val)
+
+  defp safe_filename(name) when is_binary(name) do
+    name =
+      name
+      |> String.replace(~r/[^A-Za-z0-9_-]+/, "_")
+      |> String.trim("_")
+      |> String.slice(0, 80)
+
+    if name == "", do: "Client", else: name
+  end
+
+  defp safe_filename(_name), do: "Client"
 end

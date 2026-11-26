@@ -30,4 +30,17 @@ defmodule ScopestrengthWeb.Params do
   @spec to_integer(integer() | String.t()) :: integer()
   def to_integer(value) when is_integer(value), do: value
   def to_integer(value) when is_binary(value), do: String.to_integer(value)
+
+  @doc "Parses an integer from a route or external parameter without raising."
+  @spec parse_integer(term()) :: {:ok, integer()} | :error
+  def parse_integer(value) when is_integer(value), do: {:ok, value}
+
+  def parse_integer(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {integer, ""} -> {:ok, integer}
+      _ -> :error
+    end
+  end
+
+  def parse_integer(_value), do: :error
 end

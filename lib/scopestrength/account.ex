@@ -209,9 +209,9 @@ defmodule Scopestrength.Account do
         })
       end
 
-      Programmes.create_programme_user(%{programme_id: ppl.id, client_id: alex.id, is_active: true})
-      Programmes.create_programme_user(%{programme_id: ul.id, client_id: sarah.id, is_active: true})
-      Programmes.create_programme_user(%{programme_id: ppl.id, client_id: mike.id, is_active: true})
+      Programmes.assign_client_to_programme(trainer_user.id, ppl.id, alex.id)
+      Programmes.assign_client_to_programme(trainer_user.id, ul.id, sarah.id)
+      Programmes.assign_client_to_programme(trainer_user.id, ppl.id, mike.id)
 
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 

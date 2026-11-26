@@ -676,8 +676,6 @@ defmodule ScopestrengthWeb.Chat do
     end
   end
 
-  defp format_number(nil), do: "?"
-
   defp format_number(value) when is_float(value) do
     if value == Float.round(value, 0) do
       value |> round() |> Integer.to_string()

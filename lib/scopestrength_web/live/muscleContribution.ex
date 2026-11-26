@@ -25,18 +25,19 @@ defmodule ScopestrengthWeb.MuscleContribution do
   alias Scopestrength.Exercises.Exercise
   alias Scopestrength.Exercises.Muscles
   alias Scopestrength.Exercises.ExerciseMuscleContribution
+  alias ScopestrengthWeb.Params
   import Ecto.Query
   use ScopestrengthWeb, :live_view
 
   @page_size 5
 
   def mount(params, _session, socket) do
-    client_id = String.to_integer(params["id"])
-    muscle_id = String.to_integer(params["contribution"])
     user = socket.assigns.current_user
     trainer = Trainers.get_trainer_byUserId(user.id)
 
-    case Repo.get(Clients.Client, client_id) do
+    with {:ok, client_id} <- Params.parse_integer(params["id"]),
+         {:ok, muscle_id} <- Params.parse_integer(params["contribution"]) do
+      case Repo.get(Clients.Client, client_id) do
       nil ->
         {:ok,
          socket
@@ -108,6 +109,13 @@ defmodule ScopestrengthWeb.MuscleContribution do
                )}
           end
         end
+      end
+    else
+      :error ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Client not found")
+         |> push_navigate(to: "/trainer/clients")}
     end
   end
 
